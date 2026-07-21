@@ -1,0 +1,7 @@
+let x = 1 + 2 * 3
+print(x)
+if 10 > 5 {
+    print("Optimization works")
+}
+return 42
+print("This should be DCE-ed")

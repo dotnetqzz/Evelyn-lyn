@@ -1,0 +1,23 @@
+# 1. Annotations & Reflection
+@Deprecated
+def old_func() { print("Old") }
+
+@Author("Evelyn")
+struct User { name, age }
+
+let u = User("Alice", 30)
+
+print("Type of u: " + reflectGetType(u))
+print("Fields of u: " + reflectGetFields(u))
+print("Annotations of User type: " + reflectGetAnnotations(User))
+
+# 2. Binary Serialization
+let data = {"key": "value", "items": [1, 2, 3], "user": u}
+let packed = marshal(data)
+print("Packed size: " + len(packed))
+let unpacked = unmarshal(packed)
+print("Unpacked user name: " + unpacked.user.name)
+assert(unpacked.key == "value", "Marshal check")
+
+# 3. Bundling (can't easily test in-script, but we'll run the command)
+print("Packaging test PASSED")

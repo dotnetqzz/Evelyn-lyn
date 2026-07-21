@@ -1,0 +1,3 @@
+import "helper.lyn"
+print("Main app started")
+helper.greet("User")

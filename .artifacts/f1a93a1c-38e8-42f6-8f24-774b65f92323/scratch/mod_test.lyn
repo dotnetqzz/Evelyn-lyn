@@ -1,0 +1,8 @@
+let m = import "exporter.lyn"
+print("X from m: " + m.x)
+try {
+    print("Y from m: " + m.y)
+} catch _err {
+    print("Caught expected error for m.y: " + _err)
+}
+print("Get Y via exported func: " + m.get_y_exported())

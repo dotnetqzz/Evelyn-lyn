@@ -1,0 +1,4 @@
+export let x = 1
+let y = 2
+def get_y() { return y }
+export def get_y_exported() { return y }
