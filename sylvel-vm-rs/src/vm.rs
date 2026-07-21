@@ -578,13 +578,15 @@ impl Vm {
                     }
                 }
                 OP_CALL_NATIVE => {
-                    // Legacy: index into native_names table, args already on stack
                     let idx = fetch_u16!() as usize;
+                    let argc = fetch_u8!() as usize;
                     let name = &module.native_names[idx];
                     let f = self.natives.get(name).copied();
+                    let stack_len = self.stack.len();
+                    let args: Vec<SylVal> = self.stack.drain(stack_len - argc..).collect();
                     match f {
                         Some(f) => {
-                            let ret = f(self, &[])?;
+                            let ret = f(self, &args)?;
                             self.stack.push(ret);
                         }
                         None => {

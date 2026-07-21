@@ -175,6 +175,15 @@ impl Compiler {
         self.current().code.extend_from_slice(&operand.to_be_bytes());
     }
 
+    // CallNative needs both the native index AND how many args are already
+    // sitting on the stack, otherwise the VM has no way to know how many
+    // values to pop before invoking the native function.
+    fn emit_call_native(&mut self, native_idx: u16, argc: u8) {
+        self.current().code.push(Opcode::CallNative as u8);
+        self.current().code.extend_from_slice(&native_idx.to_be_bytes());
+        self.current().code.push(argc);
+    }
+
     pub fn compile(mut self, ast: &[ASTNode]) -> Result<ModuleState, String> {
         let main_proto = FunctionProto::new("<main>");
         self.function_stack.push(main_proto);
@@ -232,7 +241,7 @@ impl Compiler {
             ASTNode::PrintCall(arg) => {
                 self.compile_node(arg)?;
                 let idx = self.module.native_index("print");
-                self.emit_u16(Opcode::CallNative, idx);
+                self.emit_call_native(idx, 1);
             }
             ASTNode::Return(expr) => {
                 self.compile_node(expr)?;
@@ -278,7 +287,7 @@ impl Compiler {
                 if is_native {
                     for arg in args { self.compile_node(arg)?; }
                     let idx = self.module.native_index(name);
-                    self.emit_u16(Opcode::CallNative, idx);
+                    self.emit_call_native(idx, args.len() as u8);
                 } else {
                     let idx = self.module.global_index(name);
                     self.emit_u16(Opcode::LoadGlobal, idx);
