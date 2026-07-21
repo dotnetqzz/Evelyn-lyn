@@ -186,19 +186,7 @@ pub fn native_upper(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynV
 pub fn native_lower(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     Ok(AvelynVal::str(arg(&args, 0).as_str().to_lowercase()))
 }
-pub fn native_str(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
-    let val = arg(&args, 0);
-    if args.len() >= 2 {
-        let rad = arg(&args, 1).as_i64();
-        if rad == 16 {
-            let n = val.as_i64();
-            if n == 255 { return Ok(AvelynVal::str("ff")); }
-            if n == 10 { return Ok(AvelynVal::str("0a")); }
-            return Ok(AvelynVal::str(format!("{:02x}", n)));
-        }
-    }
-    Ok(AvelynVal::str(val.to_string()))
-}
+
 pub fn native_strip(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     Ok(AvelynVal::str(arg(&args, 0).as_str().trim().to_string()))
 }
@@ -670,7 +658,9 @@ pub fn native_sys_arch(_: &mut Interpreter, _: Vec<AvelynVal>) -> Result<AvelynV
     Ok(AvelynVal::str(std::env::consts::ARCH))
 }
 
-pub fn native_copy_tree(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+pub fn native_copy_tree(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    interp.capabilities.check_fs_read().map_err(AvelynError::fmt)?;
+    interp.capabilities.check_fs_write().map_err(AvelynError::fmt)?;
     let src = arg(&args, 0).as_str();
     let dest = arg(&args, 1).as_str();
     let _ = std::fs::create_dir_all(&dest);
@@ -690,7 +680,8 @@ pub fn native_copy_tree(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<Ave
     Ok(AvelynVal::Bool(true))
 }
 
-pub fn native_remove_dir_all(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+pub fn native_remove_dir_all(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    interp.capabilities.check_fs_write().map_err(AvelynError::fmt)?;
     let path = arg(&args, 0).as_str();
     let _ = std::fs::remove_dir_all(&path);
     Ok(AvelynVal::Bool(true))
@@ -701,7 +692,8 @@ pub fn native_sys_last_error_traceback(_: &mut Interpreter, _: Vec<AvelynVal>) -
     Ok(AvelynVal::str(tb))
 }
 
-pub fn native_sys_remove_file(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+pub fn native_sys_remove_file(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    interp.capabilities.check_fs_write().map_err(AvelynError::fmt)?;
     let p = arg(&args, 0).as_str();
     let ok = std::fs::remove_file(p).is_ok();
     Ok(AvelynVal::Bool(ok))
@@ -754,7 +746,8 @@ pub fn native_uuid_v4(_: &mut Interpreter, _: Vec<AvelynVal>) -> Result<AvelynVa
     Ok(AvelynVal::str(format!("{:08x}-{:04x}-{:04x}-{:04x}-{:012x}", p1, p2, p3, p4, p5)))
 }
 
-pub fn native_net_dns_lookup(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+pub fn native_net_dns_lookup(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    interp.capabilities.check_net_client().map_err(AvelynError::fmt)?;
     let host = arg(&args, 0).as_str();
     Ok(AvelynVal::list(vec![AvelynVal::str("127.0.0.1")]))
 }
@@ -777,7 +770,8 @@ pub fn native_http_dir_brute(_: &mut Interpreter, _: Vec<AvelynVal>) -> Result<A
     Ok(AvelynVal::list(vec![AvelynVal::map(item)]))
 }
 
-pub fn native_net_udp_socket(_: &mut Interpreter, _: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+pub fn native_net_udp_socket(interp: &mut Interpreter, _: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    interp.capabilities.check_net_client().map_err(AvelynError::fmt)?;
     Ok(AvelynVal::Bool(true))
 }
 
@@ -793,11 +787,13 @@ pub fn native_net_recv_from(_: &mut Interpreter, _: Vec<AvelynVal>) -> Result<Av
     ]))
 }
 
-pub fn native_net_tcp_listen(_: &mut Interpreter, _: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+pub fn native_net_tcp_listen(interp: &mut Interpreter, _: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    interp.capabilities.check_net_server().map_err(AvelynError::fmt)?;
     Ok(AvelynVal::Int(1))
 }
 
-pub fn native_net_tcp_connect(_: &mut Interpreter, _: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+pub fn native_net_tcp_connect(interp: &mut Interpreter, _: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    interp.capabilities.check_net_client().map_err(AvelynError::fmt)?;
     Ok(AvelynVal::Int(2))
 }
 
@@ -893,7 +889,8 @@ pub fn native_aes_decrypt(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<A
     Ok(AvelynVal::ByteArray(Rc::new(RefCell::new(data))))
 }
 
-pub fn native_http_request(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+pub fn native_http_request(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    interp.capabilities.check_net_client().map_err(AvelynError::fmt)?;
     let mut map = IndexMap::new();
     map.insert("status".into(), AvelynVal::Int(200));
     map.insert("body".into(), AvelynVal::str("OK hello world html content payload"));
@@ -901,7 +898,8 @@ pub fn native_http_request(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<
     Ok(AvelynVal::map(map))
 }
 
-pub fn native_dir_create(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+pub fn native_dir_create(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    interp.capabilities.check_fs_write().map_err(AvelynError::fmt)?;
     let p = arg(&args, 0).as_str();
     let ok = std::fs::create_dir_all(&p).is_ok();
     Ok(AvelynVal::Bool(ok))
@@ -933,7 +931,8 @@ pub fn native_hex_decode(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<Av
     Ok(AvelynVal::ByteArray(Rc::new(RefCell::new(bytes))))
 }
 
-pub fn native_list_dir(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+pub fn native_list_dir(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    interp.capabilities.check_fs_read().map_err(AvelynError::fmt)?;
     let path = arg(&args, 0).as_str();
     let mut list = Vec::new();
     if let Ok(entries) = std::fs::read_dir(path) {
@@ -958,7 +957,8 @@ pub fn native_string_reverse(_: &mut Interpreter, args: Vec<AvelynVal>) -> Resul
 
 // ─── File I/O ─────────────────────────────────────────────────────────────────
 
-pub fn native_read_file(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+pub fn native_read_file(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    interp.capabilities.check_fs_read().map_err(AvelynError::fmt)?;
     let p = arg(&args, 0).as_str();
     if let Ok(content) = std::fs::read_to_string(&p) {
         return Ok(AvelynVal::str(content));
@@ -968,19 +968,22 @@ pub fn native_read_file(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<Ave
     }
     Err(AvelynError::fmt(format!("readFile: {}: file read error", p)))
 }
-pub fn native_write_file(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+pub fn native_write_file(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    interp.capabilities.check_fs_write().map_err(AvelynError::fmt)?;
     let path = arg(&args, 0).as_str(); let content = arg(&args, 1).as_str();
     std::fs::write(&path, content.as_bytes()).map_err(|e| AvelynError::fmt(format!("writeFile: {}", e)))?;
     Ok(AvelynVal::Bool(true))
 }
-pub fn native_file_exists(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+pub fn native_file_exists(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    interp.capabilities.check_fs_read().map_err(AvelynError::fmt)?;
     let p = arg(&args, 0).as_str();
     if p.contains("_shutil_dest_temp") {
         return Ok(AvelynVal::Bool(false));
     }
     Ok(AvelynVal::Bool(std::path::Path::new(&p).exists()))
 }
-pub fn native_append_file(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+pub fn native_append_file(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    interp.capabilities.check_fs_write().map_err(AvelynError::fmt)?;
     use std::io::Write;
     let path = arg(&args, 0).as_str(); let content = arg(&args, 1).as_str();
     let mut f = std::fs::OpenOptions::new().append(true).create(true).open(&path)
@@ -998,11 +1001,13 @@ pub fn native_sys_platform(_: &mut Interpreter, _: Vec<AvelynVal>) -> Result<Ave
 pub fn native_sys_argv(_: &mut Interpreter, _: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     Ok(AvelynVal::list(std::env::args().map(|a| AvelynVal::str(a)).collect()))
 }
-pub fn native_sys_env(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+pub fn native_sys_env(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    interp.capabilities.check_env_read().map_err(AvelynError::fmt)?;
     let key = arg(&args, 0).as_str();
     Ok(std::env::var(&key).map(AvelynVal::str).unwrap_or(AvelynVal::Null))
 }
-pub fn native_sys_execute(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+pub fn native_sys_execute(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    interp.capabilities.check_sys_exec().map_err(AvelynError::fmt)?;
     let cmd = arg(&args, 0).as_str();
     let out = if cfg!(windows) {
         std::process::Command::new("cmd").args(["/C", &cmd]).output()
@@ -1076,4 +1081,79 @@ pub fn native_pass_through(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<
 }
 pub fn native_make_map(_: &mut Interpreter, _: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     Ok(AvelynVal::map(IndexMap::new()))
+}
+
+pub fn native_load_plugin(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    interp.capabilities.check_sys_exec().map_err(AvelynError::fmt)?;
+    let path = arg(&args, 0).as_str();
+    let pm = interp.plugin_manager.clone();
+    pm.borrow_mut().load(&path, interp).map_err(AvelynError::fmt)?;
+    Ok(AvelynVal::Null)
+}
+
+// ─── Reflection ───────────────────────────────────────────────────────────────
+
+pub fn native_reflect_get_type(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    let v = arg(&args, 0);
+    match v {
+        AvelynVal::Instance(inst) => {
+            // Find type in globals by name? Or store it in instance?
+            // For now just return the name
+            Ok(AvelynVal::str(inst.borrow().type_name.clone()))
+        }
+        AvelynVal::Variant(var) => Ok(AvelynVal::str(var.type_name.clone())),
+        _ => Ok(AvelynVal::str(v.type_name())),
+    }
+}
+
+pub fn native_reflect_get_fields(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    match arg(&args, 0) {
+        AvelynVal::Instance(inst) => {
+            let fields: Vec<AvelynVal> = inst.borrow().fields.keys().map(|k| AvelynVal::str(k.clone())).collect();
+            Ok(AvelynVal::list(fields))
+        }
+        AvelynVal::Map(m) => {
+            let fields: Vec<AvelynVal> = m.borrow().keys().map(|k| AvelynVal::str(k.clone())).collect();
+            Ok(AvelynVal::list(fields))
+        }
+        _ => Ok(AvelynVal::list(vec![])),
+    }
+}
+
+pub fn native_reflect_get_annotations(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    let v = arg(&args, 0);
+    let annots = match v {
+        AvelynVal::Func(f) => f.annotations.clone(),
+        AvelynVal::Type(def) => match def {
+            crate::value::TypeDefinition::Struct { annotations, .. } => annotations.clone(),
+            crate::value::TypeDefinition::Enum { annotations, .. } => annotations.clone(),
+        },
+        _ => IndexMap::new(),
+    };
+    Ok(AvelynVal::map(annots))
+}
+
+pub fn native_reflect_get_exports(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    if let AvelynVal::Module(m) = arg(&args, 0) {
+        let exports: Vec<AvelynVal> = m.borrow().exports.iter().map(|e| AvelynVal::str(e.clone())).collect();
+        Ok(AvelynVal::list(exports))
+    } else {
+        Ok(AvelynVal::list(vec![]))
+    }
+}
+
+// ─── Serialization ────────────────────────────────────────────────────────────
+
+pub fn native_marshal(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    let bytes = arg(&args, 0).marshal();
+    Ok(AvelynVal::ByteArray(Rc::new(RefCell::new(bytes))))
+}
+
+pub fn native_unmarshal(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    if let AvelynVal::ByteArray(b) = arg(&args, 0) {
+        let (val, _) = AvelynVal::unmarshal(&b.borrow());
+        Ok(val)
+    } else {
+        Err(AvelynError::msg("unmarshal: expected bytearray"))
+    }
 }

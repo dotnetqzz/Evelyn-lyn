@@ -2,14 +2,21 @@
 // Ported from CoreInterpreter/SysLib.swift
 
 pub mod builtins;
+pub mod module_manager;
+pub mod capabilities;
+pub mod plugin;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
+use std::cell::RefCell;
 use indexmap::IndexMap;
 
-use crate::ast::{ASTNode, Param};
+use crate::ast::ASTNode;
 use crate::env::Env;
 use crate::value::{AvelynError, AvelynFunc, AvelynVal, NativeFn, Signal};
+use self::module_manager::{ModuleManager, ModuleSource};
+use self::capabilities::Capabilities;
+use self::plugin::PluginManager;
 
 pub struct Interpreter {
     pub globals: Rc<Env>,
@@ -17,6 +24,11 @@ pub struct Interpreter {
     pub current_line: u32,
     pub call_stack: Vec<(String, String, u32)>, // (func_name, file, line)
     pub native_registry: HashMap<String, NativeFn>,
+    pub module_manager: ModuleManager,
+    pub module_cache: HashMap<String, AvelynVal>,
+    pub current_module: Option<Rc<RefCell<crate::value::Module>>>,
+    pub capabilities: Capabilities,
+    pub plugin_manager: Rc<RefCell<PluginManager>>,
 }
 
 impl Interpreter {
@@ -28,6 +40,11 @@ impl Interpreter {
             current_line: 1,
             call_stack: Vec::new(),
             native_registry: HashMap::new(),
+            module_manager: ModuleManager::new(),
+            module_cache: HashMap::new(),
+            current_module: None,
+            capabilities: Capabilities::all(),
+            plugin_manager: Rc::new(RefCell::new(PluginManager::new())),
         };
         interp.register_builtins();
         interp
@@ -40,6 +57,11 @@ impl Interpreter {
             current_line: 0,
             call_stack: Vec::new(),
             native_registry: HashMap::new(),
+            module_manager: ModuleManager::new(),
+            module_cache: HashMap::new(),
+            current_module: None,
+            capabilities: Capabilities::none(),
+            plugin_manager: Rc::new(RefCell::new(PluginManager::new())),
         }
     }
 
@@ -277,12 +299,27 @@ impl Interpreter {
         reg!("sha256", builtins::native_hash_sha256);
         reg!("md5", builtins::native_hash_md5);
         reg!("makeMap", builtins::native_make_map);
+        reg!("loadPlugin", builtins::native_load_plugin);
+
+        // Reflection
+        reg!("reflectGetType", builtins::native_reflect_get_type);
+        reg!("reflectGetFields", builtins::native_reflect_get_fields);
+        reg!("reflectGetAnnotations", builtins::native_reflect_get_annotations);
+        reg!("reflectGetExports", builtins::native_reflect_get_exports);
+
+        // Serialization
+        reg!("marshal", builtins::native_marshal);
+        reg!("unmarshal", builtins::native_unmarshal);
     }
 
     pub fn eval_ast(&mut self, ast: &[ASTNode]) -> Result<AvelynVal, AvelynError> {
+        self.eval_ast_with_env(ast, &self.globals.clone())
+    }
+
+    pub fn eval_ast_with_env(&mut self, ast: &[ASTNode], env: &Rc<Env>) -> Result<AvelynVal, AvelynError> {
         let mut last = AvelynVal::Null;
         for node in ast {
-            match self.eval_node(node, &self.globals.clone()) {
+            match self.eval_node(node, env) {
                 Ok(v) => last = v,
                 Err(Signal::Return(v)) => return Ok(v),
                 Err(Signal::Error(e)) => return Err(e),
@@ -307,9 +344,48 @@ impl Interpreter {
                 else { Err(Signal::Error(AvelynError::fmt(format!("NameError: variable '{}' is not defined", name)))) }
             }
 
-            ASTNode::Decl { name, value, mutable: _ } => {
+            ASTNode::Decl { name, value, mutable: _, annotations } => {
                 let val = self.eval_node(value, env)?;
+                let mut annots = IndexMap::new();
+                for a in annotations {
+                    let a_val = self.eval_node(a, env)?;
+                    annots.insert(a.to_string_key(), a_val);
+                }
                 env.declare(name, val);
+                Ok(AvelynVal::Null)
+            }
+
+            ASTNode::StructDecl { name, fields, annotations } => {
+                let mut annots = IndexMap::new();
+                for a in annotations {
+                    let a_val = self.eval_node(a, env)?;
+                    annots.insert(a.to_string_key(), a_val);
+                }
+                let def = crate::value::TypeDefinition::Struct {
+                    name: name.clone(),
+                    fields: fields.clone(),
+                    annotations: annots,
+                };
+                env.declare(name, AvelynVal::Type(def));
+                Ok(AvelynVal::Null)
+            }
+
+            ASTNode::EnumDecl { name, variants, annotations } => {
+                let mut annots = IndexMap::new();
+                for a in annotations {
+                    let a_val = self.eval_node(a, env)?;
+                    annots.insert(a.to_string_key(), a_val);
+                }
+                let mut v_map = HashMap::new();
+                for v in variants {
+                    v_map.insert(v.name.clone(), (v.arity, v.fields.clone()));
+                }
+                let def = crate::value::TypeDefinition::Enum {
+                    name: name.clone(),
+                    variants: v_map,
+                    annotations: annots,
+                };
+                env.declare(name, AvelynVal::Type(def));
                 Ok(AvelynVal::Null)
             }
 
@@ -461,9 +537,53 @@ impl Interpreter {
                         let map = m.borrow();
                         Ok(map.get(&i_val.as_str()).cloned().unwrap_or(AvelynVal::Null))
                     }
+                    AvelynVal::Instance(inst) => {
+                        let inst = inst.borrow();
+                        Ok(inst.fields.get(&i_val.as_str()).cloned().unwrap_or(AvelynVal::Null))
+                    }
+                    AvelynVal::Module(m) => {
+                        let m = m.borrow();
+                        let key = i_val.as_str();
+                        if m.exports.contains(&key) {
+                            Ok(m.env.get(&key).unwrap_or(AvelynVal::Null))
+                        } else {
+                            Err(Signal::Error(AvelynError::fmt(format!("NameError: module '{}' does not export '{}'", m.name, key))))
+                        }
+                    }
                     AvelynVal::Str(s) => {
                         let idx = i_val.as_i64() as usize;
                         Ok(s.chars().nth(idx).map(|c| AvelynVal::str(c.to_string())).unwrap_or(AvelynVal::Null))
+                    }
+                    AvelynVal::Type(def) => match def {
+                        crate::value::TypeDefinition::Enum { name, variants, .. } => {
+                            let v_name = i_val.as_str();
+                            if let Some((arity, _)) = variants.get(&v_name) {
+                                if *arity == 0 {
+                                    Ok(AvelynVal::Variant(Rc::new(crate::value::EnumVariantInstance {
+                                        type_name: name.clone(),
+                                        variant_name: v_name,
+                                        values: vec![],
+                                    })))
+                                } else {
+                                    // Return a constructor function using ASTNode::Lambda for closure support
+                                    let t_name = name.clone();
+                                    let v_name_inner = v_name.clone();
+
+                                    // Alternative: Define a specialized NativeFn that takes the info from somewhere?
+                                    // No, let's just use AvelynVal::Func with a custom "body" that we can identify.
+                                    // Actually, let's just make EnumVariant a first-class callable in eval_call.
+
+                                    Ok(AvelynVal::Variant(Rc::new(crate::value::EnumVariantInstance {
+                                        type_name: t_name,
+                                        variant_name: v_name_inner,
+                                        values: vec![], // Partially applied? No, Avelyn doesn't support that easily.
+                                    })))
+                                }
+                            } else {
+                                Err(Signal::Error(AvelynError::fmt(format!("NameError: enum '{}' has no variant '{}'", name, v_name))))
+                            }
+                        }
+                        _ => Ok(AvelynVal::Null),
                     }
                     _ => Ok(AvelynVal::Null),
                 }
@@ -481,26 +601,38 @@ impl Interpreter {
 
             ASTNode::Spread(_) | ASTNode::NamedArg { .. } => Ok(AvelynVal::Null),
 
-            ASTNode::FuncDecl { name, params, body, variadic } => {
+            ASTNode::FuncDecl { name, params, body, variadic, annotations } => {
+                let mut annots = IndexMap::new();
+                for a in annotations {
+                    let a_val = self.eval_node(a, env)?;
+                    annots.insert(a.to_string_key(), a_val);
+                }
                 let func = AvelynFunc {
                     name: Some(name.clone()),
                     params: params.clone(),
                     body: body.clone(),
                     closure: env.clone(),
                     variadic: *variadic,
+                    annotations: annots,
                 };
                 let val = AvelynVal::Func(Rc::new(func));
                 env.declare(name, val.clone());
                 Ok(val)
             }
 
-            ASTNode::Lambda { params, body, variadic } => {
+            ASTNode::Lambda { params, body, variadic, annotations } => {
+                let mut annots = IndexMap::new();
+                for a in annotations {
+                    let a_val = self.eval_node(a, env)?;
+                    annots.insert(a.to_string_key(), a_val);
+                }
                 let func = AvelynFunc {
                     name: None,
                     params: params.clone(),
                     body: body.clone(),
                     closure: env.clone(),
                     variadic: *variadic,
+                    annotations: annots,
                 };
                 Ok(AvelynVal::Func(Rc::new(func)))
             }
@@ -616,6 +748,18 @@ impl Interpreter {
                 Ok(AvelynVal::Null)
             }
 
+            ASTNode::Match { subject, arms } => {
+                let s_val = self.eval_node(subject, env)?;
+                for (pattern, body) in arms {
+                    let match_env = Env::child(env.clone());
+                    if self.pattern_match(pattern, &s_val, &match_env) {
+                        for stmt in body { self.eval_node(stmt, &match_env)?; }
+                        return Ok(AvelynVal::Null);
+                    }
+                }
+                Ok(AvelynVal::Null)
+            }
+
             ASTNode::Return(expr) => {
                 let val = self.eval_node(expr, env)?;
                 Err(Signal::Return(val))
@@ -630,21 +774,39 @@ impl Interpreter {
                 Err(Signal::Error(AvelynError::new(val)))
             }
 
-            ASTNode::TryCatch { body, catch_var, catch_body, finally_body } => {
+            ASTNode::TryCatch { body, catches, finally_body } => {
                 let res = (|| {
                     for stmt in body { self.eval_node(stmt, env)?; }
                     Ok(AvelynVal::Null)
                 })();
 
-                let res = match res {
-                    Err(Signal::Error(err)) => {
-                        let catch_env = Env::child(env.clone());
-                        catch_env.declare(catch_var, err.val);
-                        for stmt in catch_body { self.eval_node(stmt, &catch_env)?; }
-                        Ok(AvelynVal::Null)
+                let mut res = res;
+                if let Err(Signal::Error(err)) = &res {
+                    let mut handled = false;
+                    for (type_filter, catch_var, catch_body) in catches {
+                        let matches = match type_filter {
+                            None => true,
+                            Some(name) => {
+                                match &err.val {
+                                    AvelynVal::Instance(inst) => inst.borrow().type_name == *name,
+                                    AvelynVal::Variant(v) => v.type_name == *name,
+                                    AvelynVal::Str(s) => s.as_ref() == name,
+                                    _ => false,
+                                }
+                            }
+                        };
+
+                        if matches {
+                            let catch_env = Env::child(env.clone());
+                            catch_env.declare(catch_var, err.val.clone());
+                            for stmt in catch_body { self.eval_node(stmt, &catch_env)?; }
+                            res = Ok(AvelynVal::Null);
+                            handled = true;
+                            break;
+                        }
                     }
-                    other => other,
-                };
+                    if !handled { return res; }
+                }
 
                 if let Some(fin_stmts) = finally_body {
                     for stmt in fin_stmts { self.eval_node(stmt, env)?; }
@@ -662,46 +824,118 @@ impl Interpreter {
             }
 
             ASTNode::Import(path) => {
-                let mut candidates = Vec::new();
-                let clean_path = if path.ends_with(".lyn") { path.clone() } else { format!("{}.lyn", path) };
+                let source_info = match self.module_manager.resolve(&path, &self.current_file) {
+                    Ok(s) => s,
+                    Err(e) => return Err(Signal::Error(AvelynError::fmt(e))),
+                };
 
-                // 1. Direct path
-                candidates.push(clean_path.clone());
-                // 2. stdlib/ directory relative to workspace root
-                candidates.push(format!("stdlib/{}", clean_path));
-                // 3. stdlib/ relative to cwd
-                candidates.push(format!("../stdlib/{}", clean_path));
-                // 4. Relative to currently executing file
-                if let Some(parent) = std::path::Path::new(&self.current_file).parent() {
-                    candidates.push(parent.join(&clean_path).to_string_lossy().to_string());
-                    candidates.push(parent.join("stdlib").join(&clean_path).to_string_lossy().to_string());
-                }
-
-                let mut found_content = None;
-                for cand in &candidates {
-                    if let Ok(c) = std::fs::read_to_string(cand) {
-                        found_content = Some(c);
-                        break;
+                let (content, resolved_path, cache_key) = match source_info {
+                    ModuleSource::File(p) => {
+                        let key = p.to_string_lossy().to_string();
+                        if let Some(m) = self.module_cache.get(&key) { return Ok(m.clone()); }
+                        let c = std::fs::read_to_string(&p).map_err(|e| Signal::Error(AvelynError::fmt(format!("IOError: {}", e))))?;
+                        (c, p, key)
                     }
-                }
-
-                let content = match found_content {
-                    Some(c) => c,
-                    None => {
-                        if let Some(embedded) = crate::stdlib_bundle::get_embedded_stdlib(&path) {
-                            embedded.to_string()
-                        } else {
-                            return Err(Signal::Error(AvelynError::fmt(format!("ImportError: {}: file not found in candidates {:?}", path, candidates))));
-                        }
+                    ModuleSource::Embedded(c) => {
+                        let key = format!("embedded://{}", path);
+                        if let Some(m) = self.module_cache.get(&key) { return Ok(m.clone()); }
+                        (c, std::path::PathBuf::from(&key), key)
                     }
                 };
+
+                if let Err(e) = self.module_manager.enter_loading(resolved_path.clone()) {
+                    return Err(Signal::Error(AvelynError::fmt(e)));
+                }
+
+                let module_env = Env::child(self.globals.clone());
+                let module = Rc::new(RefCell::new(crate::value::Module {
+                    name: path.clone(),
+                    env: module_env.clone(),
+                    exports: HashSet::new(),
+                }));
+
+                let old_file = self.current_file.clone();
+                let old_module = self.current_module.clone();
+
+                self.current_file = resolved_path.to_string_lossy().to_string();
+                self.current_module = Some(module.clone());
 
                 let mut lexer = crate::lexer::Lexer::new(&content);
                 let tokens = lexer.tokenize();
                 let mut parser = crate::parser::Parser::new(tokens);
                 let ast = parser.parse();
-                self.eval_ast(&ast).map_err(Signal::Error)?;
+
+                let res = self.eval_ast_with_env(&ast, &module_env);
+
+                self.current_file = old_file;
+                self.current_module = old_module;
+                self.module_manager.exit_loading();
+
+                res.map_err(Signal::Error)?;
+
+                let mod_val = AvelynVal::Module(module);
+                self.module_cache.insert(cache_key, mod_val.clone());
+                self.module_manager.mark_loaded(resolved_path);
+
+                // Auto-bind to module name if used as a statement
+                let mod_name = std::path::Path::new(&path).file_stem()
+                    .map(|s| s.to_string_lossy().to_string())
+                    .unwrap_or_else(|| path.clone());
+                env.declare(&mod_name, mod_val.clone());
+
+                Ok(mod_val)
+            }
+
+            ASTNode::Include(path) => {
+                let source_info = match self.module_manager.resolve(&path, &self.current_file) {
+                    Ok(s) => s,
+                    Err(e) => return Err(Signal::Error(AvelynError::fmt(e))),
+                };
+
+                let (content, resolved_path) = match source_info {
+                    ModuleSource::File(p) => {
+                        let c = std::fs::read_to_string(&p).map_err(|e| Signal::Error(AvelynError::fmt(format!("IOError: {}", e))))?;
+                        (c, p)
+                    }
+                    ModuleSource::Embedded(c) => {
+                        (c, std::path::PathBuf::from(format!("embedded://{}", path)))
+                    }
+                };
+
+                if let Err(e) = self.module_manager.enter_loading(resolved_path.clone()) {
+                    return Err(Signal::Error(AvelynError::fmt(e)));
+                }
+
+                let old_file = self.current_file.clone();
+                self.current_file = resolved_path.to_string_lossy().to_string();
+
+                let mut lexer = crate::lexer::Lexer::new(&content);
+                let tokens = lexer.tokenize();
+                let mut parser = crate::parser::Parser::new(tokens);
+                let ast = parser.parse();
+
+                let res = self.eval_ast_with_env(&ast, env);
+
+                self.current_file = old_file;
+                self.module_manager.exit_loading();
+                self.module_manager.mark_loaded(resolved_path);
+
+                res.map_err(Signal::Error)?;
                 Ok(AvelynVal::Null)
+            }
+
+            ASTNode::Export(inner) => {
+                let res = self.eval_node(inner, env)?;
+                if let Some(curr) = &self.current_module {
+                    match inner.as_ref() {
+                        ASTNode::Decl { name, .. } | ASTNode::FuncDecl { name, .. } |
+                        ASTNode::StructDecl { name, .. } | ASTNode::EnumDecl { name, .. } => {
+                            curr.borrow_mut().exports.insert(name.clone());
+                        }
+                        _ => {}
+                    }
+                }
+                Ok(res)
             }
         }
     }
@@ -726,6 +960,32 @@ impl Interpreter {
 
         match callee {
             AvelynVal::Native(n_fn) => n_fn(self, positional).map_err(Signal::Error),
+            AvelynVal::Variant(v) if v.values.is_empty() => {
+                // If it's an empty variant being called, it's a constructor call
+                Ok(AvelynVal::Variant(Rc::new(crate::value::EnumVariantInstance {
+                    type_name: v.type_name.clone(),
+                    variant_name: v.variant_name.clone(),
+                    values: positional,
+                })))
+            }
+            AvelynVal::Type(def) => match def {
+                crate::value::TypeDefinition::Struct { name, fields, .. } => {
+                    let mut inst_fields = IndexMap::new();
+                    for (i, f_name) in fields.iter().enumerate() {
+                        let val = positional.get(i).cloned().unwrap_or(AvelynVal::Null);
+                        inst_fields.insert(f_name.clone(), val);
+                    }
+                    // Also handle named args
+                    for (k, v) in named { inst_fields.insert(k, v); }
+                    Ok(AvelynVal::Instance(Rc::new(std::cell::RefCell::new(crate::value::StructInstance {
+                        type_name: name.clone(),
+                        fields: inst_fields,
+                    }))))
+                }
+                crate::value::TypeDefinition::Enum { name, variants: _, .. } => {
+                    Err(Signal::Error(AvelynError::fmt(format!("TypeError: enum '{}' cannot be called directly", name))))
+                }
+            }
             AvelynVal::Func(f) => {
                 let call_env = Env::child(f.closure.clone());
                 if f.variadic && !f.params.is_empty() {
@@ -862,6 +1122,69 @@ impl Interpreter {
             ">>>" => Ok(AvelynVal::Int(((l.as_i64() as u64) >> r.as_i64()) as i64)),
 
             _ => Ok(AvelynVal::Null),
+        }
+    }
+
+    fn pattern_match(&self, pattern: &crate::ast::Pattern, value: &AvelynVal, env: &Rc<Env>) -> bool {
+        match pattern {
+            crate::ast::Pattern::Wildcard => true,
+            crate::ast::Pattern::Literal(node) => {
+                // This is a bit hacky because we don't have a clean way to eval a literal node without an interpreter instance
+                // but since it's a literal, we can compare directly or use a dummy interpreter if needed.
+                // For now, we'll support only simple literals.
+                match (node, value) {
+                    (crate::ast::ASTNode::Int(i), AvelynVal::Int(v)) => *i == *v,
+                    (crate::ast::ASTNode::Float(f), AvelynVal::Float(v)) => *f == *v,
+                    (crate::ast::ASTNode::Str(s), AvelynVal::Str(v)) => s == v.as_ref(),
+                    (crate::ast::ASTNode::Bool(b), AvelynVal::Bool(v)) => *b == *v,
+                    (crate::ast::ASTNode::Null, AvelynVal::Null) => true,
+                    _ => false,
+                }
+            }
+            crate::ast::Pattern::Var(name) => {
+                env.declare(name, value.clone());
+                true
+            }
+            crate::ast::Pattern::List(pats) => {
+                if let AvelynVal::List(l) = value {
+                    let vec = l.borrow();
+                    if vec.len() != pats.len() { return false; }
+                    for (p, v) in pats.iter().zip(vec.iter()) {
+                        if !self.pattern_match(p, v, env) { return false; }
+                    }
+                    true
+                } else { false }
+            }
+            crate::ast::Pattern::Struct { name, fields } => {
+                if let AvelynVal::Instance(inst) = value {
+                    let inst = inst.borrow();
+                    if &inst.type_name != name { return false; }
+                    for (f_name, p) in fields {
+                        if let Some(v) = inst.fields.get(f_name) {
+                            if !self.pattern_match(p, v, env) { return false; }
+                        } else { return false; }
+                    }
+                    true
+                } else { false }
+            }
+            crate::ast::Pattern::Enum { type_name, variant, args } => {
+                if let AvelynVal::Variant(v_inst) = value {
+                    if &v_inst.type_name == type_name && &v_inst.variant_name == variant {
+                        if v_inst.values.len() != args.len() { return false; }
+                        for (p, v) in args.iter().zip(v_inst.values.iter()) {
+                            if !self.pattern_match(p, v, env) { return false; }
+                        }
+                        return true;
+                    }
+                }
+                false
+            }
+            crate::ast::Pattern::Or(pats) => {
+                for p in pats {
+                    if self.pattern_match(p, value, env) { return true; }
+                }
+                false
+            }
         }
     }
 }

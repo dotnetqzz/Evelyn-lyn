@@ -54,6 +54,26 @@ impl Parser {
         stmts
     }
 
+    fn parse_annotations(&mut self) -> Vec<ASTNode> {
+        let mut annotations = Vec::new();
+        while self.cur() == &Token::At {
+            self.advance();
+            // Match @Name or @Name(Args)
+            if let Some(name) = self.ident_name() {
+                self.advance();
+                if self.cur() == &Token::LParen {
+                    self.advance();
+                    let args = self.parse_arg_list();
+                    self.consume_exact(&Token::RParen);
+                    annotations.push(ASTNode::FuncCall { name, args });
+                } else {
+                    annotations.push(ASTNode::Str(name));
+                }
+            }
+        }
+        annotations
+    }
+
     // ── Block helpers ────────────────────────────────────────────────────────
 
     fn open_block(&mut self) -> BlockKind {
@@ -148,10 +168,76 @@ impl Parser {
         (params, variadic)
     }
 
+    fn parse_pattern(&mut self) -> crate::ast::Pattern {
+        if self.cur() == &Token::Ident("_".into()) { self.advance(); return crate::ast::Pattern::Wildcard; }
+
+        // Enum or Struct pattern
+        if let Token::Ident(name) = self.cur().clone() {
+            if self.peek(1) == &Token::Dot {
+                self.advance(); self.advance(); // Type.
+                if let Token::Ident(vname) = self.cur().clone() {
+                    self.advance();
+                    let mut args = Vec::new();
+                    if self.cur() == &Token::LParen {
+                        self.advance();
+                        while self.cur() != &Token::RParen && self.cur() != &Token::Eof {
+                            args.push(self.parse_pattern());
+                            if self.cur() == &Token::Comma { self.advance(); }
+                        }
+                        self.consume_exact(&Token::RParen);
+                    }
+                    return crate::ast::Pattern::Enum { type_name: name, variant: vname, args };
+                }
+            } else if self.peek(1) == &Token::LParen {
+                self.advance(); self.advance(); // Struct(
+                let mut fields = Vec::new();
+                while self.cur() != &Token::RParen && self.cur() != &Token::Eof {
+                    if let Token::Ident(fname) = self.cur().clone() {
+                        if self.peek(1) == &Token::Colon {
+                            self.advance(); self.advance();
+                            fields.push((fname, self.parse_pattern()));
+                        } else {
+                            fields.push((fname.clone(), crate::ast::Pattern::Var(fname)));
+                            self.advance();
+                        }
+                    }
+                    if self.cur() == &Token::Comma { self.advance(); }
+                }
+                self.consume_exact(&Token::RParen);
+                return crate::ast::Pattern::Struct { name, fields };
+            }
+        }
+
+        match self.cur().clone() {
+            Token::Int(_) | Token::Float(_) | Token::Str(_) | Token::True | Token::False | Token::Null => {
+                crate::ast::Pattern::Literal(self.parse_primary())
+            }
+            Token::Ident(name) => { self.advance(); crate::ast::Pattern::Var(name) }
+            Token::LBracket => {
+                self.advance();
+                let mut elements = Vec::new();
+                while self.cur() != &Token::RBracket && self.cur() != &Token::Eof {
+                    elements.push(self.parse_pattern());
+                    if self.cur() == &Token::Comma { self.advance(); }
+                }
+                self.consume_exact(&Token::RBracket);
+                crate::ast::Pattern::List(elements)
+            }
+            _ => { self.advance(); crate::ast::Pattern::Wildcard }
+        }
+    }
+
     // ── Statements ────────────────────────────────────────────────────────────
 
     fn parse_stmt(&mut self) -> Option<ASTNode> {
+        let annotations = self.parse_annotations();
         match self.cur().clone() {
+
+            Token::Export => {
+                self.advance();
+                let inner = self.parse_stmt()?;
+                Some(ASTNode::Export(Box::new(inner)))
+            }
 
             Token::Import => {
                 self.advance();
@@ -160,7 +246,76 @@ impl Parser {
                     Token::Ident(s) => { self.advance(); s }
                     _ => return None,
                 };
-                Some(ASTNode::Import(path))
+                Some(ASTNode::Include(path))
+            }
+
+            Token::Struct => {
+                self.advance();
+                let name = self.ident_name()?; self.advance();
+                self.consume_exact(&Token::LBrace);
+                let mut fields = Vec::new();
+                while self.cur() != &Token::RBrace && self.cur() != &Token::Eof {
+                    if let Some(f) = self.ident_name() {
+                        fields.push(f); self.advance();
+                        if self.cur() == &Token::Comma { self.advance(); }
+                    } else { self.advance(); }
+                }
+                self.consume_exact(&Token::RBrace);
+                Some(ASTNode::StructDecl { name, fields, annotations })
+            }
+
+            Token::Enum => {
+                self.advance();
+                let name = self.ident_name()?; self.advance();
+                self.consume_exact(&Token::LBrace);
+                let mut variants = Vec::new();
+                while self.cur() != &Token::RBrace && self.cur() != &Token::Eof {
+                    if let Some(vname) = self.ident_name() {
+                        self.advance();
+                        let mut vfields = Vec::new();
+                        let mut varity = 0;
+                        if self.cur() == &Token::LParen {
+                            self.advance();
+                            while self.cur() != &Token::RParen && self.cur() != &Token::Eof {
+                                if let Some(f) = self.ident_name() {
+                                    vfields.push(f); self.advance();
+                                    varity += 1;
+                                    if self.cur() == &Token::Comma { self.advance(); }
+                                } else { self.advance(); }
+                            }
+                            self.consume_exact(&Token::RParen);
+                        }
+                        variants.push(crate::ast::EnumVariant { name: vname, fields: vfields, arity: varity });
+                        if self.cur() == &Token::Comma { self.advance(); }
+                    } else { self.advance(); }
+                }
+                self.consume_exact(&Token::RBrace);
+                Some(ASTNode::EnumDecl { name, variants, annotations })
+            }
+
+            Token::Match => {
+                self.advance();
+                let subject = self.parse_expr();
+                self.consume_exact(&Token::LBrace);
+                let mut arms = Vec::new();
+                while self.cur() != &Token::RBrace && self.cur() != &Token::Eof {
+                    let pat = self.parse_pattern();
+                    self.consume_exact(&Token::Arrow);
+                    let mut body = Vec::new();
+                    if self.cur() == &Token::LBrace {
+                        self.advance();
+                        while self.cur() != &Token::RBrace && self.cur() != &Token::Eof {
+                            if let Some(s) = self.parse_stmt() { body.push(s); }
+                        }
+                        self.consume_exact(&Token::RBrace);
+                    } else {
+                        if let Some(s) = self.parse_stmt() { body.push(s); }
+                    }
+                    arms.push((pat, body));
+                    if self.cur() == &Token::Comma { self.advance(); }
+                }
+                self.consume_exact(&Token::RBrace);
+                Some(ASTNode::Match { subject: Box::new(subject), arms })
             }
 
             Token::Let | Token::Var => {
@@ -206,7 +361,7 @@ impl Parser {
                     name = self.ident_name()?; self.advance();
                 }
                 self.consume_exact(&Token::Eq);
-                Some(ASTNode::Decl { name, value: Box::new(self.parse_expr()), mutable })
+                Some(ASTNode::Decl { name, value: Box::new(self.parse_expr()), mutable, annotations })
             }
 
             Token::Print => {
@@ -275,7 +430,7 @@ impl Parser {
                 Some(ASTNode::If { cond: Box::new(cond), then, els })
             }
 
-            Token::Switch | Token::Match => {
+            Token::Switch => {
                 self.advance();
                 let subject = self.parse_expr();
                 self.consume_exact(&Token::LBrace);
@@ -316,7 +471,7 @@ impl Parser {
                 let kind = self.open_block();
                 let body = self.parse_block(kind);
                 self.close_block(kind);
-                Some(ASTNode::FuncDecl { name, params, body, variadic })
+                Some(ASTNode::FuncDecl { name, params, body, variadic, annotations })
             }
 
             Token::Return => {
@@ -341,29 +496,38 @@ impl Parser {
                 let tk = self.open_block();
                 let try_body = self.parse_block(tk);
                 self.close_block(tk);
-                let mut catch_var = "_err".to_string();
-                let mut catch_body = Vec::new();
-                let mut finally_body = None;
-                if self.cur() == &Token::Catch {
+
+                let mut catches = Vec::new();
+                while self.cur() == &Token::Catch {
                     self.advance();
+                    let mut type_filter = None;
+                    let mut catch_var = "_err".to_string();
+
                     if let Some(name) = self.ident_name() {
                         self.advance();
                         if self.cur() == &Token::As {
                             self.advance();
+                            type_filter = Some(name);
                             if let Some(v) = self.ident_name() { catch_var = v; self.advance(); }
-                        } else { catch_var = name; }
+                        } else {
+                            catch_var = name;
+                        }
                     }
+
                     let ck = self.open_block();
-                    catch_body = self.parse_block(ck);
+                    let catch_body = self.parse_block(ck);
                     self.close_block(ck);
+                    catches.push((type_filter, catch_var, catch_body));
                 }
+
+                let mut finally_body = None;
                 if self.cur() == &Token::Finally {
                     self.advance();
                     let fk = self.open_block();
                     finally_body = Some(self.parse_block(fk));
                     self.close_block(fk);
                 }
-                Some(ASTNode::TryCatch { body: try_body, catch_var, catch_body, finally_body })
+                Some(ASTNode::TryCatch { body: try_body, catches, finally_body })
             }
 
             Token::Ident(name) => {
@@ -595,15 +759,21 @@ impl Parser {
                 self.advance();
                 if let Some(field) = self.ident_name() {
                     self.advance();
-                    // method call: obj.method(args) or field access as subscript
+                    // member access or method call
                     if self.cur() == &Token::LParen {
                         self.advance();
                         let args = self.parse_arg_list();
                         self.consume_exact(&Token::RParen);
-                        // Desugar obj.method(args) → method(obj, args)
-                        let mut full_args = vec![node];
-                        full_args.extend(args);
-                        node = ASTNode::FuncCall { name: field, args: full_args };
+
+                        // Instead of desugaring to FuncCall immediately,
+                        // let's use CallExpr on a Subscript for better flexibility
+                        node = ASTNode::CallExpr {
+                            callee: Box::new(ASTNode::Subscript {
+                                target: Box::new(node),
+                                index: Box::new(ASTNode::Str(field)),
+                            }),
+                            args,
+                        };
                     } else {
                         // Field access: obj.field → obj["field"]
                         node = ASTNode::Subscript {
@@ -618,6 +788,7 @@ impl Parser {
     }
 
     fn parse_primary(&mut self) -> ASTNode {
+        let annotations = self.parse_annotations();
         match self.cur().clone() {
             Token::Int(v)   => { self.advance(); ASTNode::Int(v) }
             Token::Float(v) => { self.advance(); ASTNode::Float(v) }
@@ -694,12 +865,22 @@ impl Parser {
                 if self.cur() == &Token::Arrow {
                     self.advance();
                     let expr = self.parse_expr();
-                    return ASTNode::Lambda { params, body: vec![ASTNode::Return(Box::new(expr))], variadic };
+                    return ASTNode::Lambda { params, body: vec![ASTNode::Return(Box::new(expr))], variadic, annotations };
                 }
                 let kind = self.open_block();
                 let body = self.parse_block(kind);
                 self.close_block(kind);
-                ASTNode::Lambda { params, body, variadic }
+                ASTNode::Lambda { params, body, variadic, annotations }
+            }
+
+            Token::Import => {
+                self.advance();
+                let path = match self.cur().clone() {
+                    Token::Str(s) => { self.advance(); s }
+                    Token::Ident(s) => { self.advance(); s }
+                    _ => return ASTNode::Null,
+                };
+                ASTNode::Import(path)
             }
 
             Token::Ident(name) => {

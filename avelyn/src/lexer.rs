@@ -216,6 +216,7 @@ impl Lexer {
             one!(',', Token::Comma); one!(':', Token::Colon); one!(';', Token::Semi);
             one!('.', Token::Dot);   one!('&', Token::Amp);   one!('|', Token::Pipe);
             one!('^', Token::Caret); one!('~', Token::Tilde); one!('?', Token::Quest);
+            one!('@', Token::At);
             if ch == '(' { bracket_depth += 1; self.advance(); tokens.push((Token::LParen, tok_line)); continue; }
             if ch == ')' { bracket_depth -= 1; self.advance(); tokens.push((Token::RParen, tok_line)); continue; }
             if ch == '{' { bracket_depth += 1; self.advance(); tokens.push((Token::LBrace, tok_line)); continue; }
@@ -401,11 +402,13 @@ impl Lexer {
             "false" | "False"           => Token::False,
             "null"  | "None" | "nil"    => Token::Null,
             "import"                    => Token::Import,
+            "export"                    => Token::Export,
             "try"                       => Token::Try,
             "catch" | "except"          => Token::Catch,
             "throw" | "raise"           => Token::Throw,
             "finally"                   => Token::Finally,
-            "switch" | "match"          => Token::Switch,
+            "switch"                    => Token::Switch,
+            "match"                     => Token::Match,
             "case"                      => Token::Case,
             "default"                   => Token::Default,
             "not"                       => Token::Not,
@@ -413,6 +416,8 @@ impl Lexer {
             "or"                        => Token::Or,
             "as"                        => Token::As,
             "is"                        => Token::EqEq, // Python identity → equality
+            "struct"                    => Token::Struct,
+            "enum"                      => Token::Enum,
             "lambda"                    => Token::Def,
             "assert"                    => Token::Assert,
             _                           => Token::Ident(word),

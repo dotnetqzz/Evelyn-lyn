@@ -1,13 +1,66 @@
 // compiler/loader.rs — Deserializes .lync binary files
 
+use std::collections::HashMap;
 use std::fs::File;
-use std::io::{Read, Cursor};
-use crate::compiler::{Constant, ConstantPool, FunctionProto, ModuleState};
+use std::io::{Read, Cursor, Seek, SeekFrom};
+use crate::compiler::{Constant, FunctionProto, ModuleState};
 use crate::compiler::instruction::{SBC_MAGIC, SBC_VERSION_MAJOR, SBC_VERSION_MINOR};
 
 pub struct BytecodeLoader;
 
 impl BytecodeLoader {
+    pub fn load_bundle(path: &str) -> Result<HashMap<String, Vec<u8>>, String> {
+        use crate::compiler::bundler::{SYLB_MAGIC, SYLB_VERSION};
+        let mut file = File::open(path).map_err(|e| e.to_string())?;
+
+        let mut magic = [0u8; 4];
+        file.read_exact(&mut magic).map_err(|_| "Invalid bundle header")?;
+        if &magic != SYLB_MAGIC { return Err("Invalid bundle magic".into()); }
+
+        let mut version = [0u8; 2];
+        file.read_exact(&mut version).map_err(|_| "Invalid bundle version")?;
+        if u16::from_be_bytes(version) != SYLB_VERSION { return Err("Bundle version mismatch".into()); }
+
+        let mut entry_len = [0u8; 4];
+        file.read_exact(&mut entry_len).map_err(|_| "Invalid entry point length")?;
+        let mut entry_bytes = vec![0u8; u32::from_be_bytes(entry_len) as usize];
+        file.read_exact(&mut entry_bytes).map_err(|_| "Invalid entry point string")?;
+        // let entry_point = String::from_utf8(entry_bytes).unwrap();
+
+        let mut file_count_bytes = [0u8; 4];
+        file.read_exact(&mut file_count_bytes).map_err(|_| "Invalid file count")?;
+        let file_count = u32::from_be_bytes(file_count_bytes);
+
+        let mut index = Vec::new();
+        for _ in 0..file_count {
+            let mut name_len_bytes = [0u8; 4];
+            file.read_exact(&mut name_len_bytes).map_err(|_| "Invalid name len")?;
+            let name_len = u32::from_be_bytes(name_len_bytes);
+            let mut name_bytes = vec![0u8; name_len as usize];
+            file.read_exact(&mut name_bytes).map_err(|_| "Invalid name bytes")?;
+            let name = String::from_utf8(name_bytes).map_err(|_| "Invalid name UTF8")?;
+
+            let mut offset_bytes = [0u8; 8];
+            file.read_exact(&mut offset_bytes).map_err(|_| "Invalid offset")?;
+            let offset = u64::from_be_bytes(offset_bytes);
+
+            let mut size_bytes = [0u8; 8];
+            file.read_exact(&mut size_bytes).map_err(|_| "Invalid size")?;
+            let size = u64::from_be_bytes(size_bytes);
+
+            index.push((name, offset, size));
+        }
+
+        let mut bundle_files = HashMap::new();
+        for (name, offset, size) in index {
+            file.seek(SeekFrom::Start(offset)).map_err(|e| e.to_string())?;
+            let mut data = vec![0u8; size as usize];
+            file.read_exact(&mut data).map_err(|e| e.to_string())?;
+            bundle_files.insert(name, data);
+        }
+
+        Ok(bundle_files)
+    }
     pub fn load(path: &str) -> Result<ModuleState, String> {
         let mut file = File::open(path).map_err(|e| format!("Failed to open file '{}': {}", path, e))?;
         let mut buffer = Vec::new();

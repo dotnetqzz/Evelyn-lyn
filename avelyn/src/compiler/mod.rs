@@ -2,6 +2,9 @@
 
 pub mod instruction;
 pub mod writer;
+pub mod loader;
+pub mod verifier;
+pub mod bundler;
 
 use std::collections::HashSet;
 use crate::ast::ASTNode;
@@ -185,13 +188,132 @@ impl Compiler {
     }
 
     pub fn compile(mut self, ast: &[ASTNode]) -> Result<ModuleState, String> {
+        let mut folded_ast = ast.to_vec();
+        self.fold_ast(&mut folded_ast);
+
         let main_proto = FunctionProto::new("<main>");
         self.function_stack.push(main_proto);
-        for node in ast { self.compile_node(node)?; }
+        for node in folded_ast { self.compile_node(&node)?; }
         self.emit(Opcode::ReturnNull);
         let finished = self.function_stack.pop().unwrap();
         self.module.protos.push(finished);
         Ok(self.module)
+    }
+
+    fn fold_ast(&self, ast: &mut Vec<ASTNode>) {
+        for node in ast.iter_mut() {
+            self.fold_node(node);
+        }
+        // Basic DCE: remove nodes after Return, Break, Continue
+        let mut i = 0;
+        while i < ast.len() {
+            match &ast[i] {
+                ASTNode::Return(_) | ASTNode::Break | ASTNode::Continue | ASTNode::Throw(_) => {
+                    ast.truncate(i + 1);
+                    break;
+                }
+                _ => i += 1,
+            }
+        }
+    }
+
+    fn fold_node(&self, node: &mut ASTNode) {
+        match node {
+            ASTNode::BinOp { left, op, right } => {
+                self.fold_node(left);
+                self.fold_node(right);
+                if let (ASTNode::Int(l), ASTNode::Int(r)) = (left.as_ref(), right.as_ref()) {
+                    match op.as_str() {
+                        "+" => *node = ASTNode::Int(l + r),
+                        "-" => *node = ASTNode::Int(l - r),
+                        "*" => *node = ASTNode::Int(l * r),
+                        "//" if *r != 0 => *node = ASTNode::Int(l / r),
+                        "%" if *r != 0 => *node = ASTNode::Int(l % r),
+                        "==" => *node = ASTNode::Bool(l == r),
+                        "!=" => *node = ASTNode::Bool(l != r),
+                        "<"  => *node = ASTNode::Bool(l < r),
+                        ">"  => *node = ASTNode::Bool(l > r),
+                        "<=" => *node = ASTNode::Bool(l <= r),
+                        ">=" => *node = ASTNode::Bool(l >= r),
+                        _ => {}
+                    }
+                } else if let (ASTNode::Float(l), ASTNode::Float(r)) = (left.as_ref(), right.as_ref()) {
+                    match op.as_str() {
+                        "+" => *node = ASTNode::Float(l + r),
+                        "-" => *node = ASTNode::Float(l - r),
+                        "*" => *node = ASTNode::Float(l * r),
+                        "/" if *r != 0.0 => *node = ASTNode::Float(l / r),
+                        "==" => *node = ASTNode::Bool(l == r),
+                        _ => {}
+                    }
+                }
+            }
+            ASTNode::UnaryOp { op, operand } => {
+                self.fold_node(operand);
+                if let ASTNode::Int(v) = operand.as_ref() {
+                    if op == "-" { *node = ASTNode::Int(-v); }
+                    else if op == "~" { *node = ASTNode::Int(!v); }
+                } else if let ASTNode::Bool(v) = operand.as_ref() {
+                    if op == "!" || op == "not" { *node = ASTNode::Bool(!v); }
+                }
+            }
+            ASTNode::If { cond, then, els } => {
+                self.fold_node(cond);
+                self.fold_ast(then);
+                if let Some(e) = els { self.fold_ast(e); }
+
+                if let ASTNode::Bool(b) = cond.as_ref() {
+                    if *b {
+                        // This would require replacing the If node with the block contents,
+                        // which is hard since fold_node takes &mut ASTNode.
+                        // For now we just fold the children.
+                    }
+                }
+            }
+            ASTNode::While { cond, body } => {
+                self.fold_node(cond);
+                self.fold_ast(body);
+            }
+            ASTNode::For { var: _, iter, body } => {
+                self.fold_node(iter);
+                self.fold_ast(body);
+            }
+            ASTNode::FuncDecl { name: _, params: _, body, variadic: _, annotations: _ } => {
+                self.fold_ast(body);
+            }
+            ASTNode::Lambda { params: _, body, variadic: _, annotations: _ } => {
+                self.fold_ast(body);
+            }
+            ASTNode::Decl { name: _, value, mutable: _, annotations: _ } => self.fold_node(value),
+            ASTNode::Assign { name: _, value } => self.fold_node(value),
+            ASTNode::CallExpr { callee, args } => {
+                self.fold_node(callee);
+                for a in args { self.fold_node(a); }
+            }
+            ASTNode::FuncCall { name: _, args } => {
+                for a in args { self.fold_node(a); }
+            }
+            ASTNode::Match { subject, arms } => {
+                self.fold_node(subject);
+                for (_, body) in arms { self.fold_ast(body); }
+            }
+            ASTNode::Switch { subject, cases } => {
+                self.fold_node(subject);
+                for (_, body) in cases { self.fold_ast(body); }
+            }
+            ASTNode::TryCatch { body, catches, finally_body } => {
+                self.fold_ast(body);
+                for (_, _, c_body) in catches { self.fold_ast(c_body); }
+                if let Some(f) = finally_body { self.fold_ast(f); }
+            }
+            ASTNode::ArrayLit(elements) => {
+                for e in elements { self.fold_node(e); }
+            }
+            ASTNode::MapLit(pairs) => {
+                for (k, v) in pairs { self.fold_node(k); self.fold_node(v); }
+            }
+            _ => {}
+        }
     }
 
     fn compile_node(&mut self, node: &ASTNode) -> Result<(), String> {
@@ -218,7 +340,7 @@ impl Compiler {
                     self.emit_u16(Opcode::LoadGlobal, idx);
                 }
             }
-            ASTNode::Decl { name, value, mutable } => {
+            ASTNode::Decl { name, value, mutable, annotations: _ } => {
                 self.compile_node(value)?;
                 if self.function_stack.len() > 1 || self.current().scope_depth > 0 {
                     let slot = self.current().declare_local(name, !mutable);
