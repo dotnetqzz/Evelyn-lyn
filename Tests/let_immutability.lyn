@@ -1,0 +1,11 @@
+﻿# Let immutability enforcement
+let x = 10
+# Attempting to assign to a let binding should error:
+try {
+    x = 99
+    print("FAIL: should have thrown")
+} catch err {
+    print("PASS: immutable let caught: " + err)
+}
+print(x)  # should still be 10
+print("PASS: let immutability")

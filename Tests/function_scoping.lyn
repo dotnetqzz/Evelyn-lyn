@@ -1,0 +1,12 @@
+﻿# FunctionDecl in nested scope (shadowing, not clobbering)
+def greet(name) {
+    return "Hello from outer " + name
+}
+if true {
+    def greet(name) {
+        return "Hello from inner " + name
+    }
+    print(greet("Alice"))  # inner: Hello from inner Alice
+}
+print(greet("Bob"))  # outer (NOT clobbered): Hello from outer Bob
+print("PASS: function scoping")

@@ -1,0 +1,52 @@
+﻿# stdlib smoke test
+import "init"
+
+print("Testing math...")
+print(math["abs"](-42))
+print(math["gcd"](12, 8))
+print(math["factorial"](5))
+print(math["isPrime"](17))
+print(math["pi"])
+
+print("Testing string...")
+print(string["upper"]("hello sylvel"))
+print(string["repeat"]("ab", 3))
+print(string["padStart"]("42", 6, "0"))
+print(string["replace"]("foo bar foo", "foo", "baz"))
+print(string["isDigit"]("12345"))
+
+print("Testing array...")
+let nums = [3, 1, 4, 1, 5, 9, 2, 6]
+print(array["sum"](nums))
+print(array["min"](nums))
+print(array["max"](nums))
+print(array["unique"](nums))
+print(array["chunk"](nums, 3))
+
+print("Testing collections...")
+let s = Stack()
+s["push"](1)
+s["push"](2)
+s["push"](3)
+print(s["pop"]())
+print(s["size"]())
+
+let q = Queue()
+q["enqueue"]("a")
+q["enqueue"]("b")
+print(q["dequeue"]())
+print(q["size"]())
+
+let mySet = Set([1, 2, 2, 3, 3, 3])
+print(mySet["size"]())
+print(mySet["has"](2))
+
+print("Testing I/O and path...")
+io["write"]("_test_out.txt", "hello from stdlib\n")
+print(io["exists"]("_test_out.txt"))
+let lines = io["readLines"]("_test_out.txt")
+print(lines[0])
+print(path["basename"]("foo/bar/baz.lyn"))
+print(path["ext"]("foo/bar/baz.lyn"))
+print("PASS: stdlib integration")
+

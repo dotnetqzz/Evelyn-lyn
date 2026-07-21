@@ -1,0 +1,24 @@
+﻿# Avelyn Standard Library: net
+# Provides advanced low-level networking primitives for Phase 2.
+
+let net = {
+    "tcpConnect": fn(host, port) => netConnect(host, port),
+    "tcpListen": fn(host, port) => netListen(host, port),
+    "accept": fn(sock) => netAccept(sock),
+    "send": fn(sock, data) => netSend(sock, data),
+    "recv": fn(sock, maxLen) => netRecv(sock, maxLen),
+    "close": fn(sock) => netClose(sock),
+    
+    "udpSocket": fn() => netUdpSocket(),
+    "udpBind": fn(sock, host, port) => netUdpBind(sock, host, port),
+    "sendTo": fn(sock, host, port, data) => netSendTo(sock, host, port, data),
+    "recvFrom": fn(sock, maxLen) => netRecvFrom(sock, maxLen),
+    
+    "setTimeout": fn(sock, ms) => netSetTimeout(sock, ms),
+    "setNonBlocking": fn(sock, mode) => netSetNonBlocking(sock, mode),
+    
+    "grabBanner": fn(host, port, timeout = 2000) => netGrabBanner(host, port, timeout),
+    "portScan": fn(host, start, end, timeout = 500) => netPortScan(host, start, end, timeout),
+    "dnsLookup": fn(host) => netDnsLookup(host)
+}
+

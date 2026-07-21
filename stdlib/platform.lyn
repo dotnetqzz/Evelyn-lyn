@@ -1,0 +1,14 @@
+﻿# Sylvel Standard Library — platform.lyn
+# Replicates CPython's platform module for OS/Arch footprinting
+
+def platform_isWindows() { return sysPlatform() == "windows" }
+def platform_isMac()     { return sysPlatform() == "macos" }
+def platform_isLinux()   { return sysPlatform() == "linux" }
+
+let platform = {
+    "system":       def() => sysPlatform(),
+    "architecture": def() => sysArch(),
+    "isWindows":    platform_isWindows,
+    "isMac":        platform_isMac,
+    "isLinux":      platform_isLinux,
+}

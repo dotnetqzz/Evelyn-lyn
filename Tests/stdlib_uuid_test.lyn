@@ -1,0 +1,18 @@
+﻿# Test UUID generation and regex validation
+import "init"
+
+# 1. Test UUID v4 generation
+let id1 = uuid["uuid4"]()
+let id2 = uuid["uuid4"]()
+
+assert(stringLen(id1) == 36, "UUID length check")
+assert(id1 != id2, "successive UUIDs should be unique")
+
+# 2. Test UUID validation
+assert(uuid["isValid"](id1) == true, "generated UUID should be valid")
+assert(uuid["isValid"](id2) == true, "generated UUID 2 should be valid")
+
+assert(uuid["isValid"]("invalid-uuid-string") == false, "invalid UUID format check")
+assert(uuid["isValid"]("65366139-3736-3931-3163-356637393338") == false, "incorrect length checks")
+
+print("PASS: stdlib uuid support")

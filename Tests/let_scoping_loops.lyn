@@ -1,0 +1,10 @@
+﻿# Let inside for loop body is per-iteration
+var total = 0
+for i in 0..4 {
+    let step = i * 2  # fresh binding each iteration
+    total = total + step
+}
+print(total)  # 0+2+4+6 = 12
+
+print("ALL BOOTSTRAP SELF-TESTS PASSED")
+print("PASS: let scoping in loops")

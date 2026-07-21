@@ -1,0 +1,14 @@
+﻿# Sylvel Standard Library — sys.lyn
+# Replicates CPython's sys module
+
+let sys = {
+    "argv":    sysArgv(),
+    "exit":    def(code) => sysExit(code),
+    "version": "1.5.0",
+    "stdout": {
+        "write": def(s) { print(s) },
+    },
+    "stderr": {
+        "write": def(s) { print("Error: " + numToString(s)) },
+    },
+}

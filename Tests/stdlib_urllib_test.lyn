@@ -1,0 +1,18 @@
+﻿# Test urllib query and url utilities
+import "init"
+
+# 1. Test urlencode/urldecode roundtrip
+let rawStr = "hello world & special characters"
+let encoded = urllib["encode"](rawStr)
+let decoded = urllib["decode"](encoded)
+assert(decoded == rawStr, "urllib encoding roundtrip")
+
+# 2. Test URL component parse
+let urlObj = urllib["parse"]("https://sylvel.dev:8080/api/users?id=42&admin=true")
+assert(urlObj["scheme"] == "https", "scheme parse")
+assert(urlObj["host"] == "sylvel.dev", "host parse")
+assert(urlObj["port"] == 8080, "port parse")
+assert(urlObj["path"] == "/api/users", "path parse")
+assert(urlObj["query"] == "id=42&admin=true", "query parse")
+
+print("PASS: stdlib urllib support")

@@ -1,0 +1,5 @@
+﻿# 10. null
+let nothing = null
+print(nothing)
+print(nothing == null)
+print("PASS: null value")

@@ -1,0 +1,56 @@
+﻿# Automated unit tests for core library enhancements (string, array, math, json)
+import "init"
+
+# 1. Test String Enhancements
+assert(string["capitalize"]("hello") == "Hello", "capitalize hello")
+assert(string["capitalize"]("A") == "A", "capitalize single A")
+assert(string["capitalize"]("") == "", "capitalize empty")
+
+assert(string["isAlphanumeric"]("Sylvel123") == true, "alphanumeric string")
+assert(string["isAlphanumeric"]("Sylvel 123") == false, "string with space is not alphanumeric")
+assert(string["isAlphanumeric"]("") == false, "empty is not alphanumeric")
+
+assert(string["isWhitespace"]("  \n\t  ") == true, "whitespace chars only")
+assert(string["isWhitespace"]("  a  ") == false, "not only whitespace")
+
+assert(string["camelCase"]("hello-world-again") == "helloWorldAgain", "camelCase kebab")
+assert(string["camelCase"]("hello_world_again") == "helloWorldAgain", "camelCase snake")
+
+assert(string["snakeCase"]("helloWorld") == "hello_world", "snakeCase camel")
+assert(string["snakeCase"]("hello-world") == "hello_world", "snakeCase kebab")
+
+
+# 2. Test Array Enhancements
+let a1 = [1, 2, 3, 4]
+let a2 = [3, 4, 5, 6]
+
+let intersection = array["intersection"](a1, a2)
+assert(arrayLen(intersection) == 2, "intersection count")
+assert(arrayContains(intersection, 3) == true, "has 3")
+assert(arrayContains(intersection, 4) == true, "has 4")
+
+let difference = array["difference"](a1, a2)
+assert(arrayLen(difference) == 2, "difference count")
+assert(arrayContains(difference, 1) == true, "has 1")
+assert(arrayContains(difference, 2) == true, "has 2")
+
+let union = array["union"](a1, a2)
+assert(arrayLen(union) == 6, "union count")
+
+let shuffled = array["shuffle"]([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+assert(arrayLen(shuffled) == 10, "shuffled array length unchanged")
+
+
+# 3. Test Math Enhancements
+assert(math["round"](4.2) == 4, "round 4.2")
+assert(math["round"](4.7) == 5, "round 4.7")
+assert(math["ceil"](4.2) == 5, "ceil 4.2")
+assert(math["floor"](4.7) == 4, "floor 4.7")
+
+
+# 4. Test JSON Enhancements
+assert(json["validate"]("{\"a\": 1}") == true, "valid json object")
+assert(json["validate"]("invalid json") == false, "invalid string json")
+assert(json["validate"]("null") == true, "valid null json")
+
+print("PASS: stdlib enhancements support")

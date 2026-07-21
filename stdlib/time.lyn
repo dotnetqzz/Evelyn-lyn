@@ -1,0 +1,10 @@
+﻿# Sylvel Standard Library — time.lyn
+# Replicates CPython's time module
+
+let time = {
+    "sleep":       def(ms) => timeSleep(ms),
+    "time":        def() => timeSec(),
+    "timeMs":      def() => timeMs(),
+    "perfCounter": def() => timeMs() / 1000.0,
+    "strftime":    def(ts, fmt) => dateFormat(ts, fmt),
+}

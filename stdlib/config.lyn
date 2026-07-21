@@ -1,0 +1,57 @@
+﻿# Sylvel Standard Library — config.lyn
+# Configuration management: env vars + JSON/env file fallback
+
+def configLoad(filePath) {
+    var cfg = {}
+    # Try JSON config file first
+    if not isNull(filePath) and fileExists(filePath) {
+        let content = fileRead(filePath)
+        if not isNull(content) {
+            let parsed = jsonParse(content)
+            if not isNull(parsed) { cfg = parsed }
+        }
+    }
+    return cfg
+}
+
+def configGet(cfg, key, defaultVal) {
+    # Check env var first (uppercase)
+    let envKey = stringToUpper(stringReplaceAll(key, ".", "_"))
+    let envVal = env(envKey)
+    if not isNull(envVal) { return envVal }
+    # Then check loaded config with dot-path
+    let cfgVal = jsonGet(cfg, key)
+    if not isNull(cfgVal) { return cfgVal }
+    return defaultVal
+}
+
+def configGetInt(cfg, key, defaultVal) {
+    let v = configGet(cfg, key, null)
+    if isNull(v) { return defaultVal }
+    let n = stringToNum(numToString(v))
+    if isNull(n) { return defaultVal }
+    return mathFloor(n)
+}
+
+def configGetBool(cfg, key, defaultVal) {
+    let v = configGet(cfg, key, null)
+    if isNull(v) { return defaultVal }
+    let s = stringToLower(numToString(v))
+    if s == "true" or s == "1" or s == "yes" { return true }
+    if s == "false" or s == "0" or s == "no" { return false }
+    return defaultVal
+}
+
+def configRequired(cfg, key) {
+    let v = configGet(cfg, key, null)
+    if isNull(v) { throw "Required config key '" + key + "' is missing" }
+    return v
+}
+
+let config = {
+    "load":        configLoad,
+    "get":         configGet,
+    "getInt":      configGetInt,
+    "getBool":     configGetBool,
+    "required":    configRequired,
+}

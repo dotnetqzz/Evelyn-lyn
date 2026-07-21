@@ -1,0 +1,27 @@
+﻿# Test platform footprint markers
+import "init"
+
+let sysName = platform["system"]()
+let arch = platform["architecture"]()
+
+assert(sysName == "windows" || sysName == "darwin" || sysName == "linux", "valid system name")
+assert(stringLen(arch) > 0, "valid architecture signature")
+
+# Test helper flags
+if sysName == "windows" {
+    assert(platform["isWindows"]() == true, "should be windows")
+    assert(platform["isMac"]() == false, "should not be mac")
+    assert(platform["isLinux"]() == false, "should not be linux")
+}
+if sysName == "darwin" {
+    assert(platform["isWindows"]() == false, "should not be windows")
+    assert(platform["isMac"]() == true, "should be mac")
+    assert(platform["isLinux"]() == false, "should not be linux")
+}
+if sysName == "linux" {
+    assert(platform["isWindows"]() == false, "should not be windows")
+    assert(platform["isMac"]() == false, "should not be mac")
+    assert(platform["isLinux"]() == true, "should be linux")
+}
+
+print("PASS: stdlib platform support")

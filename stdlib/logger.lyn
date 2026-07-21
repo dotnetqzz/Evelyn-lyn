@@ -1,0 +1,68 @@
+﻿# Sylvel Standard Library — logger.lyn
+# Leveled structured logger
+
+var _logLevel = 0   # 0=debug 1=info 2=warn 3=error
+var _logFormat = "text"  # "text" or "json"
+var _logPrefix = ""
+
+let LEVEL_DEBUG = 0
+let LEVEL_INFO  = 1
+let LEVEL_WARN  = 2
+let LEVEL_ERROR = 3
+
+def _logLabel(level) {
+    if level == 0 { return "DEBUG" }
+    if level == 1 { return "INFO" }
+    if level == 2 { return "WARN" }
+    return "ERROR"
+}
+
+def _logLine(level, message, context) {
+    if level < _logLevel { return null }
+    let ts = dateFormat(dateNow(), "yyyy-MM-dd HH:mm:ss")
+    let label = _logLabel(level)
+    if _logFormat == "json" {
+        let entry = {"ts": ts, "level": label, "msg": message}
+        if not isNull(context) { mapSet(entry, "ctx", context) }
+        print(jsonStringify(entry))
+    } else {
+        var line = "[" + ts + "] [" + label + "] "
+        if stringLen(_logPrefix) > 0 { line = line + "[" + _logPrefix + "] " }
+        line = line + message
+        if not isNull(context) { line = line + " | " + jsonStringify(context) }
+        print(line)
+    }
+}
+
+def logDebug(msg)           { _logLine(0, msg, null) }
+def logInfo(msg)            { _logLine(1, msg, null) }
+def logWarn(msg)            { _logLine(2, msg, null) }
+def logError(msg)           { _logLine(3, msg, null) }
+def logDebugCtx(msg, ctx)   { _logLine(0, msg, ctx) }
+def logInfoCtx(msg, ctx)    { _logLine(1, msg, ctx) }
+def logWarnCtx(msg, ctx)    { _logLine(2, msg, ctx) }
+def logErrorCtx(msg, ctx)   { _logLine(3, msg, ctx) }
+
+let logger = {
+    "debug":    def(msg)       => logDebug(msg),
+    "info":     def(msg)       => logInfo(msg),
+    "warn":     def(msg)       => logWarn(msg),
+    "error":    def(msg)       => logError(msg),
+    "ctx":      def(msg, ctx)  => _logLine(1, msg, ctx),
+    "setLevel": def(lvl) {
+        _logLevel = lvl
+    },
+    "setFormat": def(fmt) {
+        _logFormat = fmt
+    },
+    "setPrefix": def(prefix) {
+        _logPrefix = prefix
+    },
+    # Note: child() returns itself after mutating the prefix
+    # Forward-reference to logger is safe here because logger is defined
+    # by the time child() is actually called at runtime.
+    "child": def(prefix) {
+        _logPrefix = prefix
+        return logger
+    },
+}

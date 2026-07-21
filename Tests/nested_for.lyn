@@ -1,0 +1,9 @@
+﻿# 20. Nested for loops
+var total = 0
+for a in 0..4 {
+    for b in 0..4 {
+        total = total + 1
+    }
+}
+print(total)
+print("PASS: nested for")

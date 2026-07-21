@@ -1,0 +1,7 @@
+﻿# Sylvel Standard Library — base64.lyn
+# Replicates CPython's base64 module for deobfuscation
+
+let base64 = {
+    "b64encode": def(s) => base64Encode(s),
+    "b64decode": def(s) => base64Decode(s),
+}

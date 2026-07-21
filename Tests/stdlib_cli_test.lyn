@@ -1,0 +1,38 @@
+﻿# Test stdlib CLI argument and flag parser
+import "init"
+
+let parser = cli["new"]("TestCLI", "1.2.3", "Test parser description")
+cli["addFlag"](parser, "--verbose", "-v", "Verbose flag")
+cli["addOption"](parser, "--port", "-p", "8080", "Server port")
+
+# 1. Parse standard arguments and options
+let mockArgv1 = ["--verbose", "--port", "3000", "arg1", "arg2"]
+let result1 = cli["parse"](parser, mockArgv1)
+
+# Check flag value
+assert(mapGet(result1["flags"], "verbose") == true, "verbose flag should be parsed as true")
+
+# Check option value
+assert(mapGet(result1["options"], "port") == "3000", "port option should be parsed as 3000")
+
+# Check positional arguments
+assert(arrayLen(result1["args"]) == 2, "should have 2 positional arguments")
+assert(result1["args"][0] == "arg1", "first arg matches")
+assert(result1["args"][1] == "arg2", "second arg matches")
+
+
+# 2. Parse using aliases and default values
+let mockArgv2 = ["-v", "argA"]
+let result2 = cli["parse"](parser, mockArgv2)
+
+# Check alias flag value
+assert(mapGet(result2["flags"], "verbose") == true, "alias verbose flag is true")
+
+# Check default option value
+assert(mapGet(result2["options"], "port") == "8080", "port option has default value 8080")
+
+# Check positional argument
+assert(arrayLen(result2["args"]) == 1, "should have 1 positional argument")
+assert(result2["args"][0] == "argA", "positional matches")
+
+print("PASS: stdlib cli support")

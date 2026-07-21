@@ -1,0 +1,31 @@
+﻿# Sylvel Standard Library — shutil.lyn
+# Replicates CPython's shutil module for high-level file and directory actions
+
+import "io"
+
+def shutil_copytree(src, dest) {
+    if not dirExists(src) { return false }
+    dirCreate(dest)
+    let files = dirList(src)
+    if isNull(files) { return false }
+    for f in files {
+        let srcPath = path["join"]([src, f])
+        let destPath = path["join"]([dest, f])
+        if dirExists(srcPath) {
+            shutil_copytree(srcPath, destPath)
+        } else {
+            sysCopyFile(srcPath, destPath)
+        }
+    }
+    return true
+}
+
+let shutil = {
+    "copy":      def(src, dest) => sysCopyFile(src, dest),
+    "move":      def(src, dest) => sysMoveFile(src, dest),
+    "remove":    def(p)         => sysRemoveFile(p),
+    "rmtree":    def(p)         => sysRemoveFile(p), # Native removeItem is recursive
+    "copytree":  def(src, dest) => shutil_copytree(src, dest),
+    "mkdir":     def(p)         => dirCreate(p),
+    "rmdir":     def(p)         => sysRemoveFile(p),
+}

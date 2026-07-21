@@ -1,0 +1,107 @@
+﻿# Sylvel Standard Library — middleware.lyn
+# Composable HTTP middleware for web.lyn
+
+# CORS middleware — adds Access-Control headers to every response
+def corsMiddleware(origins, methods, headers) {
+    if isNull(origins) { origins = "*" }
+    if isNull(methods) { methods = "GET,POST,PUT,DELETE,PATCH,OPTIONS" }
+    if isNull(headers) { headers = "Content-Type,Authorization" }
+    return def(req, next) {
+        let res = next(req)
+        if isNull(res) { res = {} }
+        if not mapHas(res, "headers") { mapSet(res, "headers", {}) }
+        mapSet(res["headers"], "Access-Control-Allow-Origin", origins)
+        mapSet(res["headers"], "Access-Control-Allow-Methods", methods)
+        mapSet(res["headers"], "Access-Control-Allow-Headers", headers)
+        return res
+    }
+}
+
+# Bearer token auth middleware
+def authMiddleware(token) {
+    return def(req, next) {
+        let authHeader = mapGet(req["headers"], "Authorization")
+        if isNull(authHeader) or authHeader != "Bearer " + token {
+            return {"body": "{\"error\":\"Unauthorized\"}", "status": 401, "contentType": "application/json"}
+        }
+        return next(req)
+    }
+}
+
+# Simple in-memory rate limiter
+var _rateLimitCounts = {}
+var _rateLimitWindow = {}
+
+def rateLimitMiddleware(maxRequests, windowMs) {
+    return def(req, next) {
+        let ip = mapGet(req["headers"], "X-Forwarded-For")
+        var key = ip
+        if isNull(ip) { key = "default" }
+        let currTime = dateNow()
+        if not mapHas(_rateLimitCounts, key) {
+            mapSet(_rateLimitCounts, key, 0)
+            mapSet(_rateLimitWindow, key, currTime)
+        }
+        let windowStart = mapGet(_rateLimitWindow, key)
+        if currTime - windowStart > windowMs {
+            mapSet(_rateLimitCounts, key, 0)
+            mapSet(_rateLimitWindow, key, currTime)
+        }
+        let count = mapGet(_rateLimitCounts, key)
+        if count >= maxRequests {
+            return {"body": "{\"error\":\"Too Many Requests\"}", "status": 429, "contentType": "application/json"}
+        }
+        mapSet(_rateLimitCounts, key, count + 1)
+        return next(req)
+    }
+}
+
+# Request logger middleware
+def requestLoggerMiddleware(req, next) {
+    let ts = dateFormat(dateNow(), "HH:mm:ss")
+    let result = next(req)
+    var status = 200
+    if not isNull(result) {
+        if not isNull(result["status"]) {
+            status = result["status"]
+        }
+    }
+    print("[" + ts + "] " + req["method"] + " " + req["path"] + " → " + numToString(status))
+    return result
+}
+
+# JSON body parser middleware — parses req["body"] as JSON into req["json"]
+def jsonBodyMiddleware(req, next) {
+    let body = req["body"]
+    if stringLen(body) > 0 {
+        let parsed = jsonParse(body)
+        if not isNull(parsed) { mapSet(req, "json", parsed) }
+    }
+    return next(req)
+}
+
+# Compose multiple middleware functions: compose([m1, m2, m3])(handler)
+def composeMiddleware(middlewares) {
+    return def(handler) {
+        var composed = handler
+        var i = arrayLen(middlewares) - 1
+        while i >= 0 {
+            let mw = middlewares[i]
+            let prev = composed
+            composed = def(req) {
+                return mw(req, prev)
+            }
+            i -= 1
+        }
+        return composed
+    }
+}
+
+let middleware = {
+    "cors":        corsMiddleware,
+    "auth":        authMiddleware,
+    "rateLimit":   rateLimitMiddleware,
+    "logger":      requestLoggerMiddleware,
+    "jsonBody":    jsonBodyMiddleware,
+    "compose":     composeMiddleware,
+}

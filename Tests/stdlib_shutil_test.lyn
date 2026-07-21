@@ -1,0 +1,31 @@
+﻿# Test shutil module directory and file operations
+import "init"
+
+let srcDir = "_shutil_src_temp"
+let destDir = "_shutil_dest_temp"
+let fileInSrc = srcDir + "/test.txt"
+
+# Clean up initial state
+if io["dirExists"](srcDir) { shutil["rmtree"](srcDir) }
+if io["dirExists"](destDir) { shutil["rmtree"](destDir) }
+
+# 1. Prepare source directory
+io["mkdir"](srcDir)
+io["write"](fileInSrc, "shutil recursive copy data")
+
+# 2. Test recursive copytree
+let copyOk = shutil["copytree"](srcDir, destDir)
+assert(copyOk == true, "copytree should return true")
+assert(io["dirExists"](destDir) == true, "destination directory should exist")
+assert(io["exists"](destDir + "/test.txt") == true, "nested file should exist in dest")
+assert(io["read"](destDir + "/test.txt") == "shutil recursive copy data", "nested content should match")
+
+# 3. Test recursive rmtree
+let removeOk = shutil["rmtree"](destDir)
+assert(io["dirExists"](destDir) == false, "destination directory should be recursively deleted")
+
+# Clean up src
+shutil["rmtree"](srcDir)
+assert(io["dirExists"](srcDir) == false, "source directory should be deleted")
+
+print("PASS: stdlib shutil support")

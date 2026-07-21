@@ -1,0 +1,6 @@
+﻿# 5. var (mutable) vs let (immutable intent)
+var counter = 0
+counter = counter + 1
+counter = counter + 1
+print(counter)
+print("PASS: var keyword")

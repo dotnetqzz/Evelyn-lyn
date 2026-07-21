@@ -1,0 +1,71 @@
+﻿import "crypto"
+
+var fail = 0
+var passed = 0
+
+fn check(name, actual, expected):
+    if actual == expected:
+        passed += 1
+        print("PASS: " + name)
+    else:
+        fail += 1
+        print("FAIL: " + name + " — got " + toString(actual) + " expected " + toString(expected))
+
+fn checkArray(name, actual, expected):
+    if jsonStringify(actual) == jsonStringify(expected):
+        passed += 1
+        print("PASS: " + name)
+    else:
+        fail += 1
+        print("FAIL: " + name + " — got " + jsonStringify(actual) + " expected " + jsonStringify(expected))
+
+print("Testing Crypto Module (Phase 3)...")
+
+# 1. Hashing
+check("md5 string", crypto["md5"]("hello"), "5d41402abc4b2a76b9719d911017c592")
+check("sha1 string", crypto["sha1"]("hello"), "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d")
+check("sha256 string", crypto["sha256"]("hello"), "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824")
+check("sha512 string", crypto["sha512"]("hello"), "9b71d224bd62f3785d96d46ad3ea3d73319bfbc2890caadae2dff72519673ca72323c3d99ba5c11d7c7acc6e14b8c5da0c4663475c2e5c3adef46f73bcdec043")
+
+# Hashing bytes
+check("sha256 bytes", crypto["sha256"](b"hello"), "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824")
+
+# 2. HMAC
+# HMAC_SHA256("key", "The quick brown fox jumps over the lazy dog")
+let hmac_sha256 = crypto["hmac"]("sha256", b"key", b"The quick brown fox jumps over the lazy dog")
+check("hmac sha256", hmac_sha256, "f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8")
+
+# 3. Random
+let rBytes = crypto["randomBytes"](16)
+check("randomBytes length", arrayLen(rBytes), 16)
+let rInt = crypto["randomInt"](10, 20)
+check("randomInt in bounds", rInt >= 10 and rInt <= 20, true)
+
+# 4. Encoding
+let hexStr = crypto["hexEncode"](b"hello")
+check("hexEncode", hexStr, "68656c6c6f")
+let hexDec = crypto["hexDecode"]("68656c6c6f")
+checkArray("hexDecode", hexDec, b"hello")
+
+let b64Str = crypto["base64Encode"](b"hello")
+check("base64Encode", b64Str, "aGVsbG8=")
+let b64Dec = crypto["base64Decode"]("aGVsbG8=")
+checkArray("base64Decode", b64Dec, b"hello")
+
+# 5. AES Encryption
+let aesKey = crypto["hexDecode"]("000102030405060708090a0b0c0d0e0f")
+let aesMsg = b"SuperSecretData!" # Exactly 16 bytes for testing ECB without padding edge case debugging
+
+let ecbCt = crypto["aesEncrypt"]("ECB", aesKey, aesMsg)
+let ecbPt = crypto["aesDecrypt"]("ECB", aesKey, ecbCt)
+checkArray("aes ECB roundtrip", ecbPt, aesMsg)
+
+let iv = crypto["hexDecode"]("101112131415161718191a1b1c1d1e1f")
+let msg2 = b"Hello Crypto World!! Padding!"
+let cbcCt = crypto["aesEncrypt"]("CBC", aesKey, iv, msg2)
+let cbcPt = crypto["aesDecrypt"]("CBC", aesKey, iv, cbcCt)
+checkArray("aes CBC roundtrip", cbcPt, msg2)
+
+
+print("\nCrypto Tests: " + toString(passed) + " passed, " + toString(fail) + " failed")
+if fail > 0: throw "Crypto tests failed!"

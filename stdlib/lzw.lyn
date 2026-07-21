@@ -1,0 +1,95 @@
+﻿# Sylvel Standard Library — lzw.lyn
+# Pure Sylvel LZW (Lempel-Ziv-Welch) Compression and Decompression
+
+def lzw_compress(uncompressed) {
+    if stringLen(uncompressed) == 0 { return [] }
+    
+    # Build dictionary
+    let dictionary = {}
+    var dictSize = 256
+    var i = 0
+    while i < 256 {
+        mapSet(dictionary, charFromCode(i), i)
+        i = i + 1
+    }
+    
+    var w = ""
+    var result = []
+    let chars = stringSplit(uncompressed, "")
+    let len = arrayLen(chars)
+    i = 0
+    
+    while i < len {
+        let c = chars[i]
+        let wc = w + c
+        if mapHas(dictionary, wc) {
+            w = wc
+        } else {
+            let code = mapGet(dictionary, w)
+            let updatedResult = arrayAppend(result, code)
+            result = updatedResult
+            
+            mapSet(dictionary, wc, dictSize)
+            dictSize = dictSize + 1
+            w = c
+        }
+        i = i + 1
+    }
+    
+    if stringLen(w) > 0 {
+        let code = mapGet(dictionary, w)
+        let updatedResult = arrayAppend(result, code)
+        result = updatedResult
+    }
+    
+    return result
+}
+
+def lzw_decompress(compressed) {
+    let compLen = arrayLen(compressed)
+    if compLen == 0 { return "" }
+    
+    # Build dictionary
+    let dictionary = {}
+    var dictSize = 256
+    var i = 0
+    while i < 256 {
+        mapSet(dictionary, numToString(i), charFromCode(i))
+        i = i + 1
+    }
+    
+    var w = charFromCode(compressed[0])
+    var result = w
+    
+    i = 1
+    while i < compLen {
+        let k = compressed[i]
+        var entry = ""
+        
+        if mapHas(dictionary, numToString(k)) {
+            entry = mapGet(dictionary, numToString(k))
+        } else {
+            if k == dictSize {
+                entry = w + stringSub(w, 0, 1)
+            } else {
+                throw "Bad compressed LZW symbol: " + numToString(k)
+            }
+        }
+        
+        result = result + entry
+        
+        # Add to dictionary
+        mapSet(dictionary, numToString(dictSize), w + stringSub(entry, 0, 1))
+        dictSize = dictSize + 1
+        
+        w = entry
+        i = i + 1
+    }
+    
+    return result
+}
+
+let lzw = {
+    "compress":   def(s) => lzw_compress(s),
+    "decompress": def(arr) => lzw_decompress(arr),
+}

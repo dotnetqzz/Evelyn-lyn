@@ -1,0 +1,20 @@
+﻿# Test stdlib terminal formatting and colors
+import "init"
+
+# 1. Verify ANSI color formatting codes exist
+assert(mapHas(term["codes"], "red") == true, "has red code")
+assert(mapHas(term["codes"], "green") == true, "has green code")
+assert(mapHas(term["codes"], "reset") == true, "has reset code")
+
+# 2. Test term["format"]
+let redText = term["format"]("red", "Error")
+assert(stringContains(redText, "Error") == true, "formatted text contains original text")
+assert(stringContains(redText, "\u001b[31m") == true, "formatted text has red ANSI code")
+assert(stringContains(redText, "\u001b[0m") == true, "formatted text has reset ANSI code")
+
+# 3. Test shortcut formatters
+let greenText = term["green"]("Success")
+assert(stringContains(greenText, "Success") == true, "shortcut contains text")
+assert(stringContains(greenText, "\u001b[32m") == true, "shortcut has green code")
+
+print("PASS: stdlib term support")

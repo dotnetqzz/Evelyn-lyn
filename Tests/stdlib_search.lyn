@@ -1,0 +1,20 @@
+﻿# Test importing standard library by short name
+import "init"
+
+print("Testing math...")
+print(math["abs"](-100))
+print(math["factorial"](6))
+
+print("Testing string...")
+print(string["repeat"]("xyz", 2))
+
+print("Testing collections...")
+let s = Stack()
+s["push"]("apple")
+s["push"]("banana")
+print(s["pop"]())
+print(s["size"]())
+
+print("ALL SHORT-NAME STDLIB TESTS PASSED")
+print("PASS: stdlib search")
+

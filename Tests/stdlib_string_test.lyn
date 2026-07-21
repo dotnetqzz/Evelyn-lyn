@@ -1,0 +1,125 @@
+﻿# Sylvel Standard Library – stdlib_string_test.lyn
+# Tests for all string[] methods: len, upper, lower, trim, split, join,
+# startsWith, endsWith, indexOf, count, replace, reverse, repeat,
+# padStart, padEnd, center, sub, capitalize, isAlpha, isDigit,
+# isAlphanumeric, isWhitespace, camelCase, snakeCase
+import "init"
+
+# ─── len ────────────────────────────────────────────────────────────────────
+assert(string["len"]("hello") == 5,         "len: basic word")
+assert(string["len"]("") == 0,              "len: empty string")
+assert(string["len"](" ") == 1,             "len: single space")
+assert(string["len"]("Sylvel!") == 7,       "len: with punctuation")
+assert(string["len"]("abc") == 3,           "len: three chars")
+
+# ─── upper / lower ──────────────────────────────────────────────────────────
+assert(string["upper"]("hello") == "HELLO", "upper: all lower")
+assert(string["upper"]("HELLO") == "HELLO", "upper: already upper")
+assert(string["upper"]("") == "",           "upper: empty")
+assert(string["lower"]("WORLD") == "world", "lower: all upper")
+assert(string["lower"]("world") == "world", "lower: already lower")
+assert(string["lower"]("") == "",           "lower: empty")
+
+# ─── trim ───────────────────────────────────────────────────────────────────
+assert(string["trim"]("  hi  ") == "hi",    "trim: spaces both sides")
+assert(string["trim"]("hi") == "hi",        "trim: no whitespace")
+assert(string["trim"]("  ") == "",          "trim: only spaces")
+assert(string["trim"]("   hi   ") == "hi", "trim: leading and trailing spaces")
+
+# ─── startsWith / endsWith ──────────────────────────────────────────────────
+assert(string["startsWith"]("hello", "he") == true,   "startsWith: match")
+assert(string["startsWith"]("hello", "lo") == false,  "startsWith: no match")
+assert(string["startsWith"]("hello", "") == true,      "startsWith: empty prefix")
+assert(string["startsWith"]("hi", "hello") == false,   "startsWith: prefix longer than string")
+assert(string["endsWith"]("hello", "lo") == true,      "endsWith: match")
+assert(string["endsWith"]("hello", "he") == false,     "endsWith: no match")
+assert(string["endsWith"]("hello", "") == true,        "endsWith: empty suffix")
+assert(string["endsWith"]("hi", "hello") == false,     "endsWith: suffix longer than string")
+
+# ─── indexOf ────────────────────────────────────────────────────────────────
+assert(string["indexOf"]("hello", "ll") == 2,    "indexOf: found in middle")
+assert(string["indexOf"]("hello", "he") == 0,    "indexOf: found at start")
+assert(string["indexOf"]("hello", "lo") == 3,    "indexOf: found at end")
+assert(string["indexOf"]("hello", "xy") == -1,   "indexOf: not found")
+assert(string["indexOf"]("hello", "") == 0,      "indexOf: empty sub")
+
+# ─── count ──────────────────────────────────────────────────────────────────
+assert(string["count"]("banana", "a") == 3,      "count: multiple occurrences")
+assert(string["count"]("banana", "an") == 2,     "count: overlapping-style sub")
+assert(string["count"]("hello", "x") == 0,       "count: not present")
+assert(string["count"]("aaa", "aa") == 1,        "count: non-overlapping")
+assert(string["count"]("", "a") == 0,            "count: empty string")
+
+# ─── replace ────────────────────────────────────────────────────────────────
+assert(string["replace"]("hello world", "world", "Sylvel") == "hello Sylvel", "replace: basic")
+assert(string["replace"]("aabbaa", "aa", "x") == "xbbx",                     "replace: multiple")
+assert(string["replace"]("hello", "x", "y") == "hello",                      "replace: not found")
+assert(string["replace"]("hello", "", "x") == "hello",                       "replace: empty old")
+
+# ─── reverse ────────────────────────────────────────────────────────────────
+assert(string["reverse"]("hello") == "olleh",  "reverse: basic")
+assert(string["reverse"]("a") == "a",          "reverse: single char")
+assert(string["reverse"]("") == "",            "reverse: empty")
+assert(string["reverse"]("abba") == "abba",    "reverse: palindrome")
+
+# ─── repeat ─────────────────────────────────────────────────────────────────
+assert(string["repeat"]("ab", 3) == "ababab",  "repeat: 3 times")
+assert(string["repeat"]("x", 1) == "x",        "repeat: 1 time")
+assert(string["repeat"]("x", 0) == "",         "repeat: 0 times")
+
+# ─── padStart / padEnd ──────────────────────────────────────────────────────
+assert(string["padStart"]("5", 3, "0") == "005",     "padStart: zero padding")
+assert(string["padStart"]("hello", 3, "0") == "hello","padStart: no pad needed (longer)")
+assert(string["padEnd"]("5", 3, "0") == "500",       "padEnd: zero padding")
+assert(string["padEnd"]("hi", 5, "-") == "hi---",    "padEnd: dash padding")
+
+# ─── center ─────────────────────────────────────────────────────────────────
+assert(string["center"]("hi", 6, "-") == "--hi--",  "center: even padding")
+assert(string["center"]("hi", 5, "-") == "-hi--",   "center: odd padding goes right")
+assert(string["center"]("hi", 2, "-") == "hi",      "center: no padding needed")
+
+# ─── sub ────────────────────────────────────────────────────────────────────
+assert(string["sub"]("hello", 1, 4) == "ell",  "sub: middle slice")
+assert(string["sub"]("hello", 0, 5) == "hello","sub: full string")
+assert(string["sub"]("hello", 0, 1) == "h",    "sub: first char")
+assert(string["sub"]("hello", 4, 5) == "o",    "sub: last char")
+
+# ─── split / join ───────────────────────────────────────────────────────────
+let parts = string["split"]("a,b,c", ",")
+assert(arrayLen(parts) == 3,      "split: count")
+assert(parts[0] == "a",           "split: first element")
+assert(parts[2] == "c",           "split: last element")
+
+let joined = string["join"](["x", "y", "z"], "-")
+assert(joined == "x-y-z",         "join: basic")
+
+let joinedEmpty = string["join"](["a", "b"], "")
+assert(joinedEmpty == "ab",        "join: empty separator")
+
+# ─── capitalize ─────────────────────────────────────────────────────────────
+assert(string["capitalize"]("hello") == "Hello",  "capitalize: lower word")
+assert(string["capitalize"]("HELLO") == "HELLO",  "capitalize: already upper (first char)")
+assert(string["capitalize"]("") == "",             "capitalize: empty")
+assert(string["capitalize"]("a") == "A",           "capitalize: single char")
+
+# ─── isAlpha / isDigit / isAlphanumeric / isWhitespace ──────────────────────
+assert(string["isAlpha"]("hello") == true,            "isAlpha: pure alpha")
+assert(string["isAlpha"]("hello1") == false,          "isAlpha: contains digit")
+assert(string["isAlpha"]("") == false,                "isAlpha: empty")
+assert(string["isDigit"]("12345") == true,            "isDigit: pure digits")
+assert(string["isDigit"]("12x") == false,             "isDigit: contains letter")
+assert(string["isDigit"]("") == false,                "isDigit: empty")
+assert(string["isAlphanumeric"]("Sylvel42") == true,  "isAlphanumeric: mixed")
+assert(string["isAlphanumeric"]("hi!") == false,      "isAlphanumeric: punct")
+assert(string["isAlphanumeric"]("") == false,         "isAlphanumeric: empty")
+assert(string["isWhitespace"]("   ") == true,         "isWhitespace: spaces")
+assert(string["isWhitespace"]("  a") == false,        "isWhitespace: has non-ws")
+assert(string["isWhitespace"]("") == false,           "isWhitespace: empty")
+
+# ─── camelCase / snakeCase ──────────────────────────────────────────────────
+assert(string["camelCase"]("hello_world") == "helloWorld",       "camelCase: snake input")
+assert(string["camelCase"]("hello-world-again") == "helloWorldAgain", "camelCase: kebab input")
+assert(string["snakeCase"]("helloWorld") == "hello_world",       "snakeCase: camel input")
+assert(string["snakeCase"]("hello-world") == "hello_world",      "snakeCase: kebab input")
+
+print("PASS: stdlib string methods")

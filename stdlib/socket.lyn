@@ -1,0 +1,23 @@
+﻿# Sylvel Standard Library — socket.lyn
+# Replicates CPython's socket module
+
+def socket_connect(host, port) {
+    let socketId = netConnect(host, port)
+    if socketId < 0 { return null }
+
+    def send(data) { netWrite(socketId, data) }
+    def recv(maxLen) { return netRead(socketId, maxLen) }
+    def close() { netClose(socketId) }
+
+    return {
+        "send":  send,
+        "recv":  recv,
+        "close": close,
+    }
+}
+
+let socket = {
+    "socket": def() => {
+        "connect": def(host, port) => socket_connect(host, port),
+    },
+}

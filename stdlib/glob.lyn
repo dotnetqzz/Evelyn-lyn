@@ -1,0 +1,23 @@
+﻿# Sylvel Standard Library — glob.lyn
+# Replicates CPython's glob module for directory file search
+
+def glob_match(dirPath, suffix) {
+    let files = dirList(dirPath)
+    if isNull(files) { return [] }
+    var out = []
+    for f in files {
+        let fLen = stringLen(f)
+        let sLen = stringLen(suffix)
+        if fLen >= sLen {
+            let slice = stringSub(f, fLen - sLen, sLen)
+            if slice == suffix {
+                arrayAppend(out, dirPath + "/" + f)
+            }
+        }
+    }
+    return out
+}
+
+let glob = {
+    "glob": def(dirPath, suffix) => glob_match(dirPath, suffix),
+}

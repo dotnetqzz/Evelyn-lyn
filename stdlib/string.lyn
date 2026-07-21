@@ -1,0 +1,214 @@
+﻿# Sylvel Standard Library â€” string.lyn
+# String utilities implemented in Sylvel
+
+def str_repeat(s, n) {
+    var out = ""
+    var cnt = 0
+    while cnt < n { out = out + s  cnt = cnt + 1 }
+    return out
+}
+
+def str_startsWith(s, prefix) {
+    if stringLen(prefix) > stringLen(s) { return false }
+    return stringSub(s, 0, stringLen(prefix)) == prefix
+}
+
+def str_endsWith(s, suffix) {
+    let sl = stringLen(s)
+    let pl = stringLen(suffix)
+    if pl > sl { return false }
+    return stringSub(s, sl - pl, pl) == suffix
+}
+
+def str_padStart(s, width, ch) {
+    var out = s
+    var padCh = ch
+    if isNull(padCh) { padCh = " " }
+    while stringLen(out) < width { out = padCh + out }
+    return out
+}
+
+def str_padEnd(s, width, ch) {
+    var out = s
+    var padCh = ch
+    if isNull(padCh) { padCh = " " }
+    while stringLen(out) < width { out = out + padCh }
+    return out
+}
+
+def str_center(s, width, ch) {
+    var padCh = ch
+    if isNull(padCh) { padCh = " " }
+    let need = width - stringLen(s)
+    if need <= 0 { return s }
+    let left  = need // 2
+    let right = need - left
+    return str_repeat(padCh, left) + s + str_repeat(padCh, right)
+}
+
+def str_count(s, sub) {
+    let sl = stringLen(s)
+    let pl = stringLen(sub)
+    if pl == 0 or pl > sl { return 0 }
+    var cnt = 0
+    var idx = 0
+    while idx <= sl - pl {
+        if stringSub(s, idx, pl) == sub { cnt = cnt + 1  idx = idx + pl }
+        else { idx = idx + 1 }
+    }
+    return cnt
+}
+
+def str_indexOf(s, sub) {
+    let sl = stringLen(s)
+    let pl = stringLen(sub)
+    if pl == 0 { return 0 }
+    var idx = 0
+    while idx <= sl - pl {
+        if stringSub(s, idx, pl) == sub { return idx }
+        idx = idx + 1
+    }
+    return -1
+}
+
+def str_replace(s, old, new) {
+    if old == "" { return s }
+    var out = ""
+    let sl = stringLen(s)
+    let ol = stringLen(old)
+    var idx = 0
+    while idx <= sl - ol {
+        if stringSub(s, idx, ol) == old {
+            out = out + new
+            idx = idx + ol
+        } else {
+            out = out + stringAt(s, idx)
+            idx = idx + 1
+        }
+    }
+    if idx < sl { out = out + stringSub(s, idx, sl - idx) }
+    return out
+}
+
+def str_reverse(s) {
+    let chars = stringSplit(s, "")
+    var out = ""
+    var idx = arrayLen(chars) - 1
+    while idx >= 0 {
+        out = out + chars[idx]
+        idx = idx - 1
+    }
+    return out
+}
+
+def str_isDigit(s) {
+    if stringLen(s) == 0 { return false }
+    let digits = "0123456789"
+    for ch in stringSplit(s, "") {
+        if str_indexOf(digits, ch) == -1 { return false }
+    }
+    return true
+}
+
+def str_isAlpha(s) {
+    if stringLen(s) == 0 { return false }
+    let alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    for ch in stringSplit(s, "") {
+        if str_indexOf(alpha, ch) == -1 { return false }
+    }
+    return true
+}
+
+def str_capitalize(s) {
+    let sl = stringLen(s)
+    if sl == 0 { return "" }
+    if sl == 1 { return stringToUpper(s) }
+    return stringToUpper(stringSub(s, 0, 1)) + stringSub(s, 1, sl - 1)
+}
+
+def str_isAlphanumeric(s) {
+    if stringLen(s) == 0 { return false }
+    let chars = stringSplit(s, "")
+    for ch in chars {
+        if not str_isAlpha(ch) and not str_isDigit(ch) { return false }
+    }
+    return true
+}
+
+def str_isWhitespace(s) {
+    if stringLen(s) == 0 { return false }
+    let chars = stringSplit(s, "")
+    for ch in chars {
+        if ch != " " and ch != "\t" and ch != "\n" and ch != "\r" { return false }
+    }
+    return true
+}
+
+def str_camelCase(s) {
+    let clean = stringReplaceAll(s, "-", "_")
+    let parts = stringSplit(clean, "_")
+    let pl = arrayLen(parts)
+    if pl == 0 { return "" }
+    var out = stringToLower(parts[0])
+    var idx = 1
+    while idx < pl {
+        let p = parts[idx]
+        if stringLen(p) > 0 {
+            out = out + str_capitalize(stringToLower(p))
+        }
+        idx = idx + 1
+    }
+    return out
+}
+
+def str_snakeCase(s) {
+    let chars = stringSplit(s, "")
+    var out = ""
+    let len = arrayLen(chars)
+    var idx = 0
+    while idx < len {
+        let ch = chars[idx]
+        if ch == "-" or ch == " " {
+            out = out + "_"
+        } else {
+            let upper = stringToUpper(ch)
+            if ch == upper and str_isAlpha(ch) {
+                if idx > 0 and stringSub(out, stringLen(out) - 1, 1) != "_" {
+                    out = out + "_"
+                }
+                out = out + stringToLower(ch)
+            } else {
+                out = out + stringToLower(ch)
+            }
+        }
+        idx = idx + 1
+    }
+    return out
+}
+
+let string = {
+    "repeat":         def(s, n)         => str_repeat(s, n),
+    "startsWith":     def(s, p)         => str_startsWith(s, p),
+    "endsWith":       def(s, p)         => str_endsWith(s, p),
+    "padStart":       def(s, w, c)      => str_padStart(s, w, c),
+    "padEnd":         def(s, w, c)      => str_padEnd(s, w, c),
+    "center":         def(s, w, c)      => str_center(s, w, c),
+    "count":          def(s, sub)       => str_count(s, sub),
+    "indexOf":        def(s, sub)       => str_indexOf(s, sub),
+    "replace":        def(s, old, new)  => str_replace(s, old, new),
+    "reverse":        def(s)            => str_reverse(s),
+    "isDigit":        def(s)            => str_isDigit(s),
+    "isAlpha":        def(s)            => str_isAlpha(s),
+    "upper":          def(s)            => stringToUpper(s),
+    "lower":          def(s)            => stringToLower(s),
+    "trim":           def(s)            => stringTrim(s),
+    "split":          def(s, sep)       => stringSplit(s, sep),
+    "join":           def(arr, sep)     => stringJoin(arr, sep),
+    "len":            def(s)            => stringLen(s),
+    "sub":            def(s, a, b)      => stringSub(s, a, b - a),
+    "capitalize":     def(s)            => str_capitalize(s),
+    "isAlphanumeric": def(s)            => str_isAlphanumeric(s),
+    "isWhitespace":   def(s)            => str_isWhitespace(s),
+    "camelCase":      def(s)            => str_camelCase(s),
+    "snakeCase":      def(s)            => str_snakeCase(s),
+}

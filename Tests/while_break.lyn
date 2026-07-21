@@ -1,0 +1,8 @@
+﻿# 19. while with break
+var n = 0
+while n < 100 {
+    if n == 7 { break }
+    n = n + 1
+}
+print(n)
+print("PASS: while break")

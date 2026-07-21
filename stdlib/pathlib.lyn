@@ -1,0 +1,47 @@
+﻿# Sylvel Standard Library — pathlib.lyn
+# Object-oriented path management
+
+import "io"
+
+def Path(pathStr) {
+    def join(subPath) {
+        return Path(path["join"]([pathStr, subPath]))
+    }
+    def basename() {
+        return path["basename"](pathStr)
+    }
+    def dirname() {
+        return Path(path["dirname"](pathStr))
+    }
+    def ext() {
+        return path["ext"](pathStr)
+    }
+    def exists() {
+        return io["exists"](pathStr)
+    }
+    def isDir() {
+        return io["dirExists"](pathStr)
+    }
+    def read() {
+        return io["read"](pathStr)
+    }
+    def write(data) {
+        return io["write"](pathStr, data)
+    }
+
+    return {
+        "str":      pathStr,
+        "join":     join,
+        "basename": basename,
+        "dirname":  dirname,
+        "ext":      ext,
+        "exists":   exists,
+        "isDir":    isDir,
+        "read":     read,
+        "write":    write,
+    }
+}
+
+let pathlib = {
+    "Path": def(s) => Path(s),
+}

@@ -1,0 +1,4 @@
+﻿# 13. String + concatenation with +
+let greeting = "Hello, " + "World"
+print(greeting)
+print("PASS: string concat")

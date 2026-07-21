@@ -1,0 +1,151 @@
+﻿# Sylvel Standard Library — cli.lyn
+# Robust Command Line Interface argument and flag parser
+
+import "sys"
+
+def cli_new(name, version, description) {
+    return {
+        "name": name,
+        "version": version,
+        "description": description,
+        "flags": [],    # List of flag maps
+        "options": []   # List of option maps
+    }
+}
+
+def cli_add_flag(parser, name, alias, description) {
+    let flag = {
+        "name": name,
+        "alias": alias,
+        "description": description
+    }
+    let updated = arrayAppend(parser["flags"], flag)
+    mapSet(parser, "flags", updated)
+}
+
+def cli_add_option(parser, name, alias, defaultVal, description) {
+    let option = {
+        "name": name,
+        "alias": alias,
+        "default": defaultVal,
+        "description": description
+    }
+    let updated = arrayAppend(parser["options"], option)
+    mapSet(parser, "options", updated)
+}
+
+def cli_print_help(parser) {
+    print(parser["name"] + " v" + parser["version"])
+    print(parser["description"])
+    print("")
+    print("USAGE:")
+    print("  sylvel script.lyn [options] [arguments]")
+    print("")
+
+    let flags = parser["flags"]
+    if arrayLen(flags) > 0 {
+        print("FLAGS:")
+        for f in flags {
+            print("  " + f["name"] + ", " + f["alias"] + "      " + f["description"])
+        }
+        print("")
+    }
+
+    let options = parser["options"]
+    if arrayLen(options) > 0 {
+        print("OPTIONS:")
+        for o in options {
+            print("  " + o["name"] + ", " + o["alias"] + "      " + o["description"] + " (default: " + numToString(o["default"]) + ")")
+        }
+        print("")
+    }
+}
+
+def cli_parse(parser, argv) {
+    let flags = parser["flags"]
+    let options = parser["options"]
+
+    # Initialize results map
+    let resultFlags = {}
+    let resultOptions = {}
+    var resultArgs = []
+
+    # Pre-populate defaults for options
+    for o in options {
+        mapSet(resultOptions, stringReplaceAll(o["name"], "-", ""), o["default"])
+    }
+
+    # Pre-populate false for flags
+    for f in flags {
+        mapSet(resultFlags, stringReplaceAll(f["name"], "-", ""), false)
+    }
+
+    let len = arrayLen(argv)
+    var i = 0
+
+    # Skip the executable or first few args if running in compiler/runner mode
+    # Usually the user passes sys["argv"] directly.
+    while i < len {
+        let arg = argv[i]
+
+        # Check for help triggers
+        if arg == "--help" or arg == "-h" {
+            cli_print_help(parser)
+            sys["exit"](0)
+        }
+
+        # Check if arg is a registered option
+        var isOpt = false
+        var matchedOpt = null
+        for o in options {
+            if arg == o["name"] or arg == o["alias"] {
+                isOpt = true
+                matchedOpt = o
+            }
+        }
+
+        if isOpt {
+            if i + 1 < len {
+                let optVal = argv[i + 1]
+                mapSet(resultOptions, stringReplaceAll(matchedOpt["name"], "-", ""), optVal)
+                i = i + 2
+            } else {
+                print("Error: Missing value for option " + arg)
+                sys["exit"](1)
+            }
+        } else {
+            # Check if arg is a registered flag
+            var isFlag = false
+            var matchedFlag = null
+            for f in flags {
+                if arg == f["name"] or arg == f["alias"] {
+                    isFlag = true
+                    matchedFlag = f
+                }
+            }
+
+            if isFlag {
+                mapSet(resultFlags, stringReplaceAll(matchedFlag["name"], "-", ""), true)
+                i = i + 1
+            } else {
+                # Standalone positional argument
+                arrayAppend(resultArgs, arg)
+                i = i + 1
+            }
+        }
+    }
+
+    return {
+        "flags": resultFlags,
+        "options": resultOptions,
+        "args": resultArgs
+    }
+}
+
+let cli = {
+    "new":       def(n, v, d)        => cli_new(n, v, d),
+    "addFlag":   def(p, n, a, d)     => cli_add_flag(p, n, a, d),
+    "addOption": def(p, n, a, df, d) => cli_add_option(p, n, a, df, d),
+    "printHelp": def(p)              => cli_print_help(p),
+    "parse":     def(p, argv)        => cli_parse(p, argv)
+}

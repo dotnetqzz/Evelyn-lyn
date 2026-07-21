@@ -1,0 +1,7 @@
+﻿# Sylvel Standard Library — hex.lyn
+# Exposes hexadecimal encoding & decoding for binary payloads
+
+let hex = {
+    "encode": def(s) => hexEncode(s),
+    "decode": def(s) => hexDecode(s),
+}

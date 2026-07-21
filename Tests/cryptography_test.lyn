@@ -1,0 +1,49 @@
+﻿# Test CPython-style cryptography, encoding, and CSPRNG randomness
+import "init"
+
+# 1. Test hashlib
+let data = "security-script"
+let shaHash = hashlib["sha256"](data)
+let md5Hash = hashlib["md5"](data)
+let sha1Hash = hashlib["sha1"](data)
+
+print("SHA-256: " + shaHash)
+print("MD5: " + md5Hash)
+print("SHA-1: " + sha1Hash)
+
+assert(stringLen(shaHash) == 64, "SHA-256 digest length")
+assert(stringLen(md5Hash) == 32, "MD5 digest length")
+assert(stringLen(sha1Hash) == 40, "SHA-1 digest length")
+
+# 2. Test Base64
+let original = "SylvelSec"
+let b64Encoded = base64["b64encode"](original)
+let b64Decoded = base64["b64decode"](b64Encoded)
+var b64Str = ""
+for b in b64Decoded { b64Str = b64Str + charFromCode(b) }
+assert(b64Str == original, "Base64 roundtrip")
+
+# 3. Test Hex
+let hexEncoded = hex["encode"](original)
+let hexDecoded = hex["decode"](hexEncoded)
+var hexStr = ""
+for b in hexDecoded { hexStr = hexStr + charFromCode(b) }
+assert(hexStr == original, "Hex roundtrip")
+
+# 4. Test CSPRNG secure random
+let secureDbl = random["random"]()
+assert(secureDbl >= 0.0 && secureDbl < 1.0, "Secure random double range")
+
+let secureInt = random["randint"](10, 100)
+assert(secureInt >= 10 && secureInt <= 100, "Secure random int range")
+
+let choices = ["A", "B", "C"]
+let chosen = random["choice"](choices)
+assert(chosen == "A" || chosen == "B" || chosen == "C", "Secure random choice")
+
+# 5. Test secrets
+let secureHex = secrets["token_hex"](16)
+print("Secure Token Hex: " + secureHex)
+assert(stringLen(secureHex) == 32, "Secrets hex token length")
+
+print("PASS: cryptography integration")

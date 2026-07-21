@@ -1,0 +1,120 @@
+﻿# Sylvel Standard Library — json.lyn
+# Full JSON module: parse, stringify, pretty-print, merge, diff
+
+def jsonLoads(s)  { return jsonParse(s) }
+def jsonDumps(v)  { return jsonStringify(v) }
+
+def jsonPretty(v) {
+    # Simple pretty-printer with 2-space indent
+    return _jsonPrettyImpl(v, 0)
+}
+
+def _jsonPrettyImpl(v, depth) {
+    let indent = stringRepeat("  ", depth)
+    let inner  = stringRepeat("  ", depth + 1)
+    if isNull(v)    { return "null" }
+    if isBool(v)    { if v { return "true" } return "false" }
+    if isNumber(v)  { return numToString(v) }
+    if isString(v)  { return "\"" + v + "\"" }
+    if isArray(v) {
+        if arrayLen(v) == 0 { return "[]" }
+        var lines = []
+        for item in v { arrayAppend(lines, inner + _jsonPrettyImpl(item, depth + 1)) }
+        return "[\n" + stringJoin(lines, ",\n") + "\n" + indent + "]"
+    }
+    if isMap(v) {
+        let keys = mapKeys(v)
+        if arrayLen(keys) == 0 { return "{}" }
+        var lines = []
+        for k in keys {
+            let val = _jsonPrettyImpl(mapGet(v, k), depth + 1)
+            arrayAppend(lines, inner + "\"" + k + "\": " + val)
+        }
+        return "{\n" + stringJoin(lines, ",\n") + "\n" + indent + "}"
+    }
+    return "null"
+}
+
+# Deep merge two maps (m2 overwrites m1 at same keys)
+def jsonMerge(m1, m2) {
+    let result = mapCopy(m1)
+    let keys = mapKeys(m2)
+    for k in keys {
+        let v2 = mapGet(m2, k)
+        if mapHas(result, k) and isMap(mapGet(result, k)) and isMap(v2) {
+            mapSet(result, k, jsonMerge(mapGet(result, k), v2))
+        } else {
+            mapSet(result, k, v2)
+        }
+    }
+    return result
+}
+
+# Get nested value by dot-path: jsonGet(obj, "user.address.city")
+def jsonGet(obj, path) {
+    let parts = stringSplit(path, ".")
+    var cur = obj
+    for p in parts {
+        if isNull(cur) { return null }
+        if isMap(cur) { cur = mapGet(cur, p) }
+        else { return null }
+    }
+    return cur
+}
+
+# Set nested value by dot-path
+def jsonSet(obj, path, value) {
+    let parts = stringSplit(path, ".")
+    if arrayLen(parts) == 1 {
+        mapSet(obj, path, value)
+        return obj
+    }
+    let head = parts[0]
+    let rest = stringJoin(arraySlice(parts, 1, arrayLen(parts)), ".")
+    if not mapHas(obj, head) or not isMap(mapGet(obj, head)) {
+        mapSet(obj, head, {})
+    }
+    jsonSet(mapGet(obj, head), rest, value)
+    return obj
+}
+
+# Flatten nested map with dot-key paths
+def jsonFlatten(obj) {
+    let result = {}
+    def _flat(prefix, val) {
+        if isMap(val) {
+            let keys = mapKeys(val)
+            for k in keys {
+                var newKey = k
+                if stringLen(prefix) > 0 {
+                    newKey = prefix + "." + k
+                }
+                _flat(newKey, mapGet(val, k))
+            }
+        } else {
+            mapSet(result, prefix, val)
+        }
+    }
+    _flat("", obj)
+    return result
+}
+
+def json_validate(s) {
+    let parsed = jsonParse(s)
+    if isNull(parsed) {
+        let trimmed = stringTrim(s)
+        return trimmed == "null"
+    }
+    return true
+}
+
+let json = {
+    "loads":    jsonLoads,
+    "dumps":    jsonDumps,
+    "pretty":   jsonPretty,
+    "merge":    jsonMerge,
+    "get":      jsonGet,
+    "set":      jsonSet,
+    "flatten":  jsonFlatten,
+    "validate": def(s) => json_validate(s),
+}

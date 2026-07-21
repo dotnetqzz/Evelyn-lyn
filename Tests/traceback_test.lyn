@@ -1,0 +1,27 @@
+﻿# Test traceback formatting inside try-catch
+import "init"
+
+def nested_two() {
+    throw "nested_error"
+}
+
+def nested_one() {
+    nested_two()
+}
+
+try {
+    nested_one()
+} catch err {
+    let tb = sysLastErrorTraceback()
+    print("Result of traceback execution:")
+    print(tb)
+    
+    assert(stringContains(tb, "Traceback (most recent call last):"), "traceback header not found")
+    assert(stringContains(tb, "File \""), "file path not found")
+    assert(stringContains(tb, "traceback_test.lyn\", line 12, in <top-level>"), "top level frame not found")
+    assert(stringContains(tb, "nested_one"), "nested_one frame not found")
+    assert(stringContains(tb, "nested_two"), "nested_two frame not found")
+    assert(stringContains(tb, "Error: nested_error"), "error message not found")
+}
+
+print("PASS: traceback support")

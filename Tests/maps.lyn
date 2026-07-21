@@ -1,0 +1,9 @@
+﻿# 14. Maps / dicts
+var config = {"host": "localhost", "port": "8080"}
+print(mapGet(config, "host"))
+print(mapGet(config, "port"))
+mapSet(config, "port", "9090")
+print(mapGet(config, "port"))
+print(mapHas(config, "host"))
+print(mapHas(config, "missing"))
+print("PASS: maps")

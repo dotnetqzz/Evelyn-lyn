@@ -1,0 +1,7 @@
+﻿# 6. for range loop
+var sum = 0
+for i in 0..5 {
+    sum = sum + i
+}
+print(sum)
+print("PASS: for range loop")

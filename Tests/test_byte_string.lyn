@@ -1,0 +1,76 @@
+﻿# Avelyn Language — Byte String Literals Test
+# Tests: b"\xDE\xAD" → integer array
+
+var passed = 0
+var fail = 0
+fn check(name, got, expected):
+    if got == expected:
+        passed += 1
+    else:
+        fail += 1
+        print("FAIL: " + name + " — got " + toString(got) + " expected " + toString(expected))
+
+# ── Basic byte string ────────────────────────────────────────────────────────
+let empty_bytes = b""
+check("empty byte string length", arrayLen(empty_bytes), 0)
+
+let single = b"\x41"
+check("single byte \\x41 = 65 (A)", single[0], 65)
+
+let magic = b"\xDE\xAD\xBE\xEF"
+check("magic bytes length",  arrayLen(magic), 4)
+check("magic[0] 0xDE = 222", magic[0], 222)
+check("magic[1] 0xAD = 173", magic[1], 173)
+check("magic[2] 0xBE = 190", magic[2], 190)
+check("magic[3] 0xEF = 239", magic[3], 239)
+
+# ── NULL byte ────────────────────────────────────────────────────────────────
+let null_byte = b"\x00"
+check("null byte value", null_byte[0], 0)
+
+let with_null = b"\x41\x00\x42"
+check("with null: length", arrayLen(with_null), 3)
+check("with null: [0]=65",   with_null[0], 65)
+check("with null: [1]=0",    with_null[1], 0)
+check("with null: [2]=66",   with_null[2], 66)
+
+# ── Escape sequences in byte strings ─────────────────────────────────────────
+let escapes = b"\n\t\r\\"
+check("\\n = 10",  escapes[0], 10)
+check("\\t = 9",   escapes[1], 9)
+check("\\r = 13",  escapes[2], 13)
+check("\\\\ = 92", escapes[3], 92)
+
+# ── ASCII byte string ─────────────────────────────────────────────────────────
+let hello = b"hello"
+check("ASCII: h=104", hello[0], 104)
+check("ASCII: e=101", hello[1], 101)
+check("ASCII: l=108", hello[2], 108)
+check("ASCII: l=108", hello[3], 108)
+check("ASCII: o=111", hello[4], 111)
+check("ASCII: length=5", arrayLen(hello), 5)
+
+# ── Shellcode-like patterns ───────────────────────────────────────────────────
+let nop_sled = b"\x90\x90\x90\x90"
+check("NOP sled length", arrayLen(nop_sled), 4)
+check("NOP value 0x90 = 144", nop_sled[0], 144)
+
+# XOR a byte string with a key
+let data = b"\x41\x42\x43"
+let key = 0x13
+var xored = []
+for b in data:
+    xored = arrayPush(xored, b ^ key)
+check("XOR [0]", xored[0], 0x52)  # 0x41 ^ 0x13 = 0x52
+check("XOR [1]", xored[1], 0x51)  # 0x42 ^ 0x13 = 0x51
+check("XOR [2]", xored[2], 0x50)  # 0x43 ^ 0x13 = 0x50
+
+# ── Byte string is a regular Avelyn array ─────────────────────────────────────
+let arr = b"\x01\x02\x03"
+var sum = 0
+for item in arr:
+    sum += item
+check("sum of [1,2,3] = 6", sum, 6)
+
+print("Byte string tests: " + toString(passed) + " passed, " + toString(fail) + " failed")
+if fail > 0: throw "Some byte string tests failed!"

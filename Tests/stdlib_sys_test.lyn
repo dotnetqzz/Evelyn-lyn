@@ -1,0 +1,15 @@
+﻿# Test sys environment properties
+import "init"
+
+# 1. Test sys.argv
+let args = sys["argv"]
+assert(arrayLen(args) >= 1, "sys.argv should have elements")
+
+# 2. Test sys.version
+assert(sys["version"] == "1.5.0", "version match")
+
+# 3. Test sys.stdout/stderr footprints
+assert(isMap(sys["stdout"]), "sys.stdout should be a map")
+assert(isMap(sys["stderr"]), "sys.stderr should be a map")
+
+print("PASS: stdlib sys support")

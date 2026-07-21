@@ -1,0 +1,52 @@
+﻿# Sylvel Standard Library — random.lyn
+# Replicates CPython's random module using secure entropy (CSPRNG)
+
+def rand_choice(arr) {
+    let n = arrayLen(arr)
+    if n == 0 { return null }
+    let randVal = sysSecureRandomDouble()
+    let idx = mathFloor(randVal * n)
+    return arr[idx]
+}
+
+def rand_int(a, b) {
+    let randVal = sysSecureRandomDouble()
+    let range = b - a + 1
+    return mathFloor(randVal * range) + a
+}
+
+def rand_uniform(a, b) {
+    let randVal = sysSecureRandomDouble()
+    return a + randVal * (b - a)
+}
+
+def rand_shuffle(arr) {
+    let out = arraySlice(arr, 0, arrayLen(arr))
+    var i = arrayLen(out) - 1
+    while i > 0 {
+        let randVal = sysSecureRandomDouble()
+        let j = mathFloor(randVal * (i + 1))
+        # swap elements i and j
+        let temp = out[i]
+        out[i] = out[j]
+        out[j] = temp
+        i -= 1
+    }
+    return out
+}
+
+def rand_sample(arr, k) {
+    let n = arrayLen(arr)
+    if k > n { throw "Sample larger than population" }
+    let shuffled = rand_shuffle(arr)
+    return arraySlice(shuffled, 0, k)
+}
+
+let random = {
+    "random":  def() => sysSecureRandomDouble(),
+    "randint": def(a, b) => rand_int(a, b),
+    "uniform": def(a, b) => rand_uniform(a, b),
+    "choice":  def(arr) => rand_choice(arr),
+    "shuffle": def(arr) => rand_shuffle(arr),
+    "sample":  def(arr, k) => rand_sample(arr, k),
+}

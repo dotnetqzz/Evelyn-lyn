@@ -1,0 +1,19 @@
+﻿# Test dotenv environment loader
+import "init"
+
+let envPath = "_temp_env.txt"
+
+# 1. Prepare temp env file
+io["write"](envPath, "PORT=9000\nDB_USER=admin\n# comment line\nSTR_VAL=\"quoted\"\n")
+
+# 2. Load .env
+let envMap = dotenv["load"](envPath)
+assert(mapGet(envMap, "PORT") == "9000", "PORT parsed successfully")
+assert(mapGet(envMap, "DB_USER") == "admin", "DB_USER parsed successfully")
+assert(mapGet(envMap, "STR_VAL") == "quoted", "quotes stripped successfully")
+assert(mapHas(envMap, "# comment line") == false, "comments ignored")
+
+# Cleanup
+sysRemoveFile(envPath)
+
+print("PASS: stdlib dotenv support")

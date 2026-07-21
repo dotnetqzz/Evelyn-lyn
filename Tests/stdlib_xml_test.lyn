@@ -1,0 +1,19 @@
+﻿# Test xml tag and attribute extraction
+import "init"
+
+let xmlPayload = "<user id=\"104\" role=\"admin\" status=\"active\"><name>Alice Dev</name><email>alice@sylvel.dev</email></user>"
+
+# 1. Test tag search
+let name = xml["findTag"](xmlPayload, "name")
+assert(name == "Alice Dev", "extract simple tag contents")
+
+let email = xml["findTag"](xmlPayload, "email")
+assert(email == "alice@sylvel.dev", "extract simple tag contents email")
+
+# 2. Test attribute parsing
+let attrs = xml["findAttributes"](xmlPayload, "user")
+assert(mapGet(attrs, "id") == "104", "attribute id match")
+assert(mapGet(attrs, "role") == "admin", "attribute role match")
+assert(mapGet(attrs, "status") == "active", "attribute status match")
+
+print("PASS: stdlib xml support")

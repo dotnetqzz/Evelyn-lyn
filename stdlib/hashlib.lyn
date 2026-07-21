@@ -1,0 +1,8 @@
+﻿# Sylvel Standard Library — hashlib.lyn
+# Replicates CPython's hashlib module
+
+let hashlib = {
+    "sha256": def(data) => sha256(data),
+    "md5":    def(data) => md5(data),
+    "sha1":   def(data) => sha1(data),
+}

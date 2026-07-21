@@ -1,0 +1,28 @@
+﻿# Test validate library schema inputs
+import "init"
+
+let schema = {
+    "name":  {"required": true, "minLen": 2},
+    "email": {"required": true, "email": true},
+    "age":   {"min": 18},
+}
+
+# 1. Test valid input
+let inputValid = {
+    "name":  "Bob",
+    "email": "bob@sylvel.dev",
+    "age":   25,
+}
+let errors1 = validate["schema"](inputValid, schema)
+assert(arrayLen(errors1) == 0, "should have no validation errors")
+
+# 2. Test invalid input
+let inputInvalid = {
+    "name":  "A", # too short
+    "email": "invalid-email",
+    "age":   16, # too young
+}
+let errors2 = validate["schema"](inputInvalid, schema)
+assert(arrayLen(errors2) == 3, "should capture exactly 3 validation errors")
+
+print("PASS: stdlib validate support")

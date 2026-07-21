@@ -1,0 +1,8 @@
+﻿# Test socket module footprint
+import "init"
+
+assert(isMap(socket), "socket should be a map")
+let sObj = socket["socket"]()
+assert(isMap(sObj), "socket connector should be a map")
+
+print("PASS: stdlib socket support")

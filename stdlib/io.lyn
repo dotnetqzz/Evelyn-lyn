@@ -1,0 +1,70 @@
+﻿# Sylvel Standard Library — io.lyn
+# High-performance native file I/O and path utilities
+
+# Path utilities
+def path_join(parts) {
+    if arrayLen(parts) == 0 { return "" }
+    var out = parts[0]
+    var i = 1
+    while i < arrayLen(parts) {
+        out = pathJoin(out, parts[i])
+        i += 1
+    }
+    return out
+}
+
+# File helpers
+def io_readLines(filePath) {
+    let src = fileRead(filePath)
+    if isNull(src) { return null }
+    return stringSplit(src, "\n")
+}
+
+def io_writeLines(filePath, lines) {
+    return fileWrite(filePath, stringJoin(lines, "\n"))
+}
+
+def io_appendLine(filePath, line) {
+    return fileAppend(filePath, line + "\n")
+}
+
+def io_exists(filePath) {
+    return fileExists(filePath)
+}
+
+def io_size(filePath) {
+    let content = fileRead(filePath)
+    if isNull(content) { return -1 }
+    return stringLen(content)
+}
+
+let path = {
+    "join":      def(parts)  => path_join(parts),
+    "basename":  def(p)      => pathBasename(p),
+    "dirname":   def(p)      => pathDirname(p),
+    "ext":       def(p) {
+        let e = pathExtension(p)
+        if stringLen(e) == 0 { return "" }
+        return "." + e
+    },
+    "absolute":  def(p)      => pathAbsolute(p),
+    "noExt":     def(p) {
+        let ext = pathExtension(p)
+        if stringLen(ext) == 0 { return p }
+        return stringSub(p, 0, stringLen(p) - stringLen(ext) - 1)
+    },
+}
+
+let io = {
+    "readLines":  def(p)        => io_readLines(p),
+    "writeLines": def(p, lines) => io_writeLines(p, lines),
+    "appendLine": def(p, line)  => io_appendLine(p, line),
+    "exists":     def(p)        => io_exists(p),
+    "size":       def(p)        => io_size(p),
+    "read":       def(p)        => fileRead(p),
+    "write":      def(p, data)  => fileWrite(p, data),
+    "append":     def(p, data)  => fileAppend(p, data),
+    "mkdir":      def(p)        => dirCreate(p),
+    "dirExists":  def(p)        => dirExists(p),
+    "listDir":    def(p)        => dirList(p),
+}

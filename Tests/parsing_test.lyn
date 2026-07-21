@@ -1,0 +1,39 @@
+﻿# Test CPython-style regex, json parsing, glob, xml, and csv parsing
+import "init"
+
+# 1. Test re (Regex)
+let pattern = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+let email = "hacker@sylvel.org"
+let isEmail = re["search"](pattern, email)
+assert(isEmail == true, "Regex match check")
+
+let text = "User ip is 192.168.1.1"
+let anonymized = re["sub"]("192\\.168\\.1\\.[0-9]+", "[ANONYMIZED]", text)
+print(anonymized)
+assert(anonymized == "User ip is [ANONYMIZED]", "Regex replace check")
+
+# 2. Test json parsing
+let jsonStr = "{\"id\":42,\"name\":\"Alice\",\"active\":true}"
+let parsed = json["loads"](jsonStr)
+assert(parsed["id"] == 42, "JSON int parsing")
+assert(parsed["name"] == "Alice", "JSON string parsing")
+assert(parsed["active"] == true, "JSON bool parsing")
+
+let dumped = json["dumps"](parsed)
+print("Dumped: " + dumped)
+
+# 3. Test XML
+let xmlData = "<packet><ip>10.0.0.1</ip><payload>ping</payload></packet>"
+let targetIp = xml["findTag"](xmlData, "ip")
+let targetPayload = xml["findTag"](xmlData, "payload")
+assert(targetIp == "10.0.0.1", "XML tag extraction ip")
+assert(targetPayload == "ping", "XML tag extraction payload")
+
+# 4. Test CSV
+let csvLine = "10.0.0.1,80,HTTP,GET"
+let parsedCsv = csv["parseLine"](csvLine)
+assert(arrayLen(parsedCsv) == 4, "CSV parsed column count")
+assert(parsedCsv[0] == "10.0.0.1", "CSV col 0")
+assert(parsedCsv[2] == "HTTP", "CSV col 2")
+
+print("PASS: data parsing integration")

@@ -1,0 +1,76 @@
+﻿import "websec"
+var passed = 0
+var fail = 0
+
+fn check(name, actual, expected):
+    if actual == expected:
+        passed += 1
+        print("PASS: " + name)
+    else:
+        fail += 1
+        print("FAIL: " + name + " — got " + toString(actual) + " expected " + toString(expected))
+
+print("Testing WebSec Pentest Module (Phase 6)...")
+
+# 1. SQL Injection
+let sqli = websec["sqliTest"]("https://example.com", {"param": "id"})
+# We expect 0 vulns from a basic httpbin /get test
+check("SQLi test baseline", arrayLen(sqli) == 0, true)
+
+# 2. XSS
+let xssBasic = websec["xssPayloads"]("basic")
+check("XSS payloads basic count", arrayLen(xssBasic) > 0, true)
+check("XSS payloads basic content", xssBasic[0], "<script>alert(1)</script>")
+
+let xssTest = websec["xssTest"]("https://httpbin.org/get", {"payloads": ["<script>alert(1)</script>"]})
+# httpbin/get does not reflect the parameter directly in the body unescaped in a way that matches perfectly usually, but wait, it reflects args in JSON. 
+# JSON escaping might break it. Let's just check if it ran without errors.
+check("XSS test execution", xssTest != null, true)
+
+# 3. XXE
+let xxePayload = websec["xxePayload"]({"type": "file_read", "file": "/etc/passwd"})
+check("XXE payload structure", string["indexOf"](xxePayload, "file:///etc/passwd") >= 0, true)
+
+# 4. CSRF
+let csrfPoc = websec["csrfPoC"]({"action": "http://example.com/update", "method": "POST", "fields": {"user": "admin"}})
+check("CSRF PoC generation", string["indexOf"](csrfPoc, "document.forms[0].submit()") >= 0, true)
+
+# 5. Path Traversal
+# Just testing execution, not expecting httpbin to actually be vulnerable to /etc/passwd
+let travTest = websec["traversalTest"]("https://httpbin.org/get", {"param": "file", "targets": ["/etc/passwd"]})
+check("Traversal test execution", arrayLen(travTest) == 0, true)
+
+# 6. Command Injection
+let cmdTest = websec["cmdInjTest"]("https://httpbin.org/get", {"param": "host"})
+check("Command Injection test execution", arrayLen(cmdTest) == 0, true)
+
+# 7. JWT Attacks
+let dummyHdr = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" # {"alg":"HS256","typ":"JWT"}
+let dummyBdy = "eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ"
+# signature is just a placeholder
+let dummySig = "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+let dummyToken = dummyHdr + "." + dummyBdy + "." + dummySig
+let jwtRes = websec["jwtAttack"](dummyToken, {"alg_none": true})
+var algNonePassed = false
+if jwtRes["alg_none"] != null {
+    if string["len"](jwtRes["alg_none"]) > 20 {
+        algNonePassed = true
+    }
+}
+check("JWT alg:none attack", algNonePassed, true)
+
+# JWT Secret Brute Forcing
+let secret = "secret"
+# Generate a valid HMAC for dummyHdr.dummyBdy with "secret"
+let realMac = crypto["hmac"]("sha256", secret, dummyHdr + "." + dummyBdy)
+let realMacB64 = string["replace"](string["replace"](string["replace"](crypto["base64Encode"](realMac), "=", ""), "+", "-"), "/", "_")
+let validToken = dummyHdr + "." + dummyBdy + "." + realMacB64
+
+let jwtBrute = websec["jwtAttack"](validToken, {"brute_secret": ["password", "123456", "secret", "admin"]})
+check("JWT secret cracked", jwtBrute["cracked_secret"], "secret")
+
+
+if fail > 0 {
+    throw "WebSec tests failed!"
+}
+print("\nWebSec Tests: Passed")

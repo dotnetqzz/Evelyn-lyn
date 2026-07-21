@@ -1,0 +1,12 @@
+﻿# Test logger levels and format configuration
+import "init"
+
+# Ensure log configurations work warning-free
+logger["setLevel"](1) # INFO
+logger["setFormat"]("text")
+logger["setPrefix"]("[TEST_PREFIX] ")
+
+# Expose info logs
+logger["info"]("Testing standard logger level print")
+
+print("PASS: stdlib logger support")

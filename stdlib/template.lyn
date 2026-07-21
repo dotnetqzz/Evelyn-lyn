@@ -1,0 +1,85 @@
+﻿# Sylvel Standard Library — template.lyn
+# Lightweight string templating engine
+
+# Render "Hello, {{name}}!" with {"name": "World"} → "Hello, World!"
+def templateRender(tmpl, vars) {
+    var result = tmpl
+    let keys = mapKeys(vars)
+    for key in keys {
+        let placeholder = "{{" + key + "}}"
+        let value = numToString(mapGet(vars, key))
+        result = stringReplaceAll(result, placeholder, value)
+    }
+    return result
+}
+
+# Render a file
+def templateRenderFile(path, vars) {
+    let tmpl = fileRead(path)
+    if isNull(tmpl) { return "" }
+    return templateRender(tmpl, vars)
+}
+
+# Simple if-block: {{#if key}}...{{/if}}
+def templateRenderIf(tmpl, vars) {
+    var result = tmpl
+    # Remove {{#if key}}...{{/if}} when key is falsy
+    let keys = mapKeys(vars)
+    for key in keys {
+        let open = "{{#if " + key + "}}"
+        let close = "{{/if}}"
+        let val = mapGet(vars, key)
+        if isNull(val) or val == false or val == 0 or val == "" {
+            # Remove entire block between open and close
+            var start = stringIndexOf(result, open)
+            while start >= 0 {
+                let end = stringIndexOf(result, close)
+                if end < 0 { break }
+                let before = stringSub(result, 0, start)
+                let after = stringSub(result, end + stringLen(close), stringLen(result) - end - stringLen(close))
+                result = before + after
+                start = stringIndexOf(result, open)
+            }
+        } else {
+            result = stringReplaceAll(result, open, "")
+            result = stringReplaceAll(result, close, "")
+        }
+    }
+    return result
+}
+
+# Escape HTML special characters
+def htmlEscape(s) {
+    var r = stringReplaceAll(s, "&", "&amp;")
+    r = stringReplaceAll(r, "<", "&lt;")
+    r = stringReplaceAll(r, ">", "&gt;")
+    r = stringReplaceAll(r, "\"", "&quot;")
+    return r
+}
+
+# Build an HTML table from an array of maps
+def htmlTable(rows, columns) {
+    var html = "<table><thead><tr>"
+    for col in columns {
+        html = html + "<th>" + htmlEscape(col) + "</th>"
+    }
+    html = html + "</tr></thead><tbody>"
+    for row in rows {
+        html = html + "<tr>"
+        for col in columns {
+            let val = numToString(mapGet(row, col))
+            html = html + "<td>" + htmlEscape(val) + "</td>"
+        }
+        html = html + "</tr>"
+    }
+    html = html + "</tbody></table>"
+    return html
+}
+
+let template = {
+    "render":     templateRender,
+    "renderFile": templateRenderFile,
+    "renderIf":   templateRenderIf,
+    "escape":     htmlEscape,
+    "htmlTable":  htmlTable,
+}

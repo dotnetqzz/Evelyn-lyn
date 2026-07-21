@@ -1,0 +1,72 @@
+﻿# Avelyn Language — Pipe Operator |> Test
+
+var passed = 0
+var fail = 0
+fn check(name, got, expected):
+    if got == expected:
+        passed += 1
+    else:
+        fail += 1
+        print("FAIL: " + name + " — got " + toString(got) + " expected " + toString(expected))
+
+# ── Helper functions ──────────────────────────────────────────────────────────
+fn double(x):   return x * 2
+fn add10(x):    return x + 10
+fn square(x):   return x * x
+fn negate(x):   return -x
+fn to_str(x):   return toString(x)
+fn add_suffix(x, suf): return x + suf
+
+# ── Basic pipe ────────────────────────────────────────────────────────────────
+let r1 = 5 |> double
+check("5 |> double = 10", r1, 10)
+
+let r2 = 5 |> double |> add10
+check("5 |> double |> add10 = 20", r2, 20)
+
+let r3 = 3 |> square |> double |> add10
+check("3 |> square |> double |> add10 = 28", r3, 28)
+
+# ── Pipe with unary negation ──────────────────────────────────────────────────
+let r4 = 5 |> negate
+check("5 |> negate = -5", r4, -5)
+
+# ── Pipe chain to string ──────────────────────────────────────────────────────
+let r5 = 42 |> double |> to_str
+check("42 |> double |> to_str = '84'", r5, "84")
+
+# ── Pipe returns last value ────────────────────────────────────────────────────
+let r6 = 100 |> add10 |> double
+check("100 |> add10 |> double = 220", r6, 220)
+
+# ── Pipe inside expression ────────────────────────────────────────────────────
+let a = 4 |> square
+let b = 3 |> square
+check("pythagorean: 3²+4²=25", a + b, 25)
+
+# ── Multi-line pipe chain ─────────────────────────────────────────────────────
+fn step1(x): return x + 1
+fn step2(x): return x * 3
+fn step3(x): return x - 5
+
+let pipeline_result = 2 |> step1 |> step2 |> step3
+check("2→step1→step2→step3 = (2+1)*3-5 = 4", pipeline_result, 4)
+
+# ── Pipe in security context: hex encoding ────────────────────────────────────
+fn to_upper(s): return stringUpper(s)
+fn add_0x(s):   return "0x" + s
+fn hex_byte(n):
+    let h = toString(n, 16)
+    if stringLen(h) == 1: return "0" + h
+    return h
+
+# Chain: byte value → hex → uppercase → add prefix
+# Note: this tests that pipe creates proper call chains
+
+fn wrap_hex(n): return "0x" + stringUpper(hex_byte(n))
+check("hex byte 255", wrap_hex(255), "0xFF")
+check("hex byte 10",  wrap_hex(10),  "0x0A")
+check("hex byte 0",   wrap_hex(0),   "0x00")
+
+print("Pipe operator tests: " + toString(passed) + " passed, " + toString(fail) + " failed")
+if fail > 0: throw "Some pipe tests failed!"

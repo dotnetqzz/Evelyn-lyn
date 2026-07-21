@@ -1,0 +1,53 @@
+﻿# Sylvel Standard Library — re.lyn
+# Full-featured regular expression module
+
+def reSearch(pat, text)            { return sysRegexMatch(pat, text) }
+def reSub(pat, repl, text)         { return sysRegexReplace(pat, text, repl) }
+def reGroups(pat, text)            { return sysRegexGroups(pat, text) }
+def reFindAll(pat, text)           { return sysRegexFindAll(pat, text) }
+
+def reMatch(pat, text) {
+    let anchored = "^(?:" + pat + ")"
+    return sysRegexMatch(anchored, text)
+}
+
+def reFullMatch(pat, text) {
+    let anchored = "^(?:" + pat + ")$"
+    return sysRegexMatch(anchored, text)
+}
+
+def reSplit(pat, text) {
+    # Split by regex: find all matches, use positions to split
+    let matches = sysRegexFindAll(pat, text)
+    if arrayLen(matches) == 0 { return [text] }
+    var parts = []
+    var remaining = text
+    for m in matches {
+        let idx = stringIndexOf(remaining, m)
+        if idx < 0 { break }
+        arrayAppend(parts, stringSub(remaining, 0, idx))
+        remaining = stringSub(remaining, idx + stringLen(m), stringLen(remaining) - idx - stringLen(m))
+    }
+    arrayAppend(parts, remaining)
+    return parts
+}
+
+def reEscape(text) {
+    var result = text
+    let specials = ["\\", ".", "^", "$", "*", "+", "?", "(", ")", "[", "]", "{", "}", "|"]
+    for ch in specials {
+        result = stringReplaceAll(result, ch, "\\" + ch)
+    }
+    return result
+}
+
+let re = {
+    "search":    reSearch,
+    "match":     reMatch,
+    "fullMatch": reFullMatch,
+    "findAll":   reFindAll,
+    "groups":    reGroups,
+    "sub":       reSub,
+    "split":     reSplit,
+    "escape":    reEscape,
+}

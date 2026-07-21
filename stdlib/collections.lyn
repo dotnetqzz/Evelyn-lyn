@@ -1,0 +1,76 @@
+﻿# Sylvel Standard Library â€” collections.lyn
+# Stack, Queue, Set â€” implemented in Sylvel
+
+# Stack
+def Stack() {
+    var _data = []
+    def push(x)   { arrayAppend(_data, x) }
+    def pop()     {
+        if arrayLen(_data) == 0 { return null }
+        let v = _data[arrayLen(_data) - 1]
+        arrayPop(_data)
+        return v
+    }
+    def peek()    { if arrayLen(_data) == 0 { return null } return _data[arrayLen(_data) - 1] }
+    def isEmpty() { return arrayLen(_data) == 0 }
+    def size()    { return arrayLen(_data) }
+    def toArray() { return arrayCopy(_data) }
+    return {
+        "push":    push,
+        "pop":     pop,
+        "peek":    peek,
+        "isEmpty": isEmpty,
+        "size":    size,
+        "toArray": toArray,
+    }
+}
+
+# Queue
+def Queue() {
+    var _data = []
+    def enqueue(x) { arrayAppend(_data, x) }
+    def dequeue() {
+        if arrayLen(_data) == 0 { return null }
+        let v = _data[0]
+        arrayShift(_data)
+        return v
+    }
+    def front()   { if arrayLen(_data) == 0 { return null } return _data[0] }
+    def isEmpty() { return arrayLen(_data) == 0 }
+    def size()    { return arrayLen(_data) }
+    def toArray() { return arrayCopy(_data) }
+    return {
+        "enqueue": enqueue,
+        "dequeue": dequeue,
+        "front":   front,
+        "isEmpty": isEmpty,
+        "size":    size,
+        "toArray": toArray,
+    }
+}
+
+# Set
+def Set(initial) {
+    var _data = []
+    if not isNull(initial) {
+        for x in initial {
+            if not arrayContains(_data, x) { arrayAppend(_data, x) }
+        }
+    }
+    def add(x)    { if not arrayContains(_data, x) { arrayAppend(_data, x) } }
+    def remove(x) {
+        var out = []
+        for d in _data { if d != x { arrayAppend(out, d) } }
+        _data = out
+    }
+    def has(x)    { return arrayContains(_data, x) }
+    def size()    { return arrayLen(_data) }
+    def toArray() { return arrayCopy(_data) }
+    return {
+        "add":     add,
+        "remove":  remove,
+        "has":     has,
+        "size":    size,
+        "toArray": toArray,
+    }
+}

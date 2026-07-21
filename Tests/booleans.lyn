@@ -1,0 +1,9 @@
+﻿# 1. Boolean literals & operators
+let t = true
+let f = false
+print(t)
+print(f)
+print(t == true)
+print(f == false)
+print(t != f)
+print("PASS: booleans")

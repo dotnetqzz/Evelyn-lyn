@@ -1,0 +1,15 @@
+[package]
+name = "avelyn"
+version = "2.5.7"
+edition = "2021"
+
+[[bin]]
+name = "avelyn"
+path = "src/main.rs"
+
+[dependencies]
+indexmap = "2"
+
+[profile.release]
+opt-level = 3
+strip = true

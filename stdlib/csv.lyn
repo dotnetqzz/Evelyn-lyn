@@ -1,0 +1,10 @@
+﻿# Sylvel Standard Library — csv.lyn
+# Replicates CPython's csv module for spreadsheet parsing and reporting
+
+def csv_parse_line(line) {
+    return stringSplit(line, ",")
+}
+
+let csv = {
+    "parseLine": def(line) => csv_parse_line(line),
+}

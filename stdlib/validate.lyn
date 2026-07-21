@@ -1,0 +1,141 @@
+﻿# Sylvel Standard Library — validate.lyn
+# Input validation library
+
+def validateRequired(value, fieldName) {
+    if isNull(value) { return "'" + fieldName + "' is required" }
+    if isString(value) and stringLen(stringTrim(value)) == 0 {
+        return "'" + fieldName + "' cannot be empty"
+    }
+    return null
+}
+
+def validateEmail(value, fieldName) {
+    let pattern = "^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$"
+    if not sysRegexMatch(pattern, value) {
+        return "'" + fieldName + "' must be a valid email"
+    }
+    return null
+}
+
+def validateMinLen(value, min, fieldName) {
+    if isString(value) and stringLen(value) < min {
+        return "'" + fieldName + "' must be at least " + numToString(min) + " characters"
+    }
+    return null
+}
+
+def validateMaxLen(value, max, fieldName) {
+    if isString(value) and stringLen(value) > max {
+        return "'" + fieldName + "' must be at most " + numToString(max) + " characters"
+    }
+    return null
+}
+
+def validateMin(value, min, fieldName) {
+    if isNumber(value) and value < min {
+        return "'" + fieldName + "' must be >= " + numToString(min)
+    }
+    return null
+}
+
+def validateMax(value, max, fieldName) {
+    if isNumber(value) and value > max {
+        return "'" + fieldName + "' must be <= " + numToString(max)
+    }
+    return null
+}
+
+def validateEnum(value, options, fieldName) {
+    if not arrayContains(options, value) {
+        return "'" + fieldName + "' must be one of: " + stringJoin(options, ", ")
+    }
+    return null
+}
+
+def validatePattern(value, pattern, fieldName) {
+    if not sysRegexMatch(pattern, value) {
+        return "'" + fieldName + "' has invalid format"
+    }
+    return null
+}
+
+def validateUrl(value, fieldName) {
+    let pattern = "^https?://.+"
+    if not sysRegexMatch(pattern, value) {
+        return "'" + fieldName + "' must be a valid URL"
+    }
+    return null
+}
+
+def validateInteger(value, fieldName) {
+    if not isNumber(value) or not isInteger(value) {
+        return "'" + fieldName + "' must be an integer"
+    }
+    return null
+}
+
+# Schema validation: validate a map against a schema
+# Schema format: {"field": {"required": true, "type": "string", "minLen": 3, "email": true}}
+def validateSchema(data, schema) {
+    let errors = []
+    let fields = mapKeys(schema)
+    for field in fields {
+        let rules = schema[field]
+        let value = mapGet(data, field)
+
+        if mapHas(rules, "required") and rules["required"] {
+            let err = validateRequired(value, field)
+            if not isNull(err) { arrayAppend(errors, err) }
+        }
+        if isNull(value) { continue }
+
+        if mapHas(rules, "email") and rules["email"] {
+            let err = validateEmail(value, field)
+            if not isNull(err) { arrayAppend(errors, err) }
+        }
+        if mapHas(rules, "minLen") {
+            let err = validateMinLen(value, rules["minLen"], field)
+            if not isNull(err) { arrayAppend(errors, err) }
+        }
+        if mapHas(rules, "maxLen") {
+            let err = validateMaxLen(value, rules["maxLen"], field)
+            if not isNull(err) { arrayAppend(errors, err) }
+        }
+        if mapHas(rules, "min") {
+            let err = validateMin(value, rules["min"], field)
+            if not isNull(err) { arrayAppend(errors, err) }
+        }
+        if mapHas(rules, "max") {
+            let err = validateMax(value, rules["max"], field)
+            if not isNull(err) { arrayAppend(errors, err) }
+        }
+        if mapHas(rules, "enum") {
+            let err = validateEnum(value, rules["enum"], field)
+            if not isNull(err) { arrayAppend(errors, err) }
+        }
+        if mapHas(rules, "pattern") {
+            let err = validatePattern(value, rules["pattern"], field)
+            if not isNull(err) { arrayAppend(errors, err) }
+        }
+        if mapHas(rules, "url") and rules["url"] {
+            let err = validateUrl(value, field)
+            if not isNull(err) { arrayAppend(errors, err) }
+        }
+    }
+    return errors
+}
+
+let validate = {
+    "required": validateRequired,
+    "email":    validateEmail,
+    "minLen":   validateMinLen,
+    "maxLen":   validateMaxLen,
+    "min":      validateMin,
+    "max":      validateMax,
+    "enum":     validateEnum,
+    "pattern":  validatePattern,
+    "url":      validateUrl,
+    "integer":  validateInteger,
+    "schema":   validateSchema,
+    "ok":       def(errors) => arrayLen(errors) == 0,
+}

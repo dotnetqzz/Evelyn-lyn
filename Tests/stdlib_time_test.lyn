@@ -1,0 +1,26 @@
+﻿# Test time module metrics
+import "init"
+
+# 1. Test epoch seconds
+let s1 = time["time"]()
+time["sleep"](10)
+let s2 = time["time"]()
+assert(s2 >= s1, "time increases or stays same")
+
+# 2. Test ms resolution
+let ms1 = time["timeMs"]()
+time["sleep"](20)
+let ms2 = time["timeMs"]()
+assert(ms2 > ms1, "timeMs increases after sleep")
+
+# 3. Test perfCounter
+let pc1 = time["perfCounter"]()
+time["sleep"](10)
+let pc2 = time["perfCounter"]()
+assert(pc2 > pc1, "perfCounter increases")
+
+# 4. Test strftime format
+let dateStr = time["strftime"](time["timeMs"](), "yyyy")
+assert(stringLen(dateStr) == 4, "strftime should format 4-digit year")
+
+print("PASS: stdlib time support")

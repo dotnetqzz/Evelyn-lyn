@@ -1,0 +1,27 @@
+﻿# Test glob module suffix matching
+import "init"
+
+let testDir = "_glob_test_temp"
+let file1 = testDir + "/foo.lyn"
+let file2 = testDir + "/bar.txt"
+
+# Clean up
+if io["dirExists"](testDir) { shutil["rmtree"](testDir) }
+
+io["mkdir"](testDir)
+io["write"](file1, "code")
+io["write"](file2, "text")
+
+# 1. Test glob matching suffix
+let sylFiles = glob["glob"](testDir, ".lyn")
+assert(arrayLen(sylFiles) == 1, "should find 1 syl file")
+assert(path["basename"](sylFiles[0]) == "foo.lyn", "match basename foo.lyn")
+
+let txtFiles = glob["glob"](testDir, ".txt")
+assert(arrayLen(txtFiles) == 1, "should find 1 txt file")
+assert(path["basename"](txtFiles[0]) == "bar.txt", "match basename bar.txt")
+
+# Cleanup
+shutil["rmtree"](testDir)
+
+print("PASS: stdlib glob support")

@@ -1,0 +1,18 @@
+﻿# Test template engine features
+import "init"
+
+# 1. Test basic variable substitution
+let tmpl = "Hello, {{name}}! Welcome to {{lang}}."
+let vars = {"name": "Developer", "lang": "Sylvel"}
+let rendered = template["render"](tmpl, vars)
+assert(rendered == "Hello, Developer! Welcome to Sylvel.", "render simple vars")
+
+# 2. Test conditional block template
+let condTmpl = "Status: {{#if active}}Active{{/if}}"
+let renderedTrue = template["renderIf"](condTmpl, {"active": true})
+assert(renderedTrue == "Status: Active", "render conditional block true")
+
+let renderedFalse = template["renderIf"](condTmpl, {"active": false})
+assert(renderedFalse == "Status: ", "render conditional block false")
+
+print("PASS: stdlib template support")

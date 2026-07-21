@@ -1,0 +1,9 @@
+﻿def foo():
+    var = "local"
+    print(var)
+
+var = "global"
+print(var)
+foo()
+print(var)
+print("PASS: var as identifier")

@@ -1,0 +1,193 @@
+﻿# Avelyn Language — Master Integration Test
+# Tests ALL new syntax features together in realistic security scenarios
+
+var passed = 0
+var fail = 0
+fn check(name, got, expected):
+    if got == expected:
+        passed += 1
+    else:
+        fail += 1
+        print("FAIL: " + name + " — got " + toString(got) + " expected " + toString(expected))
+
+print("Running Avelyn master syntax integration test...")
+
+# ════════════════════════════════════════════════════════════════════════════
+# SCENARIO 1: Binary Protocol Parsing
+# Parsing a simulated binary packet header
+# ════════════════════════════════════════════════════════════════════════════
+
+fn parse_flags(byte_val):
+    let syn = (byte_val >> 1) & 1  # bit 1
+    let ack = (byte_val >> 4) & 1  # bit 4
+    let fin = byte_val & 1          # bit 0
+    return {"syn": syn, "ack": ack, "fin": fin}
+
+let tcp_flags = 0b00010010  # SYN + ACK-offset
+let flags = parse_flags(tcp_flags)
+check("TCP SYN flag",  flags["syn"], 1)
+check("TCP ACK flag",  flags["ack"], 1)
+check("TCP FIN flag",  flags["fin"], 0)
+
+# Byte string shellcode (NOP sled + int3)
+let shellcode = b"\x90\x90\x90\x90\xCC"
+check("shellcode length",    arrayLen(shellcode), 5)
+check("shellcode NOP = 144", shellcode[0],        144)
+check("shellcode INT3 = 204",shellcode[4],        204)
+
+# ════════════════════════════════════════════════════════════════════════════
+# SCENARIO 2: XOR Cipher with Pipe + Default Params
+# ════════════════════════════════════════════════════════════════════════════
+
+fn xor_bytes(data, key = 0x41):
+    var result = []
+    for b in data:
+        result = arrayPush(result, b ^ key)
+    return result
+
+fn to_hex_list(arr):
+    var out = []
+    for b in arr:
+        out = arrayPush(out, b & 0xFF)
+    return out
+
+let plaintext = b"\x48\x65\x6C\x6C\x6F"  # "Hello" ASCII
+let key = 0x20
+let ciphertext = xor_bytes(plaintext, key)
+
+# Verify XOR is reversible
+let decrypted = xor_bytes(ciphertext, key)
+check("XOR cipher reversible [0]", decrypted[0], 0x48)
+check("XOR cipher reversible [4]", decrypted[4], 0x6F)
+
+# Default key
+let default_enc = xor_bytes(b"\x00\x01\x02")
+check("default key XOR [0] = 0^0x41 = 65", default_enc[0], 65)
+check("default key XOR [1] = 1^0x41 = 64", default_enc[1], 64)
+
+# ════════════════════════════════════════════════════════════════════════════
+# SCENARIO 3: Port Scanner Config with ?? and Ternary
+# ════════════════════════════════════════════════════════════════════════════
+
+fn build_scan_config(target, opts):
+    let host    = opts["host"]    ?? target
+    let port    = opts["port"]    ?? 80
+    let ssl     = opts["ssl"]     ?? false
+    let timeout = opts["timeout"] ?? 3000
+    let proto   = ssl ? "HTTPS" : "HTTP"
+    return proto + "://" + host + ":" + toString(port) + " t=" + toString(timeout)
+
+let r1 = build_scan_config("default.com", {"host": "target.com", "port": 443, "ssl": true})
+let r2 = build_scan_config("default.com", {"timeout": 500})
+let r3 = build_scan_config("default.com", {})
+
+check("full config",    r1, "HTTPS://target.com:443 t=3000")
+check("timeout only",   r2, "HTTP://default.com:80 t=500")
+check("empty opts",     r3, "HTTP://default.com:80 t=3000")
+
+# ════════════════════════════════════════════════════════════════════════════
+# SCENARIO 4: Threat Classification with match + ranges
+# ════════════════════════════════════════════════════════════════════════════
+
+fn classify_severity(cvss):
+    match cvss {
+        case 0.0...3.9:  return "LOW"
+        case 4.0...6.9:  return "MEDIUM"
+        case 7.0...8.9:  return "HIGH"
+        case 9.0...10.0: return "CRITICAL"
+        default:         return "UNKNOWN"
+    }
+
+check("CVSS 0.0  = LOW",      classify_severity(0.0),   "LOW")
+check("CVSS 3.9  = LOW",      classify_severity(3.9),   "LOW")
+check("CVSS 5.0  = MEDIUM",   classify_severity(5.0),   "MEDIUM")
+check("CVSS 7.5  = HIGH",     classify_severity(7.5),   "HIGH")
+check("CVSS 9.8  = CRITICAL", classify_severity(9.8),   "CRITICAL")
+check("CVSS 10.0 = CRITICAL", classify_severity(10.0),  "CRITICAL")
+
+# ════════════════════════════════════════════════════════════════════════════
+# SCENARIO 5: Destructuring + Spread in exploit helper
+# ════════════════════════════════════════════════════════════════════════════
+
+fn make_payload(...parts):
+    var result = []
+    for part in parts:
+        for b in part:
+            result = arrayPush(result, b)
+    return result
+
+let header  = b"\x41\x41\x41\x41"
+let body    = b"\x42\x42"
+let trailer = b"\x43"
+
+let full = make_payload(header, body, trailer)
+check("combined payload length", arrayLen(full), 7)
+check("payload[0] = A(65)",  full[0], 65)
+check("payload[4] = B(66)",  full[4], 66)
+check("payload[6] = C(67)",  full[6], 67)
+
+# Spread existing arrays
+let prefix = [0x90, 0x90]
+let suffix = [0xCC, 0xC3]
+let sled = [*prefix, 0xEB, 0x10, *suffix]
+check("sled with spread len", arrayLen(sled), 6)
+check("sled[0] = 144",  sled[0], 144)
+check("sled[2] = 0xEB", sled[2], 0xEB)
+check("sled[5] = 0xC3", sled[5], 0xC3)
+
+# ════════════════════════════════════════════════════════════════════════════
+# SCENARIO 6: Multi-line HTTP payload
+# ════════════════════════════════════════════════════════════════════════════
+
+let http_req = """
+GET /admin HTTP/1.1
+Host: target.com
+Cookie: session=DEADBEEF; role=user
+X-Forwarded-For: 127.0.0.1"""
+
+check("http req has GET",    stringContains(http_req, "GET /admin"), true)
+check("http req has Cookie", stringContains(http_req, "DEADBEEF"),   true)
+check("http req has XFF",    stringContains(http_req, "127.0.0.1"), true)
+
+# ════════════════════════════════════════════════════════════════════════════
+# SCENARIO 7: assert in validation function
+# ════════════════════════════════════════════════════════════════════════════
+
+fn validate_ip(ip):
+    let parts = stringSplit(ip, ".")
+    assert arrayLen(parts) == 4, "IP must have 4 octets"
+    for part in parts:
+        let n = stringToNum(part)
+        assert n >= 0 and n <= 255, "Octet out of range: " + part
+    return true
+
+var ip_ok = false
+try:
+    ip_ok = validate_ip("192.168.1.1")
+catch err:
+    ip_ok = false
+
+check("valid IP passes",  ip_ok, true)
+
+var ip_bad = ""
+try:
+    validate_ip("999.1.2.3")
+catch err:
+    ip_bad = "caught"
+
+check("invalid IP caught", ip_bad, "caught")
+
+# ════════════════════════════════════════════════════════════════════════════
+# RESULTS
+# ════════════════════════════════════════════════════════════════════════════
+print("")
+print("═══════════════════════════════════════")
+print("Master Integration Test Results:")
+print("  Passed: " + toString(passed))
+print("  Failed: " + toString(fail))
+print("═══════════════════════════════════════")
+
+if fail > 0:
+    throw "INTEGRATION TEST FAILED: " + toString(fail) + " checks failed"
+else:
+    print("All integration tests passed!")

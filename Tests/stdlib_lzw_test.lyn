@@ -1,0 +1,27 @@
+﻿# Test LZW compression and decompression
+import "init"
+
+# 1. Compress a simple repeating string
+let testStr = "TOBEORNOTTOBEORTOBEORNOT"
+let compressed = lzw["compress"](testStr)
+
+# Verify compression produces smaller representation
+assert(arrayLen(compressed) < stringLen(testStr), "LZW should compress repeating patterns")
+
+# 2. Decompress and check original string recovery
+let decompressed = lzw["decompress"](compressed)
+assert(decompressed == testStr, "Decompression should perfectly restore the original text")
+
+# 3. Test empty string handling
+let emptyComp = lzw["compress"]("")
+assert(arrayLen(emptyComp) == 0, "Empty string compression is empty array")
+let emptyDecomp = lzw["decompress"]([])
+assert(emptyDecomp == "", "Empty array decompression is empty string")
+
+# 4. Test complex string with various character symbols
+let complexStr = "ABABABABA123!@#123!@#"
+let compComplex = lzw["compress"](complexStr)
+let decompComplex = lzw["decompress"](compComplex)
+assert(decompComplex == complexStr, "Perfect recovery of complex string")
+
+print("PASS: stdlib lzw support")

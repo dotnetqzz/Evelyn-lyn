@@ -1,0 +1,5 @@
+﻿# Var is still mutable
+var counter = 0
+counter = counter + 5
+print(counter)  # 5
+print("PASS: var mutability")

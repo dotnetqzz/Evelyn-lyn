@@ -1,0 +1,10 @@
+﻿# 18. Recursive function with booleans
+def isEven(n) {
+    if n == 0 { return true }
+    if n == 1 { return false }
+    let next = n - 2
+    return isEven(next)
+}
+print(isEven(4))
+print(isEven(7))
+print("PASS: recursion")

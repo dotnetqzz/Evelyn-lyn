@@ -1,0 +1,80 @@
+﻿# Sylvel Standard Library â€” math.lyn
+# Mirrors Python's math module, implemented in Sylvel
+
+def math_abs(x)    { if x < 0 { return -x } return x }
+def math_min(a, b) { if a < b { return a } return b }
+def math_max(a, b) { if a > b { return a } return b }
+def math_clamp(x, lo, hi) { return math_max(lo, math_min(hi, x)) }
+
+def math_sign(x) {
+    if x > 0 { return 1 }
+    if x < 0 { return -1 }
+    return 0
+}
+
+def math_gcd(a, b) {
+    var x = math_abs(a)
+    var y = math_abs(b)
+    while y != 0 {
+        let t = y
+        y = x % y
+        x = t
+    }
+    return x
+}
+
+def math_lcm(a, b) {
+    let g = math_gcd(a, b)
+    if g == 0 { return 0 }
+    return math_abs(a * b) // g
+}
+
+def math_isPrime(n) {
+    if n < 2 { return false }
+    if n == 2 { return true }
+    if n % 2 == 0 { return false }
+    var d = 3
+    while d * d <= n {
+        if n % d == 0 { return false }
+        d = d + 2
+    }
+    return true
+}
+
+def math_factorial(n) {
+    if n <= 1 { return 1 }
+    return n * math_factorial(n - 1)
+}
+
+def math_pow(base, exp) {
+    if exp == 0 { return 1 }
+    var result = 1
+    var b = base
+    var e = exp
+    while e > 0 {
+        if e % 2 == 1 { result = result * b }
+        b = b * b
+        e = e // 2
+    }
+    return result
+}
+
+# Expose as a map (like Python's math module)
+let math = {
+    "abs":       def(x)    => math_abs(x),
+    "min":       def(a, b) => math_min(a, b),
+    "max":       def(a, b) => math_max(a, b),
+    "clamp":     def(x, lo, hi) => math_clamp(x, lo, hi),
+    "sign":      def(x)    => math_sign(x),
+    "gcd":       def(a, b) => math_gcd(a, b),
+    "lcm":       def(a, b) => math_lcm(a, b),
+    "isPrime":   def(n)    => math_isPrime(n),
+    "factorial": def(n)    => math_factorial(n),
+    "pow":       def(b, e) => math_pow(b, e),
+    "round":     def(x)    => mathRound(x),
+    "ceil":      def(x)    => mathCeil(x),
+    "floor":     def(x)    => mathFloor(x),
+    "pi":        3.141592653589793,
+    "e":         2.718281828459045,
+    "inf":       1.0 / 0.0,
+}

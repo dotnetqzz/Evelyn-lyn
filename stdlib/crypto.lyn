@@ -1,0 +1,23 @@
+﻿# Avelyn Standard Library: crypto
+# Provides cryptographic hashing, encryption, and secure randoms.
+
+let crypto = {
+    "sha256": fn(data) => sha256(data),
+    "sha512": fn(data) => sha512(data),
+    "sha1": fn(data) => sha1(data),
+    "md5": fn(data) => md5(data),
+    
+    "hmac": fn(alg, key, msg) => hmac(alg, key, msg),
+    
+    "aesEncrypt": fn(mode, key, ivOrData, data=null) => aesEncrypt(mode, key, ivOrData, data),
+    "aesDecrypt": fn(mode, key, ivOrData, data=null) => aesDecrypt(mode, key, ivOrData, data),
+    
+    "randomBytes": fn(len) => randomBytes(len),
+    "randomInt": fn(min, max) => randomInt(min, max),
+    
+    "uuid": fn() => uuidV4(),
+    "hexEncode": fn(data) => hexEncode(data),
+    "hexDecode": fn(str) => hexDecode(str),
+    "base64Encode": fn(data) => base64Encode(data),
+    "base64Decode": fn(str) => base64Decode(str)
+}

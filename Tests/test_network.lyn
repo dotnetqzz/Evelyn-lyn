@@ -1,0 +1,87 @@
+﻿import "net"
+
+var fail = 0
+var passed = 0
+
+fn check(name, actual, expected):
+    if jsonStringify(actual) == jsonStringify(expected):
+        passed += 1
+        print("PASS: " + name)
+    else:
+        fail += 1
+        print("FAIL: " + name + " — got " + jsonStringify(actual) + " expected " + jsonStringify(expected))
+
+print("Testing Network Module (Phase 2)...")
+
+# 1. DNS Lookup
+let ips = net["dnsLookup"]("localhost")
+if arrayLen(ips) > 0:
+    let isLocalhost = ips[0] == "127.0.0.1" or ips[0] == "::1"
+    check("dnsLookup localhost", isLocalhost, true)
+else:
+    fail += 1
+    print("FAIL: dnsLookup returned empty array for localhost")
+
+# 2. UDP self-message
+let srvUdp = net["udpSocket"]()
+let bound = net["udpBind"](srvUdp, "127.0.0.1", 9991)
+check("udpBind success", bound, true)
+
+let cliUdp = net["udpSocket"]()
+let sentUdp = net["sendTo"](cliUdp, "127.0.0.1", 9991, b"hello")
+check("udp sendTo success", sentUdp, true)
+
+let rcvUdp = net["recvFrom"](srvUdp, 1024)
+check("recvFrom got data", arrayLen(rcvUdp) > 0, true)
+if arrayLen(rcvUdp) == 3:
+    check("recvFrom payload", rcvUdp[0], b"hello")
+    check("recvFrom ip", rcvUdp[1], "127.0.0.1")
+else:
+    fail += 1
+    print("FAIL: recvFrom did not return [data, ip, port]")
+
+net["close"](srvUdp)
+net["close"](cliUdp)
+
+# 3. TCP Server/Client (Non-blocking)
+let tcpSrv = net["tcpListen"]("127.0.0.1", 9992)
+check("tcpListen returns valid ID", tcpSrv > 0, true)
+net["setNonBlocking"](tcpSrv, true)
+
+let tcpCli = net["tcpConnect"]("127.0.0.1", 9992)
+check("tcpConnect success", tcpCli > 0, true)
+
+let accepted = net["accept"](tcpSrv)
+check("tcpAccept returns info", arrayLen(accepted) == 3, true)
+
+if arrayLen(accepted) == 3:
+    let accSock = accepted[0]
+    
+    # Send from client to server (binary)
+    net["send"](tcpCli, b"\xDE\xAD\xBE\xEF")
+    
+    # Read from accepted socket
+    # Give a tiny sleep to allow loopback to deliver
+    var tcpRcv = []
+    var tries = 0
+    while arrayLen(tcpRcv) == 0 and tries < 5 {
+        tcpRcv = net["recv"](accSock, 1024)
+        tries += 1
+    }
+    check("tcp recv binary", tcpRcv, b"\xDE\xAD\xBE\xEF")
+    
+    net["close"](accSock)
+
+net["close"](tcpCli)
+net["close"](tcpSrv)
+
+# 4. Port Scan (Test against a known open port: 53 or 80 or just a local dummy)
+let dummySrv = net["tcpListen"]("127.0.0.1", 9993)
+let openPorts = net["portScan"]("127.0.0.1", 9990, 9995, 200)
+# Port 9993 must be open
+let found = arrayIndexOf(openPorts, 9993) >= 0
+check("portScan finds open port", found, true)
+net["close"](dummySrv)
+
+print("\nNetwork Tests: " + toString(passed) + " passed, " + toString(fail) + " failed")
+if fail > 0: throw "Network tests failed!"

@@ -1,0 +1,18 @@
+﻿# Sylvel Standard Library — os.lyn
+# Replicates CPython's os and os.path module
+
+import "io"
+
+let os_path = {
+    "exists":   def(p) => io["exists"](p),
+    "basename": def(p) => path["basename"](p),
+    "ext":      def(p) => path["ext"](p),
+    "join":     def(parts) => path["join"](parts),
+}
+
+let os = {
+    "path":    os_path,
+    "system":  def(cmd, args) => sysExecute(cmd, args),
+    "environ": def(key) => sysEnv(key),
+    "listdir": def(p) => io["listDir"](p),
+}

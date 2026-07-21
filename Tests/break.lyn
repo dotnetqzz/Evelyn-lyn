@@ -1,0 +1,10 @@
+﻿# 8. break
+var found = 0
+for i in 0..10 {
+    if i == 5 {
+        found = i
+        break
+    }
+}
+print(found)
+print("PASS: break statement")

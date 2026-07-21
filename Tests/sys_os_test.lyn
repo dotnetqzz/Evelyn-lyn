@@ -1,0 +1,25 @@
+﻿# Test CPython-style sys and os modules
+import "init"
+
+# 1. Test sys.argv
+let argv = sys["argv"]
+assert(arrayLen(argv) >= 1, "sys.argv should contain executable name")
+
+# 2. Test platform
+let osName = platform["system"]()
+let arch = platform["architecture"]()
+print("Running on: " + osName + " (" + arch + ")")
+assert(osName == "windows" || osName == "darwin" || osName == "linux", "Supported platforms")
+
+# 3. Test os.path
+let pathParts = ["foo", "bar", "baz.lyn"]
+let joined = os["path"]["join"](pathParts)
+print(joined)
+
+let base = os["path"]["basename"](joined)
+assert(base == "baz.lyn", "basename check")
+
+let extension = os["path"]["ext"](joined)
+assert(extension == ".lyn", "ext check")
+
+print("PASS: sys and os platform integration")

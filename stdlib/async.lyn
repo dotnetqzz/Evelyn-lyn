@@ -1,0 +1,114 @@
+﻿# Sylvel Standard Library — async.lyn
+# Cooperative multitasking event loop and Promises
+
+# Global event queue
+var _eventQueue = []
+
+def asyncDelay(ms, callback) {
+    let executeAt = timeMs() + ms
+    arrayAppend(_eventQueue, {"executeAt": executeAt, "fn": callback})
+}
+
+def asyncRunQueue() {
+    # Run all pending delayed tasks cooperatively
+    while arrayLen(_eventQueue) > 0 {
+        let currTime = timeMs()
+        var nextQueue = []
+        for task in _eventQueue {
+            if currTime >= task["executeAt"] {
+                let callback = task["fn"]
+                callback()
+            } else {
+                arrayAppend(nextQueue, task)
+            }
+        }
+        _eventQueue = nextQueue
+        if arrayLen(_eventQueue) > 0 {
+            timeSleep(5) # Cooperative yield (5ms sleep)
+        }
+    }
+}
+
+# JavaScript-style Promises
+def asyncPromise(executor) {
+    var _state = "pending" # "pending", "fulfilled", "rejected"
+    var _value = null
+    var _thenCallbacks = []
+    var _catchCallbacks = []
+
+    let resolve = def(val) {
+        if _state != "pending" { return }
+        _state = "fulfilled"
+        _value = val
+        for cb in _thenCallbacks {
+            asyncDelay(0, def() { cb(_value) })
+        }
+    }
+
+    let reject = def(err) {
+        if _state != "pending" { return }
+        _state = "rejected"
+        _value = err
+        for cb in _catchCallbacks {
+            asyncDelay(0, def() { cb(_value) })
+        }
+    }
+
+    # Execute the executor immediately
+    try {
+        executor(resolve, reject)
+    } catch e {
+        reject(e)
+    }
+
+    let then = def(onFulfilled) {
+        let pNext = asyncPromise(def(resNext, rejNext) {
+            let cb = def(val) {
+                try {
+                    let result = onFulfilled(val)
+                    resNext(result)
+                } catch e {
+                    rejNext(e)
+                }
+            }
+            if _state == "fulfilled" {
+                asyncDelay(0, def() { cb(_value) })
+            } else if _state == "pending" {
+                arrayAppend(_thenCallbacks, cb)
+            }
+        })
+        return pNext
+    }
+
+    let catchFn = def(onRejected) {
+        let pNext = asyncPromise(def(resNext, rejNext) {
+            let cb = def(err) {
+                try {
+                    let result = onRejected(err)
+                    resNext(result)
+                } catch e {
+                    rejNext(e)
+                }
+            }
+            if _state == "rejected" {
+                asyncDelay(0, def() { cb(_value) })
+            } else if _state == "pending" {
+                arrayAppend(_catchCallbacks, cb)
+            }
+        })
+        return pNext
+    }
+
+    return {
+        "then":  then,
+        "catch": catchFn,
+        "state": def() => _state,
+        "value": def() => _value,
+    }
+}
+
+let async = {
+    "promise": asyncPromise,
+    "delay":   def(ms, callback) => asyncDelay(ms, callback),
+    "loop":    asyncRunQueue,
+}

@@ -1,0 +1,26 @@
+﻿# Test object-oriented pathlib interface
+import "init"
+
+let testFile = "_pathlib_temp.txt"
+
+# 1. Test basic Path building
+let p = pathlib["Path"](testFile)
+assert(p["str"] == testFile, "Path str match")
+assert(p["basename"]() == testFile, "Path basename match")
+assert(p["ext"]() == ".txt", "Path ext match")
+
+# 2. Test exists and writes
+if p["exists"]() {
+    sysRemoveFile(testFile)
+}
+
+assert(p["exists"]() == false, "file should not exist initially")
+
+p["write"]("pathlib data payload")
+assert(p["exists"]() == true, "file exists after write")
+assert(p["read"]() == "pathlib data payload", "content matches")
+
+# Cleanup
+sysRemoveFile(testFile)
+
+print("PASS: stdlib pathlib support")

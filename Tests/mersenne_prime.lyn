@@ -1,0 +1,76 @@
+﻿# Isolated test for mersenne prime classification
+import "init"
+
+# --- HELPER FUNCTIONS ---
+def get_digits(n) {
+    let s = toString(n)
+    let chars = stringSplit(s, "")
+    var out = []
+    for c in chars {
+        let digitVal = toNumber(c)
+        if isNumber(digitVal) {
+            let updated = arrayAppend(out, digitVal)
+            out = updated
+        }
+    }
+    return out
+}
+
+def sum_digits(n) {
+    var total = 0
+    for d in get_digits(n) { total = total + d }
+    return total
+}
+
+def is_perfect_square(n) {
+    if n < 0 { return false }
+    let s = mathRound(mathSqrt(n))
+    return s * s == n
+}
+
+def is_perfect_cube(n) {
+    if n < 0 {
+        let absVal = -n
+        let c = mathRound(mathPow(absVal, 1.0 / 3.0))
+        return c * c * c == absVal
+    }
+    let c = mathRound(mathPow(n, 1.0 / 3.0))
+    return c * c * c == n
+}
+
+def proper_divisors_sum(n) {
+    if n <= 1 { return 0 }
+    var total = 0
+    var i = 1
+    while i < n {
+        if n % i == 0 { total = total + i }
+        i = i + 1
+    }
+    return total
+}
+
+def get_prime_factors(n) {
+    var temp = n
+    var factors = []
+    var d = 2
+    while d * d <= temp {
+        while temp % d == 0 {
+            let updated = arrayAppend(factors, d)
+            factors = updated
+            temp = temp // d
+        }
+        d = d + 1
+    }
+    if temp > 1 {
+        let updated = arrayAppend(factors, temp)
+        factors = updated
+    }
+    return factors
+}
+
+# --- TEST ---
+def is_prime(n) { return math["isPrime"](n) }
+def is_mersenne_prime(n) { if not is_prime(n) { return false }; var k = 2; while k <= n + 1 { if math["pow"](2, k) - 1 == n { return true }; k = k + 1 }; return false }
+assert(is_mersenne_prime(7) == true, "7 is mersenne prime")
+
+print("PASS: mersenne prime classification")

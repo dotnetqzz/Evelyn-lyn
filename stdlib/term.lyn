@@ -1,0 +1,67 @@
+﻿# Sylvel Standard Library — term.lyn
+# Terminal styling and coloring using ANSI escape codes
+
+let term_codes = {
+    "reset":      "\u001b[0m",
+    "bold":       "\u001b[1m",
+    "dim":        "\u001b[2m",
+    "underline":  "\u001b[4m",
+    "blink":      "\u001b[5m",
+    "reverse":    "\u001b[7m",
+    
+    # Foreground colors
+    "black":      "\u001b[30m",
+    "red":        "\u001b[31m",
+    "green":      "\u001b[32m",
+    "yellow":     "\u001b[33m",
+    "blue":       "\u001b[34m",
+    "magenta":    "\u001b[35m",
+    "cyan":       "\u001b[36m",
+    "white":      "\u001b[37m",
+    
+    # Background colors
+    "bgBlack":    "\u001b[40m",
+    "bgRed":      "\u001b[41m",
+    "bgGreen":    "\u001b[42m",
+    "bgYellow":   "\u001b[43m",
+    "bgBlue":     "\u001b[44m",
+    "bgMagenta":  "\u001b[45m",
+    "bgCyan":     "\u001b[46m",
+    "bgWhite":    "\u001b[47m"
+}
+
+def term_format(code, text) {
+    if not mapHas(term_codes, code) { return text }
+    return mapGet(term_codes, code) + text + mapGet(term_codes, "reset")
+}
+
+def term_print(code, text) {
+    print(term_format(code, text))
+}
+
+let term = {
+    "codes":      term_codes,
+    "format":     def(code, text) => term_format(code, text),
+    "print":      def(code, text) => term_print(code, text),
+    
+    # Shortcuts
+    "red":        def(text) => term_format("red", text),
+    "green":      def(text) => term_format("green", text),
+    "yellow":     def(text) => term_format("yellow", text),
+    "blue":       def(text) => term_format("blue", text),
+    "cyan":       def(text) => term_format("cyan", text),
+    "bold":       def(text) => term_format("bold", text),
+    "underline":  def(text) => term_format("underline", text),
+    "dim":        def(text) => term_format("dim", text),
+    "blink":      def(text) => term_format("blink", text),
+    "reverse":    def(text) => term_format("reverse", text),
+    
+    "printRed":    def(text) => term_print("red", text),
+    "printGreen":  def(text) => term_print("green", text),
+    "printYellow": def(text) => term_print("yellow", text),
+    "printBlue":   def(text) => term_print("blue", text),
+    "printCyan":   def(text) => term_print("cyan", text),
+    
+    "clear":       def() { print("\u001b[2J\u001b[H") },
+    "moveCursor":  def(row, col) { print("\u001b[" + numToString(row) + ";" + numToString(col) + "H") },
+}

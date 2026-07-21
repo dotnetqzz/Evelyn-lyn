@@ -1,0 +1,41 @@
+﻿# Sylvel Standard Library — dotenv.lyn
+# Load .env files into a map and optionally into sysEnv-like access
+
+def dotenvLoad(path) {
+    let result = {}
+    if isNull(path) { path = ".env" }
+    let content = fileRead(path)
+    if isNull(content) { return result }
+    let lines = stringSplitLines(content)
+    for line in lines {
+        let trimmed = stringTrim(line)
+        if stringLen(trimmed) == 0 { continue }
+        if stringStartsWith(trimmed, "#") { continue }
+        let eqIdx = stringIndexOf(trimmed, "=")
+        if eqIdx < 0 { continue }
+        let key = stringTrim(stringSub(trimmed, 0, eqIdx))
+        var val = stringTrim(stringSub(trimmed, eqIdx + 1, stringLen(trimmed) - eqIdx - 1))
+        # Strip surrounding quotes
+        if stringLen(val) >= 2 {
+            if (stringStartsWith(val, "\"") and stringEndsWith(val, "\"")) or
+               (stringStartsWith(val, "'") and stringEndsWith(val, "'")) {
+                val = stringSub(val, 1, stringLen(val) - 2)
+            }
+        }
+        mapSet(result, key, val)
+    }
+    return result
+}
+
+# Get a value from the loaded env map, falling back to system env
+def dotenvGet(envMap, key, defaultVal) {
+    if mapHas(envMap, key) { return mapGet(envMap, key) }
+    let sysVal = env(key)
+    if not isNull(sysVal) { return sysVal }
+    return defaultVal
+}
+
+let dotenv = {
+    "load": dotenvLoad,
+    "get":  dotenvGet,
+}

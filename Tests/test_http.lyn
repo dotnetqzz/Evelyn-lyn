@@ -1,0 +1,68 @@
+﻿import "http"
+
+var passed = 0
+var fail = 0
+
+fn check(name, actual, expected):
+    if actual == expected:
+        passed += 1
+        print("PASS: " + name)
+    else:
+        fail += 1
+        print("FAIL: " + name + " — got " + toString(actual) + " expected " + toString(expected))
+
+print("Testing HTTP Pentest Module (Phase 5)...")
+
+# 1. URL Encoding
+check("urlEncode basic", http["urlEncode"]("hello world!"), "hello%20world!")
+check("urlDecode basic", http["urlDecode"]("hello%20world!"), "hello world!")
+
+# 2. HTTP Request GET
+# We use example.com which is public and reliable for testing HTTP clients.
+let resp = http["get"]("https://example.com")
+check("httpRequest status 200", resp["status"], 200)
+check("httpRequest body present", string["len"](resp["body"]) > 10, true)
+
+# 3. HTTP Request POST
+let postResp = http["post"]("https://postman-echo.com/post", "test_body=123", {"Content-Type": "application/x-www-form-urlencoded"})
+check("httpRequest POST status 200", postResp["status"], 200)
+
+# 4. Cookie Jar
+let jar = http["cookieJar"]()
+jar["set"]("session", "abc123xyz")
+check("CookieJar get", jar["get"]("session"), "abc123xyz")
+
+# Test CookieJar inject
+let opts = {"url": "https://httpbin.org/cookies"}
+let injected = jar["inject"](opts)
+print("CookieJar inject: " + toString(injected))
+let cookieHdr = injected["headers"]["Cookie"]
+check("CookieJar inject", cookieHdr, "session=abc123xyz")
+
+# Test CookieJar extract
+let mockResp = {
+    "headers": {
+        "Set-Cookie": "PHPSESSID=99999; path=/"
+    }
+}
+jar["extract"](mockResp)
+check("CookieJar extract", jar["get"]("PHPSESSID"), "99999")
+
+# 5. Concurrent Directory Brute Forcing (Dry-run test using local loopback logic)
+var foundDirs = []
+let results = http["dirBrute"]("https://httpbin.org/status", ["200", "404", "500"], {
+    "threads": 3
+})
+
+for res in results {
+    if res["status"] == 200 {
+        foundDirs = arrayAppend(foundDirs, res["url"])
+    }
+}
+print("dirBrute results: " + toString(results))
+
+check("dirBrute concurrent success", arrayLen(foundDirs) > 0, true)
+
+
+print("\nHTTP Tests: " + toString(passed) + " passed, " + toString(fail) + " failed")
+if fail > 0: throw "HTTP tests failed!"

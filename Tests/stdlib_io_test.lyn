@@ -1,0 +1,43 @@
+﻿# Test io and path native utilities
+import "init"
+
+let testFile = "_io_test_temp.txt"
+let testDir = "_io_test_temp_dir"
+
+# 1. Test basic file existence and I/O
+if io["exists"](testFile) {
+    sysRemoveFile(testFile)
+}
+
+assert(io["exists"](testFile) == false, "file should not exist initially")
+
+io["write"](testFile, "hello sylvel filesystem integration")
+assert(io["exists"](testFile) == true, "file should exist after write")
+assert(io["size"](testFile) == 35, "size check")
+
+let content = io["read"](testFile)
+assert(content == "hello sylvel filesystem integration", "read match")
+
+# 2. Test directory utilities
+if io["dirExists"](testDir) {
+    sysRemoveFile(testDir)
+}
+
+io["mkdir"](testDir)
+assert(io["dirExists"](testDir) == true, "directory created successfully")
+
+let dirItems = io["listDir"](".")
+assert(arrayLen(dirItems) > 0, "listdir contains items")
+
+# 3. Test path utilities
+let joined = path["join"](["dir", "subdir", "file.lyn"])
+assert(path["basename"](joined) == "file.lyn", "basename check")
+assert(path["dirname"](joined) == "dir/subdir", "dirname check")
+assert(path["ext"](joined) == ".lyn", "ext check")
+assert(path["noExt"](joined) == "dir/subdir/file", "noExt check")
+
+# Cleanup
+sysRemoveFile(testFile)
+sysRemoveFile(testDir)
+
+print("PASS: stdlib io support")

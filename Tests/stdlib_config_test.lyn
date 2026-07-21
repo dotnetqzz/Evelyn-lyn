@@ -1,0 +1,34 @@
+﻿# Test config management utilities
+import "init"
+
+let mockConfig = {
+    "app": {
+        "port": "8080",
+        "debug": "true",
+        "name": "SylvelApp",
+    }
+}
+
+# 1. Test standard string getter
+assert(config["get"](mockConfig, "app.name", "Default") == "SylvelApp", "get exact value")
+assert(config["get"](mockConfig, "app.missing", "Fallback") == "Fallback", "get fallback value")
+
+# 2. Test typed getInt
+assert(config["getInt"](mockConfig, "app.port", 3000) == 8080, "getInt port parse")
+assert(config["getInt"](mockConfig, "app.missing", 3000) == 3000, "getInt fallback")
+
+# 3. Test typed getBool
+assert(config["getBool"](mockConfig, "app.debug", false) == true, "getBool debug parse")
+
+# 4. Test required validator
+assert(config["required"](mockConfig, "app.name") == "SylvelApp", "required check succeeds")
+
+var threw = false
+try {
+    config["required"](mockConfig, "app.db")
+} catch e {
+    threw = true
+}
+assert(threw == true, "required check throws on missing")
+
+print("PASS: stdlib config support")

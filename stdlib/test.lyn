@@ -1,0 +1,103 @@
+﻿# Sylvel Standard Library — test.lyn
+# pytest-like test framework
+
+var _testPassed = 0
+var _testFailed = 0
+var _testSuite  = "Default"
+var _testErrors = []
+
+def describe(suiteName, callback) {
+    _testSuite = suiteName
+    print("\n[" + suiteName + "]")
+    callback()
+}
+
+def it(name, callback) {
+    try {
+        callback()
+        _testPassed += 1
+        print("  ✓ " + name)
+    } catch e {
+        _testFailed += 1
+        let msg = "  ✗ " + name + " → " + toString(e)
+        print(msg)
+        arrayAppend(_testErrors, msg)
+    }
+}
+
+def expect(actual) {
+    return {
+        "toBe": def(expected) {
+            if not deepEqual(actual, expected) {
+                throw "Expected " + toString(expected) + " but got " + toString(actual)
+            }
+        },
+        "toEqual": def(expected) {
+            if not deepEqual(actual, expected) {
+                throw "Expected " + jsonStringify(expected) + " but got " + jsonStringify(actual)
+            }
+        },
+        "toBeNull": def() {
+            if not isNull(actual) {
+                throw "Expected null but got " + toString(actual)
+            }
+        },
+        "toBeTrue": def() {
+            if actual != true {
+                throw "Expected true but got " + toString(actual)
+            }
+        },
+        "toBeFalse": def() {
+            if actual != false {
+                throw "Expected false but got " + toString(actual)
+            }
+        },
+        "toContain": def(item) {
+            if isArray(actual) {
+                if not arrayContains(actual, item) {
+                    throw "Expected array to contain " + toString(item)
+                }
+            } else if isString(actual) {
+                if not stringContains(actual, item) {
+                    throw "Expected string to contain '" + item + "'"
+                }
+            }
+        },
+        "toThrow": def(callback) {
+            var threw = false
+            try { callback() } catch e { threw = true }
+            if not threw { throw "Expected function to throw but it didn't" }
+        },
+        "toBeGreaterThan": def(n) {
+            if not (actual > n) { throw toString(actual) + " is not greater than " + toString(n) }
+        },
+        "toBeLessThan": def(n) {
+            if not (actual < n) { throw toString(actual) + " is not less than " + toString(n) }
+        },
+        "toHaveLength": def(n) {
+            var len = 0
+            if isArray(actual) { len = arrayLen(actual) }
+            else { len = stringLen(actual) }
+            if len != n { throw "Expected length " + toString(n) + " but got " + toString(len) }
+        },
+    }
+}
+
+def testSummary() {
+    let total = _testPassed + _testFailed
+    print("\nTest Results: " + numToString(_testPassed) + "/" + numToString(total) + " passed")
+    if _testFailed > 0 {
+        print("FAILURES:")
+        for e in _testErrors { print(e) }
+    } else {
+        print("All tests passed!")
+    }
+    return _testFailed == 0
+}
+
+let test = {
+    "describe": describe,
+    "it":       it,
+    "expect":   expect,
+    "summary":  testSummary,
+}

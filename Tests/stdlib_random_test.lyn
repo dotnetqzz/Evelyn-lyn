@@ -1,0 +1,36 @@
+﻿# Test random module features
+import "init"
+
+# 1. Test CSPRNG float
+let d = random["random"]()
+assert(d >= 0.0 && d < 1.0, "secure double range")
+
+# 2. Test CSPRNG randint
+let i = random["randint"](50, 100)
+assert(i >= 50 && i <= 100, "secure randint range")
+
+# 3. Test uniform distribution
+let u = random["uniform"](10.5, 20.5)
+assert(u >= 10.5 && u <= 20.5, "secure uniform range")
+
+# 4. Test list choice
+let choices = ["foo", "bar", "baz"]
+let chosen = random["choice"](choices)
+assert(chosen == "foo" || chosen == "bar" || chosen == "baz", "secure choice selection")
+
+# 5. Test array shuffle
+let arr = [1, 2, 3, 4, 5]
+let shuffled = random["shuffle"](arr)
+assert(arrayLen(shuffled) == 5, "shuffle maintains length")
+for x in arr {
+    assert(arrayContains(shuffled, x), "shuffle maintains elements")
+}
+
+# 6. Test secure sample
+let sampled = random["sample"](arr, 3)
+assert(arrayLen(sampled) == 3, "sample length check")
+for x in sampled {
+    assert(arrayContains(arr, x), "sample draws from population")
+}
+
+print("PASS: stdlib random support")

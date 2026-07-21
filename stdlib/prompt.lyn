@@ -1,0 +1,87 @@
+﻿# Sylvel Standard Library — prompt.lyn
+# Interactive Command Line prompt, question, and selection helpers
+
+import "term"
+
+def prompt_input(question, defaultVal) {
+    var qStr = "\u001b[36m? \u001b[0m\u001b[1m" + question + "\u001b[0m"
+    if not isNull(defaultVal) {
+        print(qStr + " (" + numToString(defaultVal) + "): ")
+    } else {
+        print(qStr + ": ")
+    }
+
+    let res = sysReadLine()
+    let trimmed = stringTrim(res)
+    if stringLen(trimmed) == 0 and not isNull(defaultVal) {
+        return defaultVal
+    }
+    return trimmed
+}
+
+def prompt_confirm(question, defaultVal) {
+    var promptSuffix = " [y/n]"
+    if not isNull(defaultVal) {
+        if defaultVal {
+            promptSuffix = " [Y/n]"
+        } else {
+            promptSuffix = " [y/N]"
+        }
+    }
+
+    let qStr = "\u001b[36m? \u001b[0m\u001b[1m" + question + "\u001b[0m\u001b[2m" + promptSuffix + "\u001b[0m: "
+    print(qStr)
+
+    let res = sysReadLine()
+    let clean = stringToLower(stringTrim(res))
+
+    if stringLen(clean) == 0 and not isNull(defaultVal) {
+        return defaultVal
+    }
+
+    if clean == "y" or clean == "yes" {
+        return true
+    }
+    return false
+}
+
+def prompt_select(question, options) {
+    let qStr = "\u001b[36m? \u001b[0m\u001b[1m" + question + "\u001b[0m:"
+    print(qStr)
+
+    let len = arrayLen(options)
+    var i = 0
+    while i < len {
+        let optNum = "\u001b[32m" + numToString(i + 1) + ")\u001b[0m"
+        print("  " + optNum + " " + numToString(options[i]))
+        i = i + 1
+    }
+
+    var choice = -1
+    while choice < 1 or choice > len {
+        print("\u001b[2mEnter number (1-" + numToString(len) + "): \u001b[0m")
+        let res = sysReadLine()
+        let numVal = stringToNum(stringTrim(res))
+        if not isNull(numVal) {
+            choice = numVal
+        }
+    }
+
+    return options[choice - 1]
+}
+
+def prompt_password(question) {
+    let qStr = "\u001b[36m? \u001b[0m\u001b[1m" + question + "\u001b[0m: "
+    print(qStr)
+    return sysReadLine()
+}
+
+let prompt = {
+    "askInput":   prompt_input,
+    "input":      prompt_input,
+    "askConfirm": prompt_confirm,
+    "confirm":    prompt_confirm,
+    "askSelect":  prompt_select,
+    "select":     prompt_select,
+    "password":   prompt_password,
+}

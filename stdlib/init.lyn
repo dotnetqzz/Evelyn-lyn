@@ -1,0 +1,76 @@
+# Sylvel Standard Library — init.lyn
+# Consolidated loader — imports all standard modules
+
+# Core system
+import "sys.lyn"
+import "os.lyn"
+
+# Networking
+import "socket.lyn"
+import "http.lyn"
+import "urllib.lyn"
+
+# Web framework & Pentesting
+import "web.lyn"
+import "middleware.lyn"
+import "websec.lyn"
+
+# Data formats
+import "json.lyn"
+import "xml.lyn"
+import "csv.lyn"
+import "base64.lyn"
+import "hex.lyn"
+
+# Math & strings
+import "math.lyn"
+import "string.lyn"
+
+# Collections & arrays
+import "array.lyn"
+import "collections.lyn"
+
+# Time & date
+import "time.lyn"
+import "datetime.lyn"
+
+# Randomness & cryptography
+import "random.lyn"
+import "hashlib.lyn"
+import "secrets.lyn"
+
+# I/O & filesystem
+import "io.lyn"
+import "glob.lyn"
+import "shutil.lyn"
+
+# Utilities
+import "re.lyn"
+import "platform.lyn"
+import "dotenv.lyn"
+import "async.lyn"
+import "functional.lyn"
+import "uuid.lyn"
+import "pathlib.lyn"
+
+# Developer tools
+import "validate.lyn"
+import "template.lyn"
+import "logger.lyn"
+import "test.lyn"
+import "config.lyn"
+import "term.lyn"
+import "cli.lyn"
+import "lzw.lyn"
+import "prompt.lyn"
+
+# Global helper functions
+def env(key) {
+    return sysEnv(key)
+}
+
+def toString(v, rad) {
+    if not isNull(rad) { return numToString(v, rad) }
+    return numToString(v)
+}
+

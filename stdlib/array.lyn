@@ -1,0 +1,189 @@
+﻿# Sylvel Standard Library array.lyn
+# Array utilities implemented in Sylvel
+
+def arr_range(start, stop, step) {
+    var st = step
+    if isNull(st) { st = 1 }
+    var out = []
+    var n = start
+    while n < stop {
+        arrayAppend(out, n)
+        n = n + st
+    }
+    return out
+}
+
+def arr_sum(arr) {
+    var total = 0
+    for x in arr { total = total + x }
+    return total
+}
+
+def arr_min(arr) {
+    if arrayLen(arr) == 0 { return null }
+    var m = arr[0]
+    for x in arr { if x < m { m = x } }
+    return m
+}
+
+def arr_max(arr) {
+    if arrayLen(arr) == 0 { return null }
+    var m = arr[0]
+    for x in arr { if x > m { m = x } }
+    return m
+}
+
+def arr_avg(arr) {
+    let n = arrayLen(arr)
+    if n == 0 { return 0 }
+    return arr_sum(arr) / n
+}
+
+def arr_unique(arr) {
+    var out = []
+    for x in arr {
+        if not arrayContains(out, x) { arrayAppend(out, x) }
+    }
+    return out
+}
+
+def arr_flatten(arr) {
+    var out = []
+    for x in arr {
+        if isArray(x) {
+            let sub = arr_flatten(x)
+            for s in sub { arrayAppend(out, s) }
+        } else {
+            arrayAppend(out, x)
+        }
+    }
+    return out
+}
+
+def arr_zip(a, b) {
+    var out = []
+    var n = arrayLen(a)
+    if arrayLen(b) < n { n = arrayLen(b) }
+    var idx = 0
+    while idx < n {
+        arrayAppend(out, [a[idx], b[idx]])
+        idx = idx + 1
+    }
+    return out
+}
+
+def arr_chunk(arr, size) {
+    var out = []
+    var idx = 0
+    let n = arrayLen(arr)
+    while idx < n {
+        var end = idx + size
+        if end > n { end = n }
+        arrayAppend(out, arraySlice(arr, idx, end))
+        idx = idx + size
+    }
+    return out
+}
+
+def arr_groupBy(arr, callback) {
+    var m = {}
+    for x in arr {
+        let key = numToString(callback(x))
+        if not mapHas(m, key) { mapSet(m, key, []) }
+        let group = mapGet(m, key)
+        arrayAppend(group, x)
+        mapSet(m, key, group)
+    }
+    return m
+}
+
+def arr_countBy(arr, callback) {
+    var m = {}
+    for x in arr {
+        let key = numToString(callback(x))
+        if not mapHas(m, key) { mapSet(m, key, 0) }
+        mapSet(m, key, mapGet(m, key) + 1)
+    }
+    return m
+}
+
+def arr_intersection(a, b) {
+    var out = []
+    for x in a {
+        if arrayContains(b, x) {
+            if not arrayContains(out, x) {
+                let updated = arrayAppend(out, x)
+                out = updated
+            }
+        }
+    }
+    return out
+}
+
+def arr_difference(a, b) {
+    var out = []
+    for x in a {
+        if not arrayContains(b, x) {
+            if not arrayContains(out, x) {
+                let updated = arrayAppend(out, x)
+                out = updated
+            }
+        }
+    }
+    return out
+}
+
+def arr_union(a, b) {
+    var out = []
+    for x in a {
+        if not arrayContains(out, x) {
+            let updated = arrayAppend(out, x)
+            out = updated
+        }
+    }
+    for y in b {
+        if not arrayContains(out, y) {
+            let updated = arrayAppend(out, y)
+            out = updated
+        }
+    }
+    return out
+}
+
+def arr_shuffle(arr) {
+    var out = arraySlice(arr, 0, arrayLen(arr))
+    var i = arrayLen(out) - 1
+    while i > 0 {
+        let randVal = sysSecureRandomDouble()
+        let j = mathFloor(randVal * (i + 1))
+        let temp = out[i]
+        out[i] = out[j]
+        out[j] = temp
+        i = i - 1
+    }
+    return out
+}
+
+let array = {
+    "range":        def(start, stop, step) => arr_range(start, stop, step),
+    "sum":          def(arr)               => arr_sum(arr),
+    "min":          def(arr)               => arr_min(arr),
+    "max":          def(arr)               => arr_max(arr),
+    "avg":          def(arr)               => arr_avg(arr),
+    "unique":       def(arr)               => arr_unique(arr),
+    "flatten":      def(arr)               => arr_flatten(arr),
+    "zip":          def(a, b)              => arr_zip(a, b),
+    "chunk":        def(arr, size)         => arr_chunk(arr, size),
+    "groupBy":      def(arr, callback)           => arr_groupBy(arr, callback),
+    "countBy":      def(arr, callback)           => arr_countBy(arr, callback),
+    "contains":     def(arr, x)            => arrayContains(arr, x),
+    "len":          def(arr)               => arrayLen(arr),
+    "join":         def(arr, sep)          => stringJoin(arr, sep),
+    "reverse":      def(arr)               => arrayReverse(arr),
+    "sort":         def(arr)               => arraySort(arr),
+    "slice":        def(arr, a, b)         => arraySlice(arr, a, b),
+    "intersection": def(a, b)              => arr_intersection(a, b),
+    "difference":   def(a, b)              => arr_difference(a, b),
+    "union":        def(a, b)              => arr_union(a, b),
+    "shuffle":      def(arr)               => arr_shuffle(arr),
+}

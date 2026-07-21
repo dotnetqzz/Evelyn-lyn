@@ -1,0 +1,41 @@
+﻿# Test async event loop and Promise resolution
+import "init"
+
+var resolvedVal = ""
+var rejectedErr = ""
+
+# 1. Test basic delayed execution
+async["delay"](10, def() {
+    resolvedVal = "delayed_ok"
+})
+
+# 2. Test Promise resolution
+let p = async["promise"](def(resolve, reject) {
+    async["delay"](20, def() {
+        resolve("promise_ok")
+    })
+})
+
+p["then"](def(val) {
+    assert(val == "promise_ok", "promise then val")
+    return "chained_ok"
+})["then"](def(val) {
+    assert(val == "chained_ok", "promise chain val")
+})
+
+# 3. Test Promise rejection
+let pErr = async["promise"](def(resolve, reject) {
+    reject("error_ok")
+})
+
+pErr["catch"](def(err) {
+    rejectedErr = err
+})
+
+# Run event loop
+async["loop"]()
+
+assert(resolvedVal == "delayed_ok", "async delay execution")
+assert(rejectedErr == "error_ok", "promise catch execution")
+
+print("PASS: stdlib async support")

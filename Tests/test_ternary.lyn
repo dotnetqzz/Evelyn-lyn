@@ -1,0 +1,82 @@
+﻿# Avelyn Language — Ternary Expression Test
+# Tests: condition ? thenExpr : elseExpr
+
+var passed = 0
+var fail = 0
+fn check(name, got, expected):
+    if got == expected:
+        passed += 1
+    else:
+        fail += 1
+        print("FAIL: " + name + " — got " + toString(got) + " expected " + toString(expected))
+
+# ── Basic ternary ─────────────────────────────────────────────────────────────
+check("true  branch", true  ? "yes" : "no", "yes")
+check("false branch", false ? "yes" : "no", "no")
+check("1==1 true",    1 == 1 ? "equal" : "diff", "equal")
+check("1==2 false",   1 == 2 ? "equal" : "diff", "diff")
+
+# ── With variables ────────────────────────────────────────────────────────────
+let x = 42
+let label = x > 10 ? "big" : "small"
+check("variable condition", label, "big")
+
+let score = 95
+let grade = score >= 90 ? "A" : score >= 80 ? "B" : score >= 70 ? "C" : "F"
+check("chained ternary A",    grade, "A")
+
+let score2 = 75
+let grade2 = score2 >= 90 ? "A" : score2 >= 80 ? "B" : score2 >= 70 ? "C" : "F"
+check("chained ternary C", grade2, "C")
+
+let score3 = 50
+let grade3 = score3 >= 90 ? "A" : score3 >= 80 ? "B" : score3 >= 70 ? "C" : "F"
+check("chained ternary F", grade3, "F")
+
+# ── In expressions ────────────────────────────────────────────────────────────
+let a = 5
+let b = 3
+let max_val = a > b ? a : b
+check("max via ternary", max_val, 5)
+
+let min_val = a < b ? a : b
+check("min via ternary", min_val, 3)
+
+let abs_val = a >= 0 ? a : -a
+check("abs via ternary", abs_val, 5)
+
+let neg = -7
+let abs_neg = neg >= 0 ? neg : -neg
+check("abs negative", abs_neg, 7)
+
+# ── In function calls ─────────────────────────────────────────────────────────
+fn greet(formal):
+    return formal ? "Good day, sir." : "Hey!"
+
+check("formal true",  greet(true),  "Good day, sir.")
+check("formal false", greet(false), "Hey!")
+
+# ── Cybersecurity use cases ───────────────────────────────────────────────────
+let port = 443
+let proto = port == 80 ? "HTTP" : port == 443 ? "HTTPS" : port == 22 ? "SSH" : "unknown"
+check("port 443 = HTTPS", proto, "HTTPS")
+
+let port2 = 22
+let proto2 = port2 == 80 ? "HTTP" : port2 == 443 ? "HTTPS" : port2 == 22 ? "SSH" : "unknown"
+check("port 22 = SSH", proto2, "SSH")
+
+let port3 = 1337
+let proto3 = port3 == 80 ? "HTTP" : port3 == 443 ? "HTTPS" : port3 == 22 ? "SSH" : "unknown"
+check("port 1337 = unknown", proto3, "unknown")
+
+# ── Numeric result ────────────────────────────────────────────────────────────
+let n = 8
+let is_even = n % 2 == 0 ? 1 : 0
+check("even flag", is_even, 1)
+
+let n2 = 7
+let is_even2 = n2 % 2 == 0 ? 1 : 0
+check("odd flag",  is_even2, 0)
+
+print("Ternary tests: " + toString(passed) + " passed, " + toString(fail) + " failed")
+if fail > 0: throw "Some ternary tests failed!"

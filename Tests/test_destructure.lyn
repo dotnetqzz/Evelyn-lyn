@@ -1,0 +1,78 @@
+﻿# Avelyn Language — Destructuring Assignment Test
+
+var passed = 0
+var fail = 0
+fn check(name, got, expected):
+    if got == expected:
+        passed += 1
+    else:
+        fail += 1
+        print("FAIL: " + name + " — got " + toString(got) + " expected " + toString(expected))
+
+# ── Array destructuring ───────────────────────────────────────────────────────
+let [a, b, c] = [1, 2, 3]
+check("array destructure [0]", a, 1)
+check("array destructure [1]", b, 2)
+check("array destructure [2]", c, 3)
+
+let [x, y] = [10, 20, 30, 40]  # extra elements ignored
+check("partial destructure x", x, 10)
+check("partial destructure y", y, 20)
+
+# Fewer vars than elements (shorter binding)
+let [p, q] = [100, 200, 300]
+check("fewer vars p", p, 100)
+check("fewer vars q", q, 200)
+
+# Function returning array → destructure
+fn get_coords():
+    return [37.7749, -122.4194, 0.0]
+
+let [lat, lon, alt] = get_coords()
+check("coord lat",  lat,  37.7749)
+check("coord lon",  lon, -122.4194)
+check("coord alt",  alt,  0.0)
+
+# ── Swap via destructuring ────────────────────────────────────────────────────
+var m = 5
+var n = 10
+let tmp = m
+m = n
+n = tmp
+check("swap m", m, 10)
+check("swap n", n, 5)
+
+# ── Map destructuring ─────────────────────────────────────────────────────────
+let config = {"host": "target.com", "port": 443, "ssl": true}
+let {"host": h, "port": prt} = config
+check("map destruct host", h,   "target.com")
+check("map destruct port", prt, 443)
+
+# Map with missing key → null
+let {"missing": mv} = config
+check("map missing key = null", mv, null)
+
+# ── Destructure in loop ───────────────────────────────────────────────────────
+let pairs = [[1, 2], [3, 4], [5, 6]]
+var sum_first = 0
+var sum_second = 0
+for pair in pairs:
+    let [f, s] = pair
+    sum_first  += f
+    sum_second += s
+
+check("loop destruct first",  sum_first,  9)
+check("loop destruct second", sum_second, 12)
+
+# ── Nested array destructuring ────────────────────────────────────────────────
+let matrix = [[1, 2], [3, 4]]
+let [row1, row2] = matrix
+let [r1c1, r1c2] = row1
+let [r2c1, r2c2] = row2
+check("matrix [0][0]", r1c1, 1)
+check("matrix [0][1]", r1c2, 2)
+check("matrix [1][0]", r2c1, 3)
+check("matrix [1][1]", r2c2, 4)
+
+print("Destructuring tests: " + toString(passed) + " passed, " + toString(fail) + " failed")
+if fail > 0: throw "Some destructuring tests failed!"

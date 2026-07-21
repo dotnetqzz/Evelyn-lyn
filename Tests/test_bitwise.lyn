@@ -1,0 +1,103 @@
+﻿# Avelyn Language — Bitwise Operators Test
+# Tests: & | ^ ~ << >> >>> and compound assignment &= |= ^= <<= >>=
+
+var passed = 0
+var fail = 0
+
+fn check(name, got, expected):
+    if got == expected:
+        passed += 1
+    else:
+        fail += 1
+        print("FAIL: " + name + " — got " + toString(got) + " expected " + toString(expected))
+
+# ── Basic bitwise ops ───────────────────────────────────────────────────────
+check("AND 0xFF & 0x0F",    0xFF & 0x0F,    15)
+check("AND 0b1010 & 0b1100", 0b1010 & 0b1100, 8)
+check("OR  0x01 | 0x10",    0x01 | 0x10,    17)
+check("OR  0b0011 | 0b0101", 0b0011 | 0b0101, 7)
+check("XOR 0xFF ^ 0x0F",    0xFF ^ 0x0F,    240)
+check("XOR 0b1010 ^ 0b1100", 0b1010 ^ 0b1100, 6)
+
+# ── Bitwise NOT ─────────────────────────────────────────────────────────────
+check("NOT ~0",    ~0,    -1)
+check("NOT ~1",    ~1,    -2)
+check("NOT ~255",  ~255,  -256)
+check("NOT ~(-1)", ~(-1), 0)
+
+# ── Shift operators ─────────────────────────────────────────────────────────
+check("LSHIFT 1 << 0",  1 << 0,   1)
+check("LSHIFT 1 << 4",  1 << 4,   16)
+check("LSHIFT 1 << 8",  1 << 8,   256)
+check("LSHIFT 3 << 3",  3 << 3,   24)
+check("RSHIFT 16 >> 4", 16 >> 4,  1)
+check("RSHIFT 64 >> 2", 64 >> 2,  16)
+check("RSHIFT 255 >> 4",255 >> 4, 15)
+
+# ── Combined ops (masking, setting, clearing, toggling bits) ─────────────────
+let flags = 0b10110101
+
+# Test bit set (set bit 1)
+check("Set bit",    flags | (1 << 1),  0b10110111)
+# Test bit clear (clear bit 2)
+check("Clear bit",  flags & ~(1 << 2), 0b10110001)
+# Test bit toggle (toggle bit 4)
+check("Toggle bit", flags ^ (1 << 4),  0b10100101)
+# Test bit check (is bit 2 set?)
+check("Check bit",  (flags >> 2) & 1,  1)
+
+# ── Nibble operations ────────────────────────────────────────────────────────
+let byte_val = 0xAB
+check("High nibble", (byte_val >> 4) & 0x0F, 0xA)
+check("Low  nibble",  byte_val & 0x0F,         0xB)
+
+# ── Hex/binary literal combinations ─────────────────────────────────────────
+check("Hex AND",   0xDEAD & 0xFF00, 0xDE00)
+check("Hex OR",    0x0F00 | 0x00FF, 0x0FFF)
+check("Bin XOR",   0b11001100 ^ 0b10101010, 0b01100110)
+
+# ── Compound assignment operators ────────────────────────────────────────────
+var x = 0xFF
+x &= 0x0F
+check("&= compound", x, 15)
+
+var y = 0x01
+y |= 0x80
+check("|= compound", y, 129)
+
+var z = 0xFF
+z ^= 0x0F
+check("^= compound", z, 240)
+
+var s = 1
+s <<= 4
+check("<<= compound", s, 16)
+
+var r = 256
+r >>= 4
+check(">>= compound", r, 16)
+
+# ── Operator precedence: bitwise lower than arithmetic ─────────────────────
+check("Precedence: + before &",  2 + 3 & 7,  5)   # (2+3) & 7 = 5
+check("Precedence: * before |",  2 * 3 | 8, 14)   # (2*3) | 8 = 14
+check("Precedence: & before |", 5 & 3 | 8,   9)   # (5&3) | 8 = 9
+check("Precedence: | before ^", 5 | 3 ^ 6,   5)   # 5|(3^6) = 5|5 = 5
+
+# ── Byte manipulation (security use case) ───────────────────────────────────
+# XOR encrypt a single byte
+fn xor_byte(byte, key): return byte ^ key
+check("XOR encrypt",  xor_byte(0x41, 0x13), 0x52)
+check("XOR decrypt",  xor_byte(0x52, 0x13), 0x41)  # XOR is its own inverse
+
+# Extract byte from 32-bit word
+fn byte_at(word, pos): return (word >> (pos * 8)) & 0xFF
+let word = 0xDEADBEEF
+check("Byte 0 of 0xDEADBEEF", byte_at(word, 0), 0xEF)
+check("Byte 1 of 0xDEADBEEF", byte_at(word, 1), 0xBE)
+check("Byte 2 of 0xDEADBEEF", byte_at(word, 2), 0xAD)
+check("Byte 3 of 0xDEADBEEF", byte_at(word, 3), 0xDE)
+
+# ── Results ──────────────────────────────────────────────────────────────────
+print("Bitwise tests: " + toString(passed) + " passed, " + toString(fail) + " failed")
+if fail > 0:
+    throw "Some bitwise tests failed!"

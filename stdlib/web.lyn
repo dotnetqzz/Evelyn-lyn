@@ -1,0 +1,126 @@
+﻿# Sylvel Standard Library — web.lyn
+# Flask/FastAPI-like web framework
+
+def webApp() {
+    let _id = webCreate()
+    let _middlewares = []
+
+    let use = def(middlewareFn) {
+        arrayAppend(_middlewares, middlewareFn)
+    }
+
+    let get = def(path, handler) {
+        webRoute(_id, "GET", path, handler)
+    }
+
+    let post = def(path, handler) {
+        webRoute(_id, "POST", path, handler)
+    }
+
+    let put = def(path, handler) {
+        webRoute(_id, "PUT", path, handler)
+    }
+
+    let delete = def(path, handler) {
+        webRoute(_id, "DELETE", path, handler)
+    }
+
+    let patch = def(path, handler) {
+        webRoute(_id, "PATCH", path, handler)
+    }
+
+    let any = def(path, handler) {
+        webRoute(_id, "*", path, handler)
+    }
+
+    let json = def(data) {
+        let body = jsonStringify(data)
+        let res = {"body": body, "status": 200, "contentType": "application/json"}
+        return res
+    }
+
+    let text = def(content) {
+        return {"body": content, "status": 200, "contentType": "text/plain"}
+    }
+
+    let html = def(content) {
+        return {"body": content, "status": 200, "contentType": "text/html"}
+    }
+
+    let respond = def(body, status) {
+        return {"body": body, "status": status, "contentType": "application/json"}
+    }
+
+    let run = def(port) {
+        print("[Sylvel Web] Starting server on port " + numToString(port))
+        webServe(_id, port)
+    }
+
+    return {
+        "get":     get,
+        "post":    post,
+        "put":     put,
+        "delete":  delete,
+        "patch":   patch,
+        "any":     any,
+        "use":     use,
+        "json":    json,
+        "text":    text,
+        "html":    html,
+        "respond": respond,
+        "run":     run,
+    }
+}
+
+# Convenience response builders (global)
+def jsonResponse(data) {
+    return {"body": jsonStringify(data), "status": 200, "contentType": "application/json"}
+}
+def jsonError(message, status) {
+    let body = jsonStringify({"error": message})
+    return {"body": body, "status": status, "contentType": "application/json"}
+}
+def htmlResponse(content, status) {
+    return {"body": content, "status": status, "contentType": "text/html"}
+}
+def textResponse(content) {
+    return {"body": content, "status": 200, "contentType": "text/plain"}
+}
+def redirect(location) {
+    let headers = {"Location": location}
+    return {"body": "", "status": 302, "headers": headers}
+}
+
+# Parse query string "key=val&key2=val2" → map
+def parseQuery(qs) {
+    let result = {}
+    if stringLen(qs) == 0 { return result }
+    let pairs = stringSplit(qs, "&")
+    for pair in pairs {
+        let kv = stringSplit(pair, "=")
+        if arrayLen(kv) >= 2 {
+            let key = urlDecode(kv[0])
+            let val = urlDecode(kv[1])
+            mapSet(result, key, val)
+        }
+    }
+    return result
+}
+
+# Parse JSON body from request
+def parseBody(req) {
+    let body = req["body"]
+    if stringLen(body) == 0 { return {} }
+    return jsonParse(body)
+}
+
+let web = {
+    "app":         webApp,
+    "json":        def(data)           => jsonResponse(data),
+    "error":       def(msg, status)    => jsonError(msg, status),
+    "html":        def(content)        => htmlResponse(content, 200),
+    "text":        def(content)        => textResponse(content),
+    "redirect":    def(location)       => redirect(location),
+    "parseQuery":  def(qs)             => parseQuery(qs),
+    "parseBody":   def(req)            => parseBody(req),
+}

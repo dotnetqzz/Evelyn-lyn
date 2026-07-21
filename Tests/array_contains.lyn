@@ -1,0 +1,5 @@
+﻿# 17. arrayContains
+let items = [1, 2, 4, 5]
+print(arrayContains(items, 3))
+print(arrayContains(items, 99))
+print("PASS: array contains")

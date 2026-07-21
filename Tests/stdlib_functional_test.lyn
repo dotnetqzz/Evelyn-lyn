@@ -1,0 +1,32 @@
+﻿# Test functional programming utilities
+import "init"
+
+# 1. Test partial application
+let add = def(a, b, c) => a + b + c
+let addFive = functional["partial"](add, [2, 3])
+assert(addFive(10) == 15, "partial application sum")
+
+# 2. Test memoize
+var callCount = 0
+let double = def(x) {
+    callCount += 1
+    return x * 2
+}
+let memoDouble = functional["memoize"](double)
+assert(memoDouble(5) == 10, "memoize first call")
+assert(memoDouble(5) == 10, "memoize second call")
+assert(callCount == 1, "original function called exactly once due to caching")
+
+# 3. Test pipe
+let plusOne = def(x) => x + 1
+let triple = def(x) => x * 3
+let pipeResult = functional["pipe"](5, [plusOne, triple, plusOne])
+# (5 + 1) * 3 + 1 = 18 + 1 = 19
+assert(pipeResult == 19, "pipe execution sequential left-to-right")
+
+# 4. Test compose
+let composeResultFn = functional["compose"]([plusOne, triple, plusOne])
+# f(g(h(5))) => h(5) = 6 => g(6) = 18 => f(18) = 19
+assert(composeResultFn(5) == 19, "compose execution right-to-left")
+
+print("PASS: stdlib functional support")

@@ -1,0 +1,13 @@
+﻿# Sylvel Standard Library — uuid.lyn
+# Replicates Python's uuid module for UUID generation and validation
+
+def uuid_isValid(uuidStr) {
+    let pat = "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    import "re"
+    return re["fullMatch"](pat, stringToLower(uuidStr))
+}
+
+let uuid = {
+    "uuid4":   def() => uuidV4(),
+    "isValid": def(s) => uuid_isValid(s),
+}

@@ -1,0 +1,70 @@
+﻿# Sylvel Standard Library — datetime.lyn
+# Date and time utilities
+
+def dtNow()                     { return dateNow() }
+def dtFormat(ts, fmt)           { return dateFormat(ts, fmt) }
+def dtParse(s, fmt)             { return dateParse(s, fmt) }
+def dtAdd(ts, amount, unit)     { return dateAdd(ts, amount, unit) }
+
+def dtFromParts(year, month, day) {
+    let s = numToString(year) + "-" + stringPadStart(numToString(month), 2, "0") + "-" + stringPadStart(numToString(day), 2, "0")
+    return dateParse(s, "yyyy-MM-dd")
+}
+
+def dtDiff(ts1, ts2, unit) {
+    let diff = ts2 - ts1
+    if unit == "seconds"  { return diff / 1000 }
+    if unit == "minutes"  { return diff / 60000 }
+    if unit == "hours"    { return diff / 3600000 }
+    if unit == "days"     { return diff / 86400000 }
+    return diff
+}
+
+def dtStartOfDay(ts) {
+    let s = dateFormat(ts, "yyyy-MM-dd")
+    return dateParse(s + " 00:00:00", "yyyy-MM-dd HH:mm:ss")
+}
+
+def dtEndOfDay(ts) {
+    let s = dateFormat(ts, "yyyy-MM-dd")
+    return dateParse(s + " 23:59:59", "yyyy-MM-dd HH:mm:ss")
+}
+
+def dtIsAfter(ts1, ts2)   { return ts1 > ts2 }
+def dtIsBefore(ts1, ts2)  { return ts1 < ts2 }
+def dtIsToday(ts) {
+    let today = dateFormat(dateNow(), "yyyy-MM-dd")
+    let other = dateFormat(ts, "yyyy-MM-dd")
+    return today == other
+}
+
+def dtToISO(ts)   { return dateFormat(ts, "yyyy-MM-dd'T'HH:mm:ss'Z'") }
+def dtToDate(ts)  { return dateFormat(ts, "yyyy-MM-dd") }
+def dtToTime(ts)  { return dateFormat(ts, "HH:mm:ss") }
+
+def dtRelative(ts) {
+    let diff = (dateNow() - ts) / 1000
+    if diff < 60     { return numToString(mathFloor(diff)) + " seconds ago" }
+    if diff < 3600   { return numToString(mathFloor(diff / 60)) + " minutes ago" }
+    if diff < 86400  { return numToString(mathFloor(diff / 3600)) + " hours ago" }
+    if diff < 2592000 { return numToString(mathFloor(diff / 86400)) + " days ago" }
+    return dtToDate(ts)
+}
+
+let datetime = {
+    "now":         dtNow,
+    "format":      dtFormat,
+    "parse":       dtParse,
+    "add":         dtAdd,
+    "diff":        dtDiff,
+    "fromParts":   dtFromParts,
+    "startOfDay":  dtStartOfDay,
+    "endOfDay":    dtEndOfDay,
+    "isAfter":     dtIsAfter,
+    "isBefore":    dtIsBefore,
+    "isToday":     dtIsToday,
+    "toISO":       dtToISO,
+    "toDate":      dtToDate,
+    "toTime":      dtToTime,
+    "relative":    dtRelative,
+}

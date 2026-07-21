@@ -1,0 +1,77 @@
+﻿# Avelyn Language — Null Coalescing (??) Test
+
+var passed = 0
+var fail = 0
+fn check(name, got, expected):
+    if got == expected:
+        passed += 1
+    else:
+        fail += 1
+        print("FAIL: " + name + " — got " + toString(got) + " expected " + toString(expected))
+
+# ── Basic ?? ──────────────────────────────────────────────────────────────────
+let n = null
+check("null ?? fallback", n ?? "default",  "default")
+check("null ?? 0",        n ?? 0,           0)
+check("null ?? null",     n ?? null,         null)
+
+let s = "hello"
+check("non-null ?? ignored", s ?? "ignored", "hello")
+
+let num = 42
+check("number ?? ignored",   num ?? 99, 42)
+
+# ── False-y values are NOT null (only null triggers ??) ─────────────────────
+let zero = 0
+check("zero is not null", zero ?? 99, 0)
+
+let empty_str = ""
+check("empty string not null", empty_str ?? "fallback", "")
+
+let falsy_bool = false
+check("false is not null", falsy_bool ?? true, false)
+
+# ── Chained ?? ────────────────────────────────────────────────────────────────
+let a = null
+let b = null
+let c = "found"
+check("chained: a??b??c", a ?? b ?? c, "found")
+
+let a2 = null
+let b2 = "second"
+let c2 = "third"
+check("chained: a2??b2??c2 = second", a2 ?? b2 ?? c2, "second")
+
+# ── With map access ───────────────────────────────────────────────────────────
+let config = {"host": "target.com", "port": 443}
+let host    = config["host"] ?? "localhost"
+let timeout = config["timeout"] ?? 3000
+
+check("map key exists",  host,    "target.com")
+check("map key missing", timeout, 3000)
+
+# ── In function return ────────────────────────────────────────────────────────
+fn maybe_port(p):
+    if p > 0: return p
+    return null
+
+let port1 = maybe_port(443) ?? 80
+let port2 = maybe_port(-1)  ?? 80
+check("port from fn: 443", port1, 443)
+check("port from fn: 80",  port2, 80)
+
+# ── Cybersecurity: safe header access ─────────────────────────────────────────
+fn parse_header(headers, name):
+    return headers[name] ?? null
+
+let headers = {"Content-Type": "application/json", "X-Auth": "Bearer token123"}
+let ct  = parse_header(headers, "Content-Type") ?? "text/plain"
+let ua  = parse_header(headers, "User-Agent")   ?? "unknown"
+let auth = parse_header(headers, "X-Auth")      ?? "no-auth"
+
+check("Content-Type header",  ct,   "application/json")
+check("User-Agent missing",   ua,   "unknown")
+check("X-Auth present",       auth, "Bearer token123")
+
+print("Null coalescing tests: " + toString(passed) + " passed, " + toString(fail) + " failed")
+if fail > 0: throw "Some null coalescing tests failed!"

@@ -1,0 +1,5 @@
+﻿# 12. == and != on strings
+let lang = "Sylvel"
+print(lang == "Sylvel")
+print(lang != "Python")
+print("PASS: string equality")

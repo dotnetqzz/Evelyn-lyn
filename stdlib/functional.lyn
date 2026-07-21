@@ -1,0 +1,58 @@
+﻿# Sylvel Standard Library — functional.lyn
+# High-level functional programming utilities
+
+def fn_partial(func, presetArgs) {
+    return def(...args) {
+        var merged = arraySlice(presetArgs, 0, arrayLen(presetArgs))
+        for arg in args {
+            arrayAppend(merged, arg)
+        }
+        let n = arrayLen(merged)
+        if n == 0 { return func() }
+        if n == 1 { return func(merged[0]) }
+        if n == 2 { return func(merged[0], merged[1]) }
+        if n == 3 { return func(merged[0], merged[1], merged[2]) }
+        if n == 4 { return func(merged[0], merged[1], merged[2], merged[3]) }
+        return func(merged[0], merged[1], merged[2], merged[3], merged[4])
+    }
+}
+
+def fn_memoize(func) {
+    var cache = {}
+    return def(arg) {
+        let key = numToString(arg)
+        if not mapHas(cache, key) {
+            let res = func(arg)
+            mapSet(cache, key, res)
+        }
+        return mapGet(cache, key)
+    }
+}
+
+def fn_pipe(val, fns) {
+    var result = val
+    for f in fns {
+        result = f(result)
+    }
+    return result
+}
+
+def fn_compose(fns) {
+    return def(val) {
+        var result = val
+        var i = arrayLen(fns) - 1
+        while i >= 0 {
+            let f = fns[i]
+            result = f(result)
+            i -= 1
+        }
+        return result
+    }
+}
+
+let functional = {
+    "partial": def(func, presetArgs) => fn_partial(func, presetArgs),
+    "memoize": def(func)             => fn_memoize(func),
+    "pipe":    def(val, fns)         => fn_pipe(val, fns),
+    "compose": def(fns)              => fn_compose(fns),
+}

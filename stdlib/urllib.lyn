@@ -1,0 +1,8 @@
+﻿# Sylvel Standard Library — urllib.lyn
+# Replicates CPython's urllib.parse module for query and URL splitting
+
+let urllib = {
+    "parse":  def(url) => sysUrlParse(url),
+    "encode": def(s)   => urlEncode(s),
+    "decode": def(s)   => urlDecode(s),
+}

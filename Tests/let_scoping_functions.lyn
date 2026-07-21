@@ -1,0 +1,12 @@
+﻿# Let inside a function body is immutable too
+def testFnLet() {
+    let val = 42
+    try {
+        val = 99
+        return "FAIL"
+    } catch err {
+        return "PASS: " + err
+    }
+}
+print(testFnLet())
+print("PASS: let scoping in functions")

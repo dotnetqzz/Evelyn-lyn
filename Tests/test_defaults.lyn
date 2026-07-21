@@ -1,0 +1,64 @@
+﻿# Avelyn Language — Default Parameters & Named Arguments Test
+
+var passed = 0
+var fail = 0
+fn check(name, got, expected):
+    if got == expected:
+        passed += 1
+    else:
+        fail += 1
+        print("FAIL: " + name + " — got " + toString(got) + " expected " + toString(expected))
+
+# ── Default parameters ────────────────────────────────────────────────────────
+fn greet(name, prefix = "Hello"):
+    return prefix + ", " + name + "!"
+
+check("default prefix",       greet("Alice"),         "Hello, Alice!")
+check("override prefix",      greet("Alice", "Hi"),   "Hi, Alice!")
+check("override prefix hey",  greet("Bob", "Hey"),    "Hey, Bob!")
+
+fn scan(host, port = 80, timeout = 3000):
+    return host + ":" + toString(port) + " t=" + toString(timeout)
+
+check("all defaults",        scan("target.com"),             "target.com:80 t=3000")
+check("port override",       scan("target.com", 443),        "target.com:443 t=3000")
+check("both override",       scan("target.com", 22, 500),    "target.com:22 t=500")
+
+# ── Default with expression ───────────────────────────────────────────────────
+fn make_key(algo = "AES", bits = 128):
+    return algo + "-" + toString(bits)
+
+check("key defaults",     make_key(),             "AES-128")
+check("key algo only",    make_key("RSA"),         "RSA-128")
+check("key both",         make_key("RSA", 2048),   "RSA-2048")
+
+# ── Named arguments ───────────────────────────────────────────────────────────
+fn connect(host, port = 80, ssl = false, timeout = 5000):
+    return toString(ssl) + "@" + host + ":" + toString(port) + " t=" + toString(timeout)
+
+check("named ssl",      connect("x.com", ssl: true),           "true@x.com:80 t=5000")
+check("named timeout",  connect("x.com", timeout: 500),        "false@x.com:80 t=500")
+check("named port+ssl", connect("x.com", port: 443, ssl: true),"true@x.com:443 t=5000")
+
+# ── Mixed positional + named ──────────────────────────────────────────────────
+check("positional+named", connect("y.com", 8080, timeout: 1000), "false@y.com:8080 t=1000")
+
+# ── Spread operator ───────────────────────────────────────────────────────────
+fn sum_all(...nums):
+    var total = 0
+    for n in nums: total += n
+    return total
+
+check("variadic sum(1,2,3)",       sum_all(1, 2, 3),    6)
+check("variadic sum(10,20,30,40)", sum_all(10, 20, 30, 40), 100)
+
+let args = [1, 2, 3, 4, 5]
+check("spread into variadic", sum_all(*args), 15)
+
+# ── Default in lambda ─────────────────────────────────────────────────────────
+let double = fn(x, factor = 2) => x * factor
+check("lambda default",    double(5),    10)
+check("lambda override",   double(5, 3), 15)
+
+print("Default params / named args tests: " + toString(passed) + " passed, " + toString(fail) + " failed")
+if fail > 0: throw "Some default param tests failed!"
