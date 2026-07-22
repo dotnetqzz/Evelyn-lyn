@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{Read, Write, Seek, SeekFrom};
+use std::io::{Write, Seek, SeekFrom};
 
 pub const SYLB_MAGIC: &[u8; 4] = b"SYLB";
 pub const SYLB_VERSION: u16 = 1;

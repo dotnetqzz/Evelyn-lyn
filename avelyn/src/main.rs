@@ -214,6 +214,7 @@ fn bundle_project(entry_path: &str, out_path: &str) {
     let mut files_to_bundle = HashMap::new();
     let mut processed = std::collections::HashSet::new();
     let mut to_process = vec![entry_path.to_string()];
+    let entry_dir = std::path::Path::new(entry_path).parent().unwrap_or_else(|| std::path::Path::new("."));
 
     while let Some(path) = to_process.pop() {
         if processed.contains(&path) { continue; }
@@ -222,12 +223,11 @@ fn bundle_project(entry_path: &str, out_path: &str) {
         let mut source = None;
         let mut actual_path = path.clone();
 
-        // Resolve path
         let candidates = [
             path.clone(),
             format!("{}.lyn", path),
-            std::path::Path::new(entry_path).parent().unwrap().join(&path).to_string_lossy().to_string(),
-            std::path::Path::new(entry_path).parent().unwrap().join(format!("{}.lyn", path)).to_string_lossy().to_string(),
+            entry_dir.join(&path).to_string_lossy().to_string(),
+            entry_dir.join(format!("{}.lyn", path)).to_string_lossy().to_string(),
         ];
 
         for cand in candidates {
@@ -238,26 +238,34 @@ fn bundle_project(entry_path: &str, out_path: &str) {
             }
         }
 
-        let source = source.expect(&format!("Could not read file {}", path));
+        let source = match source {
+            Some(s) => s,
+            None => {
+                eprintln!("Bundle error: Could not read file '{}'", path);
+                exit(1);
+            }
+        };
 
         let mut lexer = Lexer::new(&source);
         let tokens = lexer.tokenize();
         let mut parser = Parser::new(tokens);
         let ast = parser.parse();
 
-        // Find dependencies
         for node in &ast {
             if let ast::ASTNode::Import(dep) | ast::ASTNode::Include(dep) = node {
                 to_process.push(dep.clone());
             }
         }
 
-        // Compile to bytecode
         let compiler = Compiler::new();
         match compiler.compile(&ast) {
             Ok(module) => {
                 let bytes = BytecodeWriter::serialize(&module);
-                let bundle_name = std::path::Path::new(&actual_path).file_name().unwrap().to_str().unwrap().to_string();
+                let bundle_name = std::path::Path::new(&actual_path)
+                    .file_name()
+                    .and_then(|f| f.to_str())
+                    .unwrap_or(&actual_path)
+                    .to_string();
                 files_to_bundle.insert(bundle_name, bytes);
             }
             Err(e) => {
@@ -267,7 +275,12 @@ fn bundle_project(entry_path: &str, out_path: &str) {
         }
     }
 
-    if let Err(e) = Bundler::bundle(std::path::Path::new(entry_path).file_name().unwrap().to_str().unwrap(), files_to_bundle, out_path) {
+    let entry_filename = std::path::Path::new(entry_path)
+        .file_name()
+        .and_then(|f| f.to_str())
+        .unwrap_or(entry_path);
+
+    if let Err(e) = Bundler::bundle(entry_filename, files_to_bundle, out_path) {
         eprintln!("Bundle error: {}", e);
         exit(1);
     }
@@ -275,14 +288,13 @@ fn bundle_project(entry_path: &str, out_path: &str) {
 }
 
 fn run_bundle_file(path: &str) {
-    let bundle = BytecodeLoader::load_bundle(path).expect("Failed to load bundle");
-
-    // We need a VM that can handle virtual file systems or pre-loaded modules.
-    // For now, we'll use the interpreter to orchestrate if possible,
-    // or just write them to a temp dir and run the entry point.
-
-    // Actually, let's just use the interpreter and add a way to load bytecode modules.
-    // But the current interpreter is tree-walk only.
+    let bundle = match BytecodeLoader::load_bundle(path) {
+        Ok(b) => b,
+        Err(e) => {
+            eprintln!("Failed to load bundle '{}': {}", path, e);
+            exit(1);
+        }
+    };
 
     eprintln!("Note: Running .lynb requires VM integration. Orchestrating via temp files...");
 
@@ -295,24 +307,37 @@ fn run_bundle_file(path: &str) {
             p = p.with_extension("lync");
         }
         if let Some(parent) = p.parent() { let _ = std::fs::create_dir_all(parent); }
-        std::fs::write(&p, data).unwrap();
+        if let Err(e) = std::fs::write(&p, data) {
+            eprintln!("Bundle extraction error for '{}': {}", p.display(), e);
+            exit(1);
+        }
     }
 
-    // Run the entry point (assuming it's a .lync in the temp dir)
-    // We need to know which one was the entry point. I didn't store it in the index properly for retrieval here.
-    // I stored it in the header. I'll read it.
+    let entry_path = (|| -> Option<String> {
+        let mut file = std::fs::File::open(path).ok()?;
+        file.seek(std::io::SeekFrom::Start(6)).ok()?;
+        let mut len_bytes = [0u8; 4];
+        file.read_exact(&mut len_bytes).ok()?;
+        let len = u32::from_be_bytes(len_bytes);
+        let mut entry_bytes = vec![0u8; len as usize];
+        file.read_exact(&mut entry_bytes).ok()?;
+        String::from_utf8(entry_bytes).ok()
+    })();
 
-    let mut file = std::fs::File::open(path).unwrap();
-    file.seek(std::io::SeekFrom::Start(6)).unwrap(); // Skip magic and version
-    let mut len_bytes = [0u8; 4];
-    file.read_exact(&mut len_bytes).unwrap();
-    let len = u32::from_be_bytes(len_bytes);
-    let mut entry_bytes = vec![0u8; len as usize];
-    file.read_exact(&mut entry_bytes).unwrap();
-    let entry_path = String::from_utf8(entry_bytes).unwrap();
+    let entry_path = match entry_path {
+        Some(p) => p,
+        None => {
+            eprintln!("Failed to parse bundle entry point header from '{}'", path);
+            exit(1);
+        }
+    };
 
-    let entry_lync = format!("{}.lync", std::path::Path::new(&entry_path).file_stem().unwrap().to_str().unwrap());
-    run_vm_file(temp_dir.join(entry_lync).to_str().unwrap());
+    let file_stem = std::path::Path::new(&entry_path)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or(&entry_path);
+    let entry_lync = format!("{}.lync", file_stem);
+    run_vm_file(temp_dir.join(entry_lync).to_str().unwrap_or(&entry_path));
 }
 
 fn run_sandboxed_file(path: &str) {

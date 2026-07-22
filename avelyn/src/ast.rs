@@ -34,7 +34,7 @@ pub enum Token {
     QQ,    // ??
     Quest, // ?
     // Indentation
-    Indent, Dedent, Newline,
+    Indent, Dedent,
     Eof,
 }
 

@@ -7,11 +7,13 @@ pub struct Lexer {
     chars: Vec<char>,
     pos: usize,
     pub line: u32,
+    /// Non-fatal warnings collected during tokenisation (line, message)
+    pub warnings: Vec<(u32, String)>,
 }
 
 impl Lexer {
     pub fn new(input: &str) -> Self {
-        Lexer { chars: input.chars().collect(), pos: 0, line: 1 }
+        Lexer { chars: input.chars().collect(), pos: 0, line: 1, warnings: Vec::new() }
     }
 
     fn cur(&self) -> Option<char> { self.chars.get(self.pos).copied() }
@@ -328,6 +330,7 @@ impl Lexer {
         if self.cur() == Some('0') {
             s.push('0'); self.advance();
             match self.cur() {
+        // Hex
                 Some('x') | Some('X') => {
                     self.advance();
                     let mut hex = String::new();
@@ -336,8 +339,23 @@ impl Lexer {
                         else if c == '_' { self.advance(); }
                         else { break; }
                     }
-                    return Token::Int(i64::from_str_radix(&hex, 16).unwrap_or(0));
+                    match i64::from_str_radix(&hex, 16) {
+                        Ok(v) => return Token::Int(v),
+                        Err(_) => {
+                            match u64::from_str_radix(&hex, 16) {
+                                Ok(v) => {
+                                    self.warnings.push((self.line, format!("IntegerOverflow: hex literal 0x{} overflows i64; truncated", hex)));
+                                    return Token::Int(v as i64);
+                                }
+                                Err(_) => {
+                                    self.warnings.push((self.line, format!("IntegerOverflow: hex literal 0x{} is too large", hex)));
+                                    return Token::Int(i64::MAX);
+                                }
+                            }
+                        }
+                    }
                 }
+                // Binary
                 Some('b') | Some('B') => {
                     self.advance();
                     let mut bin = String::new();
@@ -346,8 +364,15 @@ impl Lexer {
                         else if c == '_' { self.advance(); }
                         else { break; }
                     }
-                    return Token::Int(i64::from_str_radix(&bin, 2).unwrap_or(0));
+                    match i64::from_str_radix(&bin, 2) {
+                        Ok(v) => return Token::Int(v),
+                        Err(_) => {
+                            self.warnings.push((self.line, format!("IntegerOverflow: binary literal 0b{} overflows i64", bin)));
+                            return Token::Int(i64::MAX);
+                        }
+                    }
                 }
+                // Octal
                 Some('o') | Some('O') => {
                     self.advance();
                     let mut oct = String::new();
@@ -356,7 +381,13 @@ impl Lexer {
                         else if c == '_' { self.advance(); }
                         else { break; }
                     }
-                    return Token::Int(i64::from_str_radix(&oct, 8).unwrap_or(0));
+                    match i64::from_str_radix(&oct, 8) {
+                        Ok(v) => return Token::Int(v),
+                        Err(_) => {
+                            self.warnings.push((self.line, format!("IntegerOverflow: octal literal 0o{} overflows i64", oct)));
+                            return Token::Int(i64::MAX);
+                        }
+                    }
                 }
                 _ => {}
             }
@@ -378,8 +409,27 @@ impl Lexer {
             s.push(c); self.advance();
         }
 
-        if is_float { Token::Float(s.parse().unwrap_or(0.0)) }
-        else { Token::Int(s.parse().unwrap_or(0)) }
+        if is_float {
+            Token::Float(s.parse().unwrap_or(f64::NAN))
+        } else {
+            // Decimal integer — promote to Float on overflow rather than returning 0
+            match s.parse::<i64>() {
+                Ok(v) => Token::Int(v),
+                Err(_) => {
+                    // Try as f64 representation of a large integer
+                    match s.parse::<f64>() {
+                        Ok(f) => {
+                            self.warnings.push((self.line, format!("IntegerOverflow: decimal literal {} overflows i64; using float", s)));
+                            Token::Float(f)
+                        }
+                        Err(_) => {
+                            self.warnings.push((self.line, format!("IntegerOverflow: decimal literal {} is too large", s)));
+                            Token::Int(i64::MAX)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fn keyword_or_ident(word: String) -> Token {

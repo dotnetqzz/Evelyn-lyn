@@ -13,7 +13,7 @@ print("Total Workload: " + toString(cpus * 50000000) + " total iterations across
 let startTime = timeSec()
 
 # Spawn parallel worker threads on ALL CPU cores
-spawnWorkers("k:/Evelyn-lyn/Tests/all_cores_worker.lyn", cpus)
+spawnWorkers("Tests/all_cores_worker.lyn", cpus)
 
 let endTime = timeSec()
 let elapsed = endTime - startTime

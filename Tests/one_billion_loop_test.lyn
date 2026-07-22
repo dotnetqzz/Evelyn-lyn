@@ -19,12 +19,12 @@ while count < maxVal {
 }
 """
 
-fileWrite("k:/Evelyn-lyn/Tests/billion_worker_temp.lyn", workerScript)
+fileWrite("Tests/billion_worker_temp.lyn", workerScript)
 
 let startTime = timeSec()
 
 # Execute 1 Billion iterations across all CPU threads
-spawnWorkers("k:/Evelyn-lyn/Tests/billion_worker_temp.lyn", cpus)
+spawnWorkers("Tests/billion_worker_temp.lyn", cpus)
 
 let endTime = timeSec()
 let elapsed = endTime - startTime

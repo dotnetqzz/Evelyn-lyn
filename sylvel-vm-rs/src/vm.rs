@@ -144,7 +144,9 @@ impl Vm {
 
         verifier::verify_module(module)?;
 
-        let main_proto = module.protos.last().unwrap().clone();
+        let main_proto = module.protos.last()
+            .ok_or_else(|| "Bytecode Error: module contains no function prototypes".to_string())?
+            .clone();
         let result = self.exec_frame(module, main_proto, vec![]);
         match result {
             Ok(_) => Ok(()),

@@ -4,11 +4,19 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use crate::value::AvelynVal;
+use crate::value::{AvelynError, AvelynVal};
+
+/// A single binding: the value and whether it was declared with `var` (mutable)
+/// or `let` (immutable).
+#[derive(Debug, Clone)]
+struct Binding {
+    val: AvelynVal,
+    mutable: bool,
+}
 
 #[derive(Debug, Clone)]
 pub struct Env {
-    vars: RefCell<HashMap<String, AvelynVal>>,
+    vars: RefCell<HashMap<String, Binding>>,
     parent: Option<Rc<Env>>,
 }
 
@@ -21,20 +29,35 @@ impl Env {
         Rc::new(Env { vars: RefCell::new(HashMap::new()), parent: Some(parent) })
     }
 
-    pub fn declare(&self, name: &str, val: AvelynVal) {
-        self.vars.borrow_mut().insert(name.to_string(), val);
+    /// Declare a new binding in **this** scope.
+    /// `mutable = true` → declared with `var`; `false` → declared with `let`.
+    pub fn declare(&self, name: &str, val: AvelynVal, mutable: bool) {
+        self.vars.borrow_mut().insert(name.to_string(), Binding { val, mutable });
     }
 
-    pub fn set(self: &Rc<Self>, name: &str, val: AvelynVal) {
+    /// Assign to an existing binding anywhere in the scope chain.
+    /// Returns `Err` if the name is not found or the binding is immutable.
+    pub fn set(self: &Rc<Self>, name: &str, val: AvelynVal) -> Result<(), AvelynError> {
         if let Some(env) = self.find_owner(name) {
-            env.vars.borrow_mut().insert(name.to_string(), val);
+            let mut vars = env.vars.borrow_mut();
+            let binding = vars.get_mut(name).unwrap(); // safe: find_owner confirmed it exists
+            if !binding.mutable {
+                return Err(AvelynError::fmt(format!(
+                    "ImmutabilityError: cannot assign to immutable binding '{}' declared with 'let'",
+                    name
+                )));
+            }
+            binding.val = val;
+            Ok(())
         } else {
-            self.vars.borrow_mut().insert(name.to_string(), val);
+            // Name not yet in scope — create as mutable (implicit global assignment)
+            self.vars.borrow_mut().insert(name.to_string(), Binding { val, mutable: true });
+            Ok(())
         }
     }
 
     pub fn get(&self, name: &str) -> Option<AvelynVal> {
-        if let Some(v) = self.vars.borrow().get(name) { return Some(v.clone()); }
+        if let Some(b) = self.vars.borrow().get(name) { return Some(b.val.clone()); }
         self.parent.as_ref()?.get(name)
     }
 

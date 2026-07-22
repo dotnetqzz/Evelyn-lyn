@@ -28,7 +28,13 @@ impl AvelynError {
 
 impl fmt::Display for AvelynError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.val.format())
+        if self.line > 0 && !self.file.is_empty() {
+            write!(f, "{}:{}: {}", self.file, self.line, self.val.format())
+        } else if self.line > 0 {
+            write!(f, "line {}: {}", self.line, self.val.format())
+        } else {
+            write!(f, "{}", self.val.format())
+        }
     }
 }
 
@@ -141,8 +147,11 @@ impl AvelynVal {
                     .map(|(k, v)| format!("{:?}: {}", k, v.format())).collect();
                 format!("{{{}}}", pairs.join(", "))
             }
-            AvelynVal::Func(_)   => "<function>".into(),
-            AvelynVal::Native(_) => "<native>".into(),
+            AvelynVal::Func(f)   => match &f.name {
+                Some(n) => format!("<function '{}'>", n),
+                None    => "<anonymous function>".into(),
+            },
+            AvelynVal::Native(_) => "<native function>".into(),
             AvelynVal::ByteArray(b) => {
                 let v: Vec<String> = b.borrow().iter().map(|x| x.to_string()).collect();
                 format!("[{}]", v.join(", "))
@@ -359,99 +368,83 @@ impl AvelynVal {
     }
 
     pub fn unmarshal(bytes: &[u8]) -> (Self, usize) {
-        if bytes.is_empty() { return (AvelynVal::Null, 0); }
-        let tag = bytes[0];
-        let mut pos = 1;
-        match tag {
-            0 => (AvelynVal::Null, 1),
-            1 => {
-                if bytes.len() < 2 { return (AvelynVal::Null, 1); }
-                (AvelynVal::Bool(bytes[1] != 0), 2)
+        // Cursor-based safe reader — never panics on corrupt/short input
+        struct Cur<'a> { data: &'a [u8], pos: usize }
+        impl<'a> Cur<'a> {
+            fn u8(&mut self) -> Option<u8> {
+                if self.pos >= self.data.len() { return None; }
+                let b = self.data[self.pos]; self.pos += 1; Some(b)
             }
-            2 => {
-                if bytes.len() < pos + 8 { return (AvelynVal::Null, bytes.len()); }
-                let i = i64::from_be_bytes(bytes[pos..pos+8].try_into().unwrap());
-                (AvelynVal::Int(i), 9)
+            fn u32(&mut self) -> Option<u32> {
+                if self.pos + 4 > self.data.len() { return None; }
+                let v = u32::from_be_bytes([self.data[self.pos], self.data[self.pos+1], self.data[self.pos+2], self.data[self.pos+3]]);
+                self.pos += 4; Some(v)
             }
-            3 => {
-                if bytes.len() < pos + 8 { return (AvelynVal::Null, bytes.len()); }
-                let f = f64::from_be_bytes(bytes[pos..pos+8].try_into().unwrap());
-                (AvelynVal::Float(f), 9)
+            fn i64(&mut self) -> Option<i64> {
+                if self.pos + 8 > self.data.len() { return None; }
+                let arr: [u8;8] = self.data[self.pos..self.pos+8].try_into().ok()?;
+                self.pos += 8; Some(i64::from_be_bytes(arr))
             }
-            4 => {
-                if bytes.len() < pos + 4 { return (AvelynVal::Null, bytes.len()); }
-                let len = u32::from_be_bytes(bytes[pos..pos+4].try_into().unwrap()) as usize;
-                pos += 4;
-                if bytes.len() < pos + len { return (AvelynVal::Null, bytes.len()); }
-                let s = String::from_utf8_lossy(&bytes[pos..pos+len]).to_string();
-                (AvelynVal::str(s), pos + len)
+            fn f64(&mut self) -> Option<f64> {
+                if self.pos + 8 > self.data.len() { return None; }
+                let arr: [u8;8] = self.data[self.pos..self.pos+8].try_into().ok()?;
+                self.pos += 8; Some(f64::from_be_bytes(arr))
             }
-            5 => {
-                let count = u32::from_be_bytes(bytes[pos..pos+4].try_into().unwrap()) as usize;
-                pos += 4;
-                let mut list = Vec::new();
-                for _ in 0..count {
-                    let (item, size) = Self::unmarshal(&bytes[pos..]);
-                    list.push(item);
-                    pos += size;
-                }
-                (AvelynVal::list(list), pos)
+            fn str(&mut self) -> Option<String> {
+                let len = self.u32()? as usize;
+                if self.pos + len > self.data.len() { return None; }
+                let s = String::from_utf8_lossy(&self.data[self.pos..self.pos+len]).to_string();
+                self.pos += len; Some(s)
             }
-            6 => {
-                let count = u32::from_be_bytes(bytes[pos..pos+4].try_into().unwrap()) as usize;
-                pos += 4;
-                let mut map = IndexMap::new();
-                for _ in 0..count {
-                    let klen = u32::from_be_bytes(bytes[pos..pos+4].try_into().unwrap()) as usize;
-                    pos += 4;
-                    let k = String::from_utf8_lossy(&bytes[pos..pos+klen]).to_string();
-                    pos += klen;
-                    let (v, vsize) = Self::unmarshal(&bytes[pos..]);
-                    map.insert(k, v);
-                    pos += vsize;
-                }
-                (AvelynVal::map(map), pos)
-            }
-            7 => {
-                let tlen = u32::from_be_bytes(bytes[pos..pos+4].try_into().unwrap()) as usize;
-                pos += 4;
-                let type_name = String::from_utf8_lossy(&bytes[pos..pos+tlen]).to_string();
-                pos += tlen;
-                let flen = u32::from_be_bytes(bytes[pos..pos+4].try_into().unwrap()) as usize;
-                pos += 4;
-                let mut fields = IndexMap::new();
-                for _ in 0..flen {
-                    let klen = u32::from_be_bytes(bytes[pos..pos+4].try_into().unwrap()) as usize;
-                    pos += 4;
-                    let k = String::from_utf8_lossy(&bytes[pos..pos+klen]).to_string();
-                    pos += klen;
-                    let (v, vsize) = Self::unmarshal(&bytes[pos..]);
-                    fields.insert(k, v);
-                    pos += vsize;
-                }
-                (AvelynVal::Instance(Rc::new(RefCell::new(StructInstance { type_name, fields }))), pos)
-            }
-            8 => {
-                let tlen = u32::from_be_bytes(bytes[pos..pos+4].try_into().unwrap()) as usize;
-                pos += 4;
-                let type_name = String::from_utf8_lossy(&bytes[pos..pos+tlen]).to_string();
-                pos += tlen;
-                let vlen = u32::from_be_bytes(bytes[pos..pos+4].try_into().unwrap()) as usize;
-                pos += 4;
-                let variant_name = String::from_utf8_lossy(&bytes[pos..pos+vlen]).to_string();
-                pos += vlen;
-                let vcount = u32::from_be_bytes(bytes[pos..pos+4].try_into().unwrap()) as usize;
-                pos += 4;
-                let mut values = Vec::new();
-                for _ in 0..vcount {
-                    let (v, vsize) = Self::unmarshal(&bytes[pos..]);
-                    values.push(v);
-                    pos += vsize;
-                }
-                (AvelynVal::Variant(Rc::new(EnumVariantInstance { type_name, variant_name, values })), pos)
-            }
-            _ => (AvelynVal::Null, 1),
         }
+
+        fn parse(c: &mut Cur) -> AvelynVal {
+            match c.u8() {
+                Some(0) => AvelynVal::Null,
+                Some(1) => AvelynVal::Bool(c.u8().unwrap_or(0) != 0),
+                Some(2) => c.i64().map(AvelynVal::Int).unwrap_or(AvelynVal::Null),
+                Some(3) => c.f64().map(AvelynVal::Float).unwrap_or(AvelynVal::Null),
+                Some(4) => c.str().map(AvelynVal::str).unwrap_or(AvelynVal::Null),
+                Some(5) => {
+                    let count = c.u32().unwrap_or(0) as usize;
+                    let list: Vec<AvelynVal> = (0..count).map(|_| parse(c)).collect();
+                    AvelynVal::list(list)
+                }
+                Some(6) => {
+                    let count = c.u32().unwrap_or(0) as usize;
+                    let mut map = IndexMap::new();
+                    for _ in 0..count {
+                        let k = c.str().unwrap_or_default();
+                        let v = parse(c);
+                        map.insert(k, v);
+                    }
+                    AvelynVal::map(map)
+                }
+                Some(7) => {
+                    let type_name = c.str().unwrap_or_default();
+                    let flen = c.u32().unwrap_or(0) as usize;
+                    let mut fields = IndexMap::new();
+                    for _ in 0..flen {
+                        let k = c.str().unwrap_or_default();
+                        let v = parse(c);
+                        fields.insert(k, v);
+                    }
+                    AvelynVal::Instance(Rc::new(RefCell::new(StructInstance { type_name, fields })))
+                }
+                Some(8) => {
+                    let type_name = c.str().unwrap_or_default();
+                    let variant_name = c.str().unwrap_or_default();
+                    let vcount = c.u32().unwrap_or(0) as usize;
+                    let values: Vec<AvelynVal> = (0..vcount).map(|_| parse(c)).collect();
+                    AvelynVal::Variant(Rc::new(EnumVariantInstance { type_name, variant_name, values }))
+                }
+                _ => AvelynVal::Null,
+            }
+        }
+
+        let mut cur = Cur { data: bytes, pos: 0 };
+        let val = parse(&mut cur);
+        (val, cur.pos)
     }
 }
 

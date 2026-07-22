@@ -23,12 +23,17 @@ pub struct Interpreter {
     pub current_file: String,
     pub current_line: u32,
     pub call_stack: Vec<(String, String, u32)>, // (func_name, file, line)
+    pub call_depth: usize,                       // recursion depth guard
     pub native_registry: HashMap<String, NativeFn>,
     pub module_manager: ModuleManager,
     pub module_cache: HashMap<String, AvelynVal>,
     pub current_module: Option<Rc<RefCell<crate::value::Module>>>,
     pub capabilities: Capabilities,
     pub plugin_manager: Rc<RefCell<PluginManager>>,
+    pub tcp_listeners: HashMap<i64, std::net::TcpListener>,
+    pub tcp_streams: HashMap<i64, std::net::TcpStream>,
+    pub udp_sockets: HashMap<i64, std::net::UdpSocket>,
+    pub next_resource_id: i64,
 }
 
 impl Interpreter {
@@ -39,12 +44,17 @@ impl Interpreter {
             current_file: "<main>".into(),
             current_line: 1,
             call_stack: Vec::new(),
+            call_depth: 0,
             native_registry: HashMap::new(),
             module_manager: ModuleManager::new(),
             module_cache: HashMap::new(),
             current_module: None,
             capabilities: Capabilities::all(),
             plugin_manager: Rc::new(RefCell::new(PluginManager::new())),
+            tcp_listeners: HashMap::new(),
+            tcp_streams: HashMap::new(),
+            udp_sockets: HashMap::new(),
+            next_resource_id: 1,
         };
         interp.register_builtins();
         interp
@@ -56,19 +66,24 @@ impl Interpreter {
             current_file: "".into(),
             current_line: 0,
             call_stack: Vec::new(),
+            call_depth: 0,
             native_registry: HashMap::new(),
             module_manager: ModuleManager::new(),
             module_cache: HashMap::new(),
             current_module: None,
             capabilities: Capabilities::none(),
             plugin_manager: Rc::new(RefCell::new(PluginManager::new())),
+            tcp_listeners: HashMap::new(),
+            tcp_streams: HashMap::new(),
+            udp_sockets: HashMap::new(),
+            next_resource_id: 1,
         }
     }
 
     fn register_builtins(&mut self) {
         macro_rules! reg {
             ($name:expr, $func:path) => {
-                self.globals.declare($name, AvelynVal::Native($func));
+                self.globals.declare($name, AvelynVal::Native($func), false);
                 self.native_registry.insert($name.to_string(), $func);
             };
         }
@@ -346,14 +361,14 @@ impl Interpreter {
                 else { Err(Signal::Error(AvelynError::fmt(format!("NameError: variable '{}' is not defined", name)))) }
             }
 
-            ASTNode::Decl { name, value, mutable: _, annotations } => {
+            ASTNode::Decl { name, value, mutable, annotations } => {
                 let val = self.eval_node(value, env)?;
                 let mut annots = IndexMap::new();
                 for a in annotations {
                     let a_val = self.eval_node(a, env)?;
                     annots.insert(a.to_string_key(), a_val);
                 }
-                env.declare(name, val);
+                env.declare(name, val, *mutable);
                 Ok(AvelynVal::Null)
             }
 
@@ -368,7 +383,7 @@ impl Interpreter {
                     fields: fields.clone(),
                     annotations: annots,
                 };
-                env.declare(name, AvelynVal::Type(def));
+                env.declare(name, AvelynVal::Type(def), false); // type declarations are immutable
                 Ok(AvelynVal::Null)
             }
 
@@ -387,13 +402,13 @@ impl Interpreter {
                     variants: v_map,
                     annotations: annots,
                 };
-                env.declare(name, AvelynVal::Type(def));
+                env.declare(name, AvelynVal::Type(def), false); // type declarations are immutable
                 Ok(AvelynVal::Null)
             }
 
             ASTNode::Assign { name, value } => {
                 let val = self.eval_node(value, env)?;
-                env.set(name, val);
+                env.set(name, val).map_err(|e| Signal::Error(e))?;
                 Ok(AvelynVal::Null)
             }
 
@@ -401,7 +416,7 @@ impl Interpreter {
                 let rhs = self.eval_node(value, env)?;
                 let lhs = env.get(name).unwrap_or(AvelynVal::Null);
                 let res = self.eval_bin_op(&lhs, op, &rhs)?;
-                env.set(name, res);
+                env.set(name, res).map_err(|e| Signal::Error(e))?;
                 Ok(AvelynVal::Null)
             }
 
@@ -430,28 +445,28 @@ impl Interpreter {
                 Ok(AvelynVal::Null)
             }
 
-            ASTNode::DestructureArray { names, value, mutable: _ } => {
+            ASTNode::DestructureArray { names, value, mutable } => {
                 let val = self.eval_node(value, env)?;
                 if let AvelynVal::List(l) = val {
                     let vec = l.borrow();
                     for (i, name_opt) in names.iter().enumerate() {
                         if let Some(name) = name_opt {
                             let elem = vec.get(i).cloned().unwrap_or(AvelynVal::Null);
-                            env.declare(name, elem);
+                            env.declare(name, elem, *mutable);
                         }
                     }
                 }
                 Ok(AvelynVal::Null)
             }
 
-            ASTNode::DestructureMap { keys, value, mutable: _ } => {
+            ASTNode::DestructureMap { keys, value, mutable } => {
                 let val = self.eval_node(value, env)?;
                 if let AvelynVal::Map(m) = val {
                     let map = m.borrow();
                     for (k, alias_opt) in keys {
                         let target_name = alias_opt.as_ref().unwrap_or(k);
                         let elem = map.get(k).cloned().unwrap_or(AvelynVal::Null);
-                        env.declare(target_name, elem);
+                        env.declare(target_name, elem, *mutable);
                     }
                 }
                 Ok(AvelynVal::Null)
@@ -527,6 +542,9 @@ impl Interpreter {
                 let i_val = self.eval_node(index, env)?;
                 match t_val {
                     AvelynVal::List(l) => {
+                        if matches!(i_val, AvelynVal::Str(_)) {
+                            return Err(Signal::Error(AvelynError::fmt(format!("TypeError: list indices must be integers, not string"))));
+                        }
                         let vec = l.borrow();
                         let idx = i_val.as_i64();
                         let len = vec.len() as i64;
@@ -534,6 +552,9 @@ impl Interpreter {
                         Ok(vec.get(pos).cloned().unwrap_or(AvelynVal::Null))
                     }
                     AvelynVal::ByteArray(b) => {
+                        if matches!(i_val, AvelynVal::Str(_)) {
+                            return Err(Signal::Error(AvelynError::fmt(format!("TypeError: bytearray indices must be integers, not string"))));
+                        }
                         let vec = b.borrow();
                         let idx = i_val.as_i64();
                         let len = vec.len() as i64;
@@ -628,7 +649,7 @@ impl Interpreter {
                     annotations: annots,
                 };
                 let val = AvelynVal::Func(Rc::new(func));
-                env.declare(name, val.clone());
+                env.declare(name, val.clone(), false); // match export bindings are immutable
                 Ok(val)
             }
 
@@ -668,63 +689,9 @@ impl Interpreter {
             ASTNode::TimeCall => builtins::native_time(self, vec![]).map_err(Signal::Error),
 
             ASTNode::While { cond, body } => {
-                // Auto-parallelize while loops: while var < limit (for limits >= 100,000)
-                if let ASTNode::BinOp { left, op, right } = cond.as_ref() {
-                    if op == "<" || op == "<=" {
-                        if let ASTNode::Var(ref var_name) = left.as_ref() {
-                            let limit_val = self.eval_node(right, env)?;
-                            let target_limit = limit_val.as_i64();
-                            let current_start = env.get(var_name).map(|v| v.as_i64()).unwrap_or(0);
-                            
-                            if target_limit - current_start >= 100000 {
-                                let total_iterations = target_limit - current_start;
-                                let num_threads = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1);
-                                let chunk = total_iterations / (num_threads as i64);
-
-                                let current_file = self.current_file.clone();
-                                let body_clone = body.clone();
-                                let var_name_clone = var_name.clone();
-
-                                let mut handles = Vec::new();
-                                for t in 0..num_threads {
-                                    let f = current_file.clone();
-                                    let b = body_clone.clone();
-                                    let v = var_name_clone.clone();
-                                    let start_range = current_start + (t as i64) * chunk;
-                                    let end_range = if t == num_threads - 1 { target_limit } else { current_start + ((t + 1) as i64) * chunk };
-
-                                    let handle = std::thread::Builder::new()
-                                        .stack_size(128 * 1024 * 1024)
-                                        .spawn(move || {
-                                            let mut thread_interp = Interpreter::new();
-                                            thread_interp.current_file = f;
-                                            let thread_env = Env::new();
-
-                                            let mut cur = start_range;
-                                            while cur < end_range {
-                                                thread_env.declare(&v, AvelynVal::Int(cur));
-                                                for stmt in &b {
-                                                    match thread_interp.eval_node(stmt, &thread_env) {
-                                                        Ok(_) => {}
-                                                        Err(Signal::Break) => break,
-                                                        Err(Signal::Continue) => break,
-                                                        Err(_) => {}
-                                                    }
-                                                }
-                                                cur += 1;
-                                            }
-                                        }).ok();
-                                    if let Some(h) = handle { handles.push(h); }
-                                }
-
-                                for h in handles { h.join().ok(); }
-                                env.set(var_name, AvelynVal::Int(target_limit));
-                                return Ok(AvelynVal::Null);
-                            }
-                        }
-                    }
-                }
-
+                // Sequential evaluation only — the auto-parallelization heuristic has been
+                // removed because a fresh Env/Interpreter per thread cannot write back to the
+                // outer scope, causing silent state corruption.
                 while self.eval_node(cond, env)?.is_truthy() {
                     for stmt in body {
                         match self.eval_node(stmt, env) {
@@ -749,7 +716,7 @@ impl Interpreter {
                 };
 
                 for item in items {
-                    env.declare(var, item);
+                    env.declare(var, item, true); // loop variable is mutable by convention
                     for stmt in body {
                         match self.eval_node(stmt, env) {
                             Ok(_) => {}
@@ -764,61 +731,15 @@ impl Interpreter {
 
             ASTNode::ForRange { var, from, to, inclusive, body } => {
                 let start = self.eval_node(from, env)?.as_i64();
-                let end = self.eval_node(to, env)?.as_i64();
-                let total = (end - start).abs();
+                let end   = self.eval_node(to, env)?.as_i64();
 
-                if total >= 100000 {
-                    let num_threads = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1);
-                    let chunk = total / (num_threads as i64);
-
-                    let current_file = self.current_file.clone();
-                    let body_clone = body.clone();
-                    let var_clone = var.clone();
-
-                    let mut handles = Vec::new();
-                    for t in 0..num_threads {
-                        let f = current_file.clone();
-                        let b = body_clone.clone();
-                        let v = var_clone.clone();
-                        let start_range = start + (t as i64) * chunk;
-                        let end_range = if t == num_threads - 1 { end } else { start + ((t + 1) as i64) * chunk };
-
-                        let handle = std::thread::Builder::new()
-                            .stack_size(128 * 1024 * 1024)
-                            .spawn(move || {
-                                let mut thread_interp = Interpreter::new();
-                                thread_interp.current_file = f;
-                                let thread_env = Env::new();
-
-                                let mut cur = start_range;
-                                while if start <= end { cur < end_range } else { cur > end_range } {
-                                    thread_env.declare(&v, AvelynVal::Int(cur));
-                                    for stmt in &b {
-                                        match thread_interp.eval_node(stmt, &thread_env) {
-                                            Ok(_) => {}
-                                            Err(Signal::Break) => break,
-                                            Err(Signal::Continue) => break,
-                                            Err(_) => {}
-                                        }
-                                    }
-                                    if start <= end { cur += 1; } else { cur -= 1; }
-                                }
-                            }).ok();
-                        if let Some(h) = handle { handles.push(h); }
-                    }
-
-                    for h in handles { h.join().ok(); }
-                    return Ok(AvelynVal::Null);
-                }
-
+                // Sequential-only: auto-parallelization removed (it caused silent state corruption)
                 let mut i = start;
-                let step = if start <= end { 1 } else { -1 };
+                let step = if start <= end { 1i64 } else { -1i64 };
                 loop {
-                    if (step > 0 && (if *inclusive { i > end } else { i >= end })) ||
-                       (step < 0 && (if *inclusive { i < end } else { i <= end })) {
-                        break;
-                    }
-                    env.declare(var, AvelynVal::Int(i));
+                    if step > 0 && (if *inclusive { i > end } else { i >= end }) { break; }
+                    if step < 0 && (if *inclusive { i < end } else { i <= end }) { break; }
+                    env.declare(var, AvelynVal::Int(i), true); // loop variable is mutable
                     for stmt in body {
                         match self.eval_node(stmt, env) {
                             Ok(_) => {}
@@ -914,7 +835,7 @@ impl Interpreter {
 
                         if matches {
                             let catch_env = Env::child(env.clone());
-                            catch_env.declare(catch_var, err.val.clone());
+                            catch_env.declare(catch_var, err.val.clone(), true); // catch variable is mutable
                             for stmt in catch_body { self.eval_node(stmt, &catch_env)?; }
                             res = Ok(AvelynVal::Null);
                             handled = true;
@@ -959,6 +880,16 @@ impl Interpreter {
                     }
                 };
 
+                if self.module_manager.is_loaded(&resolved_path) {
+                    if let Some(mod_val) = self.module_cache.get(&cache_key) {
+                        let mod_name = std::path::Path::new(&path).file_stem()
+                            .map(|s| s.to_string_lossy().to_string())
+                            .unwrap_or_else(|| path.clone());
+                        env.declare(&mod_name, mod_val.clone(), false);
+                        return Ok(mod_val.clone());
+                    }
+                }
+
                 if let Err(e) = self.module_manager.enter_loading(resolved_path.clone()) {
                     return Err(Signal::Error(AvelynError::fmt(e)));
                 }
@@ -997,7 +928,7 @@ impl Interpreter {
                 let mod_name = std::path::Path::new(&path).file_stem()
                     .map(|s| s.to_string_lossy().to_string())
                     .unwrap_or_else(|| path.clone());
-                env.declare(&mod_name, mod_val.clone());
+                env.declare(&mod_name, mod_val.clone(), false); // module bindings are immutable
 
                 Ok(mod_val)
             }
@@ -1017,6 +948,10 @@ impl Interpreter {
                         (c, std::path::PathBuf::from(format!("embedded://{}", path)))
                     }
                 };
+
+                if self.module_manager.is_loaded(&resolved_path) {
+                    return Ok(AvelynVal::Null);
+                }
 
                 if let Err(e) = self.module_manager.enter_loading(resolved_path.clone()) {
                     return Err(Signal::Error(AvelynError::fmt(e)));
@@ -1103,6 +1038,18 @@ impl Interpreter {
                 }
             }
             AvelynVal::Func(f) => {
+                // Recursion depth guard (issue #17)
+                const MAX_CALL_DEPTH: usize = 1000;
+                if self.call_depth >= MAX_CALL_DEPTH {
+                    return Err(Signal::Error(AvelynError::fmt(format!(
+                        "RecursionError: maximum call depth ({}) exceeded", MAX_CALL_DEPTH
+                    ))));
+                }
+
+                let func_name = f.name.clone().unwrap_or_else(|| "<anonymous>".to_string());
+                self.call_depth += 1;
+                self.call_stack.push((func_name, self.current_file.clone(), self.current_line));
+
                 let call_env = Env::child(f.closure.clone());
                 if f.variadic && !f.params.is_empty() {
                     let fixed_count = f.params.len() - 1;
@@ -1117,7 +1064,7 @@ impl Interpreter {
                         } else {
                             AvelynVal::Null
                         };
-                        call_env.declare(param_name, val);
+                        call_env.declare(param_name, val, true);
                     }
                     let var_param_name = &f.params[fixed_count].0;
                     let rest = if positional.len() > fixed_count {
@@ -1125,7 +1072,7 @@ impl Interpreter {
                     } else {
                         vec![]
                     };
-                    call_env.declare(var_param_name, AvelynVal::list(rest));
+                    call_env.declare(var_param_name, AvelynVal::list(rest), true);
                 } else {
                     for (i, (param_name, default_opt)) in f.params.iter().enumerate() {
                         let val = if let Some(n_val) = named.get(param_name) {
@@ -1137,18 +1084,22 @@ impl Interpreter {
                         } else {
                             AvelynVal::Null
                         };
-                        call_env.declare(param_name, val);
+                        call_env.declare(param_name, val, true);
                     }
                 }
 
+                let mut result = Ok(AvelynVal::Null);
                 for stmt in &f.body {
                     match self.eval_node(stmt, &call_env) {
                         Ok(_) => {}
-                        Err(Signal::Return(v)) => return Ok(v),
-                        Err(other) => return Err(other),
+                        Err(Signal::Return(v)) => { result = Ok(v); break; }
+                        Err(other) => { result = Err(other); break; }
                     }
                 }
-                Ok(AvelynVal::Null)
+
+                self.call_depth -= 1;
+                self.call_stack.pop();
+                result
             }
             _ => Err(Signal::Error(AvelynError::fmt(format!("TypeError: '{}' is not callable", callee.type_name())))),
         }
@@ -1158,6 +1109,16 @@ impl Interpreter {
         match callee {
             AvelynVal::Native(n_fn) => n_fn(self, args).map_err(Signal::Error),
             AvelynVal::Func(f) => {
+                const MAX_CALL_DEPTH: usize = 1000;
+                if self.call_depth >= MAX_CALL_DEPTH {
+                    return Err(Signal::Error(AvelynError::fmt(format!(
+                        "RecursionError: maximum call depth ({}) exceeded", MAX_CALL_DEPTH
+                    ))));
+                }
+                self.call_depth += 1;
+                let func_name = f.name.clone().unwrap_or_else(|| "<anonymous>".to_string());
+                self.call_stack.push((func_name, self.current_file.clone(), self.current_line));
+
                 let call_env = Env::child(f.closure.clone());
                 for (i, (name, default_opt)) in f.params.iter().enumerate() {
                     let val = if i < args.len() {
@@ -1167,17 +1128,20 @@ impl Interpreter {
                     } else {
                         AvelynVal::Null
                     };
-                    call_env.declare(name, val);
+                    call_env.declare(name, val, true);
                 }
 
+                let mut result = Ok(AvelynVal::Null);
                 for stmt in &f.body {
                     match self.eval_node(stmt, &call_env) {
                         Ok(_) => {}
-                        Err(Signal::Return(v)) => return Ok(v),
-                        Err(other) => return Err(other),
+                        Err(Signal::Return(v)) => { result = Ok(v); break; }
+                        Err(other) => { result = Err(other); break; }
                     }
                 }
-                Ok(AvelynVal::Null)
+                self.call_depth -= 1;
+                self.call_stack.pop();
+                result
             }
             _ => Err(Signal::Error(AvelynError::fmt(format!("TypeError: '{}' is not callable", callee.type_name())))),
         }
@@ -1186,7 +1150,10 @@ impl Interpreter {
     fn eval_bin_op(&self, l: &AvelynVal, op: &str, r: &AvelynVal) -> Result<AvelynVal, Signal> {
         match op {
             "+" => match (l, r) {
-                (AvelynVal::Int(a), AvelynVal::Int(b)) => Ok(AvelynVal::Int(a + b)),
+                (AvelynVal::Int(a), AvelynVal::Int(b)) => Ok(match a.checked_add(*b) {
+                    Some(v) => AvelynVal::Int(v),
+                    None => AvelynVal::Float(*a as f64 + *b as f64),
+                }),
                 (AvelynVal::Float(a), AvelynVal::Float(b)) => Ok(AvelynVal::Float(a + b)),
                 (AvelynVal::Int(a), AvelynVal::Float(b)) => Ok(AvelynVal::Float(*a as f64 + b)),
                 (AvelynVal::Float(a), AvelynVal::Int(b)) => Ok(AvelynVal::Float(a + *b as f64)),
@@ -1198,23 +1165,42 @@ impl Interpreter {
                     res.extend(b.borrow().iter().cloned());
                     Ok(AvelynVal::list(res))
                 }
-                _ => Ok(AvelynVal::Null),
+                _ => Err(Signal::Error(AvelynError::fmt(format!(
+                    "TypeError: unsupported operand types for '+': '{}' and '{}'",
+                    l.type_name(), r.type_name())))),
             },
             "-" => match (l, r) {
-                (AvelynVal::Int(a), AvelynVal::Int(b)) => Ok(AvelynVal::Int(a.wrapping_sub(*b))),
+                (AvelynVal::Int(a), AvelynVal::Int(b)) => Ok(match a.checked_sub(*b) {
+                    Some(v) => AvelynVal::Int(v),
+                    None => AvelynVal::Float(*a as f64 - *b as f64),
+                }),
                 (AvelynVal::Float(a), AvelynVal::Float(b)) => Ok(AvelynVal::Float(a - b)),
                 (AvelynVal::Int(a), AvelynVal::Float(b)) => Ok(AvelynVal::Float(*a as f64 - b)),
                 (AvelynVal::Float(a), AvelynVal::Int(b)) => Ok(AvelynVal::Float(a - *b as f64)),
-                _ => Ok(AvelynVal::Float(l.as_f64() - r.as_f64())),
+                _ => Err(Signal::Error(AvelynError::fmt(format!(
+                    "TypeError: unsupported operand types for '-': '{}' and '{}'",
+                    l.type_name(), r.type_name())))),
             },
-            "*" => Ok(match (l, r) {
-                (AvelynVal::Str(s), AvelynVal::Int(n)) => AvelynVal::str(s.repeat((*n as usize).max(0))),
-                (AvelynVal::Int(n), AvelynVal::Str(s)) => AvelynVal::str(s.repeat((*n as usize).max(0))),
-                (AvelynVal::Int(a), AvelynVal::Int(b)) => AvelynVal::Int(a.wrapping_mul(*b)),
-                _ => AvelynVal::Float(l.as_f64() * r.as_f64()),
-            }),
+            "*" => match (l, r) {
+                (AvelynVal::Str(s), AvelynVal::Int(n)) => Ok(AvelynVal::str(s.repeat((*n as usize).max(0)))),
+                (AvelynVal::Int(n), AvelynVal::Str(s)) => Ok(AvelynVal::str(s.repeat((*n as usize).max(0)))),
+                (AvelynVal::Int(a), AvelynVal::Int(b)) => Ok(match a.checked_mul(*b) {
+                    Some(v) => AvelynVal::Int(v),
+                    None => AvelynVal::Float(*a as f64 * *b as f64),
+                }),
+                (AvelynVal::Float(a), AvelynVal::Float(b)) => Ok(AvelynVal::Float(a * b)),
+                (AvelynVal::Int(a), AvelynVal::Float(b)) => Ok(AvelynVal::Float(*a as f64 * b)),
+                (AvelynVal::Float(a), AvelynVal::Int(b)) => Ok(AvelynVal::Float(a * *b as f64)),
+                _ => Err(Signal::Error(AvelynError::fmt(format!(
+                    "TypeError: unsupported operand types for '*': '{}' and '{}'",
+                    l.type_name(), r.type_name())))),
+            },
             "/" => {
+                // True division (like Python's /): always returns float
                 let denom = r.as_f64();
+                if denom == 0.0 {
+                    return Err(Signal::Error(AvelynError::msg("ZeroDivisionError: division by zero")));
+                }
                 Ok(AvelynVal::Float(l.as_f64() / denom))
             }
             "//" => match (l, r) {
@@ -1231,17 +1217,56 @@ impl Interpreter {
                 }
                 _ => {
                     let bf = r.as_f64();
+                    if bf == 0.0 { return Err(Signal::Error(AvelynError::msg("ZeroDivisionError: modulo by zero"))); }
                     Ok(AvelynVal::Float(l.as_f64() % bf))
                 }
             },
-            "**" => Ok(AvelynVal::Float(l.as_f64().powf(r.as_f64()))),
+            "**" => match (l, r) {
+                // Integer exponentiation with overflow promotion
+                (AvelynVal::Int(base), AvelynVal::Int(exp)) if *exp >= 0 && *exp <= 62 => {
+                    match base.checked_pow(*exp as u32) {
+                        Some(v) => Ok(AvelynVal::Int(v)),
+                        None => Ok(AvelynVal::Float((*base as f64).powf(*exp as f64))),
+                    }
+                }
+                _ => Ok(AvelynVal::Float(l.as_f64().powf(r.as_f64()))),
+            },
 
             "==" => Ok(AvelynVal::Bool(l.deep_equal(r))),
             "!=" => Ok(AvelynVal::Bool(!l.deep_equal(r))),
-            "<"  => Ok(AvelynVal::Bool(l.as_f64() < r.as_f64())),
-            ">"  => Ok(AvelynVal::Bool(l.as_f64() > r.as_f64())),
-            "<=" => Ok(AvelynVal::Bool(l.as_f64() <= r.as_f64())),
-            ">=" => Ok(AvelynVal::Bool(l.as_f64() >= r.as_f64())),
+            // String-aware relational operators
+            "<" => Ok(AvelynVal::Bool(match (l, r) {
+                (AvelynVal::Str(a), AvelynVal::Str(b)) => a.as_str() < b.as_str(),
+                (AvelynVal::Int(a), AvelynVal::Int(b)) => a < b,
+                (AvelynVal::Float(a), AvelynVal::Float(b)) => a < b,
+                (AvelynVal::Int(a), AvelynVal::Float(b)) => (*a as f64) < *b,
+                (AvelynVal::Float(a), AvelynVal::Int(b)) => *a < (*b as f64),
+                _ => l.as_f64() < r.as_f64(),
+            })),
+            ">" => Ok(AvelynVal::Bool(match (l, r) {
+                (AvelynVal::Str(a), AvelynVal::Str(b)) => a.as_str() > b.as_str(),
+                (AvelynVal::Int(a), AvelynVal::Int(b)) => a > b,
+                (AvelynVal::Float(a), AvelynVal::Float(b)) => a > b,
+                (AvelynVal::Int(a), AvelynVal::Float(b)) => (*a as f64) > *b,
+                (AvelynVal::Float(a), AvelynVal::Int(b)) => *a > (*b as f64),
+                _ => l.as_f64() > r.as_f64(),
+            })),
+            "<=" => Ok(AvelynVal::Bool(match (l, r) {
+                (AvelynVal::Str(a), AvelynVal::Str(b)) => a.as_str() <= b.as_str(),
+                (AvelynVal::Int(a), AvelynVal::Int(b)) => a <= b,
+                (AvelynVal::Float(a), AvelynVal::Float(b)) => a <= b,
+                (AvelynVal::Int(a), AvelynVal::Float(b)) => (*a as f64) <= *b,
+                (AvelynVal::Float(a), AvelynVal::Int(b)) => *a <= (*b as f64),
+                _ => l.as_f64() <= r.as_f64(),
+            })),
+            ">=" => Ok(AvelynVal::Bool(match (l, r) {
+                (AvelynVal::Str(a), AvelynVal::Str(b)) => a.as_str() >= b.as_str(),
+                (AvelynVal::Int(a), AvelynVal::Int(b)) => a >= b,
+                (AvelynVal::Float(a), AvelynVal::Float(b)) => a >= b,
+                (AvelynVal::Int(a), AvelynVal::Float(b)) => (*a as f64) >= *b,
+                (AvelynVal::Float(a), AvelynVal::Int(b)) => *a >= (*b as f64),
+                _ => l.as_f64() >= r.as_f64(),
+            })),
 
             "&"  => Ok(AvelynVal::Int(l.as_i64() & r.as_i64())),
             "|"  => Ok(AvelynVal::Int(l.as_i64() | r.as_i64())),
@@ -1277,7 +1302,7 @@ impl Interpreter {
                 }
             }
             crate::ast::Pattern::Var(name) => {
-                env.declare(name, value.clone());
+                env.declare(name, value.clone(), true); // pattern match bindings are mutable
                 true
             }
             crate::ast::Pattern::List(pats) => {
