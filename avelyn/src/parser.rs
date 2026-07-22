@@ -210,7 +210,8 @@ impl Parser {
 
         match self.cur().clone() {
             Token::Int(_) | Token::Float(_) | Token::Str(_) | Token::True | Token::False | Token::Null => {
-                crate::ast::Pattern::Literal(self.parse_primary())
+                let expr = self.parse_expr();
+                crate::ast::Pattern::Literal(expr)
             }
             Token::Ident(name) => { self.advance(); crate::ast::Pattern::Var(name) }
             Token::LBracket => {
@@ -296,25 +297,50 @@ impl Parser {
             Token::Match => {
                 self.advance();
                 let subject = self.parse_expr();
-                self.consume_exact(&Token::LBrace);
+                let has_brace = self.cur() == &Token::LBrace;
+                if has_brace { self.advance(); }
                 let mut arms = Vec::new();
-                while self.cur() != &Token::RBrace && self.cur() != &Token::Eof {
-                    let pat = self.parse_pattern();
-                    self.consume_exact(&Token::Arrow);
-                    let mut body = Vec::new();
-                    if self.cur() == &Token::LBrace {
+                while self.cur() != &Token::Eof {
+                    if has_brace && self.cur() == &Token::RBrace { break; }
+                    if self.cur() == &Token::Case {
                         self.advance();
-                        while self.cur() != &Token::RBrace && self.cur() != &Token::Eof {
+                        let pat = self.parse_pattern();
+                        if self.cur() == &Token::Colon || self.cur() == &Token::Arrow { self.advance(); }
+                        let mut body = Vec::new();
+                        while !matches!(self.cur(), Token::Case | Token::Default | Token::RBrace | Token::Eof | Token::Dedent) {
+                            let s = self.pos;
+                            if let Some(st) = self.parse_stmt() { body.push(st); }
+                            if self.pos == s { self.advance(); }
+                        }
+                        arms.push((pat, body));
+                    } else if self.cur() == &Token::Default {
+                        self.advance();
+                        if self.cur() == &Token::Colon || self.cur() == &Token::Arrow { self.advance(); }
+                        let mut body = Vec::new();
+                        while !matches!(self.cur(), Token::Case | Token::Default | Token::RBrace | Token::Eof | Token::Dedent) {
+                            let s = self.pos;
+                            if let Some(st) = self.parse_stmt() { body.push(st); }
+                            if self.pos == s { self.advance(); }
+                        }
+                        arms.push((crate::ast::Pattern::Wildcard, body));
+                    } else {
+                        let pat = self.parse_pattern();
+                        if self.cur() == &Token::Arrow || self.cur() == &Token::Colon { self.advance(); }
+                        let mut body = Vec::new();
+                        if self.cur() == &Token::LBrace {
+                            self.advance();
+                            while self.cur() != &Token::RBrace && self.cur() != &Token::Eof {
+                                if let Some(s) = self.parse_stmt() { body.push(s); }
+                            }
+                            self.consume_exact(&Token::RBrace);
+                        } else {
                             if let Some(s) = self.parse_stmt() { body.push(s); }
                         }
-                        self.consume_exact(&Token::RBrace);
-                    } else {
-                        if let Some(s) = self.parse_stmt() { body.push(s); }
+                        arms.push((pat, body));
                     }
-                    arms.push((pat, body));
                     if self.cur() == &Token::Comma { self.advance(); }
                 }
-                self.consume_exact(&Token::RBrace);
+                if has_brace { self.consume_exact(&Token::RBrace); }
                 Some(ASTNode::Match { subject: Box::new(subject), arms })
             }
 

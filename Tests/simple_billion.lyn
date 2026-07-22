@@ -1,0 +1,7 @@
+let start = dateNow()
+var i = 0
+while i < 1000000000 {
+    i = i + 1
+}
+let end = dateNow()
+print("Time taken: " + toString((end - start) / 1000.0) + " seconds")

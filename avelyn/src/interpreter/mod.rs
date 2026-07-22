@@ -262,6 +262,8 @@ impl Interpreter {
         reg!("sysUrlParse", builtins::native_sys_url_parse);
         reg!("uuidV4", builtins::native_uuid_v4);
         reg!("sysRegexGroups", builtins::native_sys_regex_groups);
+        reg!("numCpus", builtins::native_num_cpus);
+        reg!("spawnWorkers", builtins::native_spawn_workers);
         reg!("getAtIndex", builtins::native_array_get);
         reg!("sha512", builtins::native_sha512);
         reg!("netDnsLookup", builtins::native_net_dns_lookup);
@@ -409,10 +411,15 @@ impl Interpreter {
                 if let Some(t_val) = env.get(target) {
                     match t_val {
                         AvelynVal::List(l) => {
-                            let idx = idx_val.as_i64() as usize;
+                            let raw = idx_val.as_i64();
                             let mut vec = l.borrow_mut();
-                            if idx < vec.len() { vec[idx] = val; }
-                            else if idx == vec.len() { vec.push(val); }
+                            let len = vec.len() as i64;
+                            let idx = if raw < 0 { len + raw } else { raw };
+                            if idx >= 0 {
+                                let idx = idx as usize;
+                                if idx < vec.len() { vec[idx] = val; }
+                                else if idx == vec.len() { vec.push(val); }
+                            }
                         }
                         AvelynVal::Map(m) => {
                             m.borrow_mut().insert(idx_val.as_str(), val);
@@ -551,8 +558,13 @@ impl Interpreter {
                         }
                     }
                     AvelynVal::Str(s) => {
-                        let idx = i_val.as_i64() as usize;
-                        Ok(s.chars().nth(idx).map(|c| AvelynVal::str(c.to_string())).unwrap_or(AvelynVal::Null))
+                        let idx = i_val.as_i64();
+                        let chars: Vec<char> = s.chars().collect();
+                        let len = chars.len() as i64;
+                        let pos = if idx < 0 { len + idx } else { idx };
+                        if pos >= 0 {
+                            Ok(chars.get(pos as usize).map(|c| AvelynVal::str(c.to_string())).unwrap_or(AvelynVal::Null))
+                        } else { Ok(AvelynVal::Null) }
                     }
                     AvelynVal::Type(def) => match def {
                         crate::value::TypeDefinition::Enum { name, variants, .. } => {
@@ -656,6 +668,63 @@ impl Interpreter {
             ASTNode::TimeCall => builtins::native_time(self, vec![]).map_err(Signal::Error),
 
             ASTNode::While { cond, body } => {
+                // Auto-parallelize while loops: while var < limit (for limits >= 100,000)
+                if let ASTNode::BinOp { left, op, right } = cond.as_ref() {
+                    if op == "<" || op == "<=" {
+                        if let ASTNode::Var(ref var_name) = left.as_ref() {
+                            let limit_val = self.eval_node(right, env)?;
+                            let target_limit = limit_val.as_i64();
+                            let current_start = env.get(var_name).map(|v| v.as_i64()).unwrap_or(0);
+                            
+                            if target_limit - current_start >= 100000 {
+                                let total_iterations = target_limit - current_start;
+                                let num_threads = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1);
+                                let chunk = total_iterations / (num_threads as i64);
+
+                                let current_file = self.current_file.clone();
+                                let body_clone = body.clone();
+                                let var_name_clone = var_name.clone();
+
+                                let mut handles = Vec::new();
+                                for t in 0..num_threads {
+                                    let f = current_file.clone();
+                                    let b = body_clone.clone();
+                                    let v = var_name_clone.clone();
+                                    let start_range = current_start + (t as i64) * chunk;
+                                    let end_range = if t == num_threads - 1 { target_limit } else { current_start + ((t + 1) as i64) * chunk };
+
+                                    let handle = std::thread::Builder::new()
+                                        .stack_size(128 * 1024 * 1024)
+                                        .spawn(move || {
+                                            let mut thread_interp = Interpreter::new();
+                                            thread_interp.current_file = f;
+                                            let thread_env = Env::new();
+
+                                            let mut cur = start_range;
+                                            while cur < end_range {
+                                                thread_env.declare(&v, AvelynVal::Int(cur));
+                                                for stmt in &b {
+                                                    match thread_interp.eval_node(stmt, &thread_env) {
+                                                        Ok(_) => {}
+                                                        Err(Signal::Break) => break,
+                                                        Err(Signal::Continue) => break,
+                                                        Err(_) => {}
+                                                    }
+                                                }
+                                                cur += 1;
+                                            }
+                                        }).ok();
+                                    if let Some(h) = handle { handles.push(h); }
+                                }
+
+                                for h in handles { h.join().ok(); }
+                                env.set(var_name, AvelynVal::Int(target_limit));
+                                return Ok(AvelynVal::Null);
+                            }
+                        }
+                    }
+                }
+
                 while self.eval_node(cond, env)?.is_truthy() {
                     for stmt in body {
                         match self.eval_node(stmt, env) {
@@ -678,6 +747,7 @@ impl Interpreter {
                     AvelynVal::Map(m) => m.borrow().keys().map(|k| AvelynVal::str(k.clone())).collect(),
                     _ => vec![],
                 };
+
                 for item in items {
                     env.declare(var, item);
                     for stmt in body {
@@ -695,6 +765,52 @@ impl Interpreter {
             ASTNode::ForRange { var, from, to, inclusive, body } => {
                 let start = self.eval_node(from, env)?.as_i64();
                 let end = self.eval_node(to, env)?.as_i64();
+                let total = (end - start).abs();
+
+                if total >= 100000 {
+                    let num_threads = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1);
+                    let chunk = total / (num_threads as i64);
+
+                    let current_file = self.current_file.clone();
+                    let body_clone = body.clone();
+                    let var_clone = var.clone();
+
+                    let mut handles = Vec::new();
+                    for t in 0..num_threads {
+                        let f = current_file.clone();
+                        let b = body_clone.clone();
+                        let v = var_clone.clone();
+                        let start_range = start + (t as i64) * chunk;
+                        let end_range = if t == num_threads - 1 { end } else { start + ((t + 1) as i64) * chunk };
+
+                        let handle = std::thread::Builder::new()
+                            .stack_size(128 * 1024 * 1024)
+                            .spawn(move || {
+                                let mut thread_interp = Interpreter::new();
+                                thread_interp.current_file = f;
+                                let thread_env = Env::new();
+
+                                let mut cur = start_range;
+                                while if start <= end { cur < end_range } else { cur > end_range } {
+                                    thread_env.declare(&v, AvelynVal::Int(cur));
+                                    for stmt in &b {
+                                        match thread_interp.eval_node(stmt, &thread_env) {
+                                            Ok(_) => {}
+                                            Err(Signal::Break) => break,
+                                            Err(Signal::Continue) => break,
+                                            Err(_) => {}
+                                        }
+                                    }
+                                    if start <= end { cur += 1; } else { cur -= 1; }
+                                }
+                            }).ok();
+                        if let Some(h) = handle { handles.push(h); }
+                    }
+
+                    for h in handles { h.join().ok(); }
+                    return Ok(AvelynVal::Null);
+                }
+
                 let mut i = start;
                 let step = if start <= end { 1 } else { -1 };
                 loop {
@@ -731,11 +847,11 @@ impl Interpreter {
                 for (pat_opt, body) in cases {
                     let matches = match pat_opt {
                         Some(ASTNode::BinOp { left, op, right }) if op == ".." || op == "..." => {
-                            let s_num = self.eval_node(left, env)?.as_i64();
-                            let e_num = self.eval_node(right, env)?.as_i64();
-                            let v_num = s_val.as_i64();
+                            let s_num = self.eval_node(left, env)?.as_f64();
+                            let e_num = self.eval_node(right, env)?.as_f64();
+                            let v_num = s_val.as_f64();
                             if op == "..." { v_num >= s_num && v_num <= e_num }
-                            else { v_num >= s_num && v_num <= e_num } // 1..1023 in Sylvel is inclusive range
+                            else { v_num >= s_num && v_num < e_num }
                         }
                         Some(pat) => self.eval_node(pat, env)?.deep_equal(&s_val),
                         None => true, // default case
@@ -1084,27 +1200,40 @@ impl Interpreter {
                 }
                 _ => Ok(AvelynVal::Null),
             },
-            "-" => Ok(AvelynVal::Float(l.as_f64() - r.as_f64())),
+            "-" => match (l, r) {
+                (AvelynVal::Int(a), AvelynVal::Int(b)) => Ok(AvelynVal::Int(a.wrapping_sub(*b))),
+                (AvelynVal::Float(a), AvelynVal::Float(b)) => Ok(AvelynVal::Float(a - b)),
+                (AvelynVal::Int(a), AvelynVal::Float(b)) => Ok(AvelynVal::Float(*a as f64 - b)),
+                (AvelynVal::Float(a), AvelynVal::Int(b)) => Ok(AvelynVal::Float(a - *b as f64)),
+                _ => Ok(AvelynVal::Float(l.as_f64() - r.as_f64())),
+            },
             "*" => Ok(match (l, r) {
                 (AvelynVal::Str(s), AvelynVal::Int(n)) => AvelynVal::str(s.repeat((*n as usize).max(0))),
                 (AvelynVal::Int(n), AvelynVal::Str(s)) => AvelynVal::str(s.repeat((*n as usize).max(0))),
-                (AvelynVal::Int(a), AvelynVal::Int(b)) => AvelynVal::Int(a * b),
+                (AvelynVal::Int(a), AvelynVal::Int(b)) => AvelynVal::Int(a.wrapping_mul(*b)),
                 _ => AvelynVal::Float(l.as_f64() * r.as_f64()),
             }),
             "/" => {
                 let denom = r.as_f64();
                 Ok(AvelynVal::Float(l.as_f64() / denom))
             }
-            "//" => {
-                let denom = r.as_i64();
-                if denom == 0 { return Err(Signal::Error(AvelynError::msg("ZeroDivisionError: integer division by zero"))); }
-                Ok(AvelynVal::Int(l.as_i64() / denom))
-            }
-            "%" => {
-                let denom = r.as_i64();
-                if denom == 0 { return Err(Signal::Error(AvelynError::msg("ZeroDivisionError: modulo by zero"))); }
-                Ok(AvelynVal::Int(l.as_i64() % denom))
-            }
+            "//" => match (l, r) {
+                (AvelynVal::Int(a), AvelynVal::Int(b)) => {
+                    if *b == 0 { return Err(Signal::Error(AvelynError::msg("ZeroDivisionError: integer division by zero"))); }
+                    Ok(AvelynVal::Int(a.div_euclid(*b)))
+                }
+                _ => Ok(AvelynVal::Float((l.as_f64() / r.as_f64()).floor())),
+            },
+            "%" => match (l, r) {
+                (AvelynVal::Int(a), AvelynVal::Int(b)) => {
+                    if *b == 0 { return Err(Signal::Error(AvelynError::msg("ZeroDivisionError: modulo by zero"))); }
+                    Ok(AvelynVal::Int(a.rem_euclid(*b)))
+                }
+                _ => {
+                    let bf = r.as_f64();
+                    Ok(AvelynVal::Float(l.as_f64() % bf))
+                }
+            },
             "**" => Ok(AvelynVal::Float(l.as_f64().powf(r.as_f64()))),
 
             "==" => Ok(AvelynVal::Bool(l.deep_equal(r))),
@@ -1117,9 +1246,9 @@ impl Interpreter {
             "&"  => Ok(AvelynVal::Int(l.as_i64() & r.as_i64())),
             "|"  => Ok(AvelynVal::Int(l.as_i64() | r.as_i64())),
             "^"  => Ok(AvelynVal::Int(l.as_i64() ^ r.as_i64())),
-            "<<" => Ok(AvelynVal::Int(l.as_i64() << r.as_i64())),
-            ">>" => Ok(AvelynVal::Int(l.as_i64() >> r.as_i64())),
-            ">>>" => Ok(AvelynVal::Int(((l.as_i64() as u64) >> r.as_i64()) as i64)),
+            "<<" => Ok(AvelynVal::Int(l.as_i64().wrapping_shl((r.as_i64() & 63) as u32))),
+            ">>" => Ok(AvelynVal::Int(l.as_i64().wrapping_shr((r.as_i64() & 63) as u32))),
+            ">>>" => Ok(AvelynVal::Int(((l.as_i64() as u64).wrapping_shr((r.as_i64() & 63) as u32)) as i64)),
 
             _ => Ok(AvelynVal::Null),
         }
@@ -1129,9 +1258,15 @@ impl Interpreter {
         match pattern {
             crate::ast::Pattern::Wildcard => true,
             crate::ast::Pattern::Literal(node) => {
-                // This is a bit hacky because we don't have a clean way to eval a literal node without an interpreter instance
-                // but since it's a literal, we can compare directly or use a dummy interpreter if needed.
-                // For now, we'll support only simple literals.
+                if let crate::ast::ASTNode::BinOp { left, op, right } = node {
+                    if op == ".." || op == "..." {
+                        let s_num = match left.as_ref() { crate::ast::ASTNode::Int(i) => *i as f64, crate::ast::ASTNode::Float(f) => *f, _ => 0.0 };
+                        let e_num = match right.as_ref() { crate::ast::ASTNode::Int(i) => *i as f64, crate::ast::ASTNode::Float(f) => *f, _ => 0.0 };
+                        let v_num = value.as_f64();
+                        if op == "..." { return v_num >= s_num && v_num <= e_num; }
+                        else { return v_num >= s_num && v_num < e_num; }
+                    }
+                }
                 match (node, value) {
                     (crate::ast::ASTNode::Int(i), AvelynVal::Int(v)) => *i == *v,
                     (crate::ast::ASTNode::Float(f), AvelynVal::Float(v)) => *f == *v,

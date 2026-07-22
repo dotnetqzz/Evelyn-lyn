@@ -1,4 +1,4 @@
-﻿# Sylvel Standard Library — shutil.lyn
+# Sylvel Standard Library — shutil.lyn
 # Replicates CPython's shutil module for high-level file and directory actions
 
 import "io"
@@ -24,8 +24,8 @@ let shutil = {
     "copy":      def(src, dest) => sysCopyFile(src, dest),
     "move":      def(src, dest) => sysMoveFile(src, dest),
     "remove":    def(p)         => sysRemoveFile(p),
-    "rmtree":    def(p)         => sysRemoveFile(p), # Native removeItem is recursive
+    "rmtree":    def(p)         => rmTree(p),
     "copytree":  def(src, dest) => shutil_copytree(src, dest),
     "mkdir":     def(p)         => dirCreate(p),
-    "rmdir":     def(p)         => sysRemoveFile(p),
+    "rmdir":     def(p)         => rmTree(p),
 }

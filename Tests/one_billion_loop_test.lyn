@@ -1,0 +1,36 @@
+# 1 Billion Loop Speed & Time Benchmark
+
+print("════════════════════════════════════════════════════════════════════")
+print(" AVELYN 1 BILLION LOOP BENCHMARK")
+print("════════════════════════════════════════════════════════════════════")
+
+let cpus = numCpus()
+print("Detected Logical CPU Processors: " + toString(cpus))
+let iterationsPerWorker = 1000000000 // cpus
+print("Workload: 1,000,000,000 Total Loop Iterations")
+print("Executing parallel loop across " + toString(cpus) + " CPU threads (" + toString(iterationsPerWorker) + " iterations per thread)...")
+
+# Worker script logic
+let workerScript = """
+var count = 0
+let maxVal = """ + toString(iterationsPerWorker) + """
+while count < maxVal {
+    count = count + 1
+}
+"""
+
+fileWrite("k:/Evelyn-lyn/Tests/billion_worker_temp.lyn", workerScript)
+
+let startTime = timeSec()
+
+# Execute 1 Billion iterations across all CPU threads
+spawnWorkers("k:/Evelyn-lyn/Tests/billion_worker_temp.lyn", cpus)
+
+let endTime = timeSec()
+let elapsed = endTime - startTime
+
+print("\n════════════════════════════════════════════════════════════════════")
+print(" SUCCESS: 1,000,000,000 LOOP ITERATIONS COMPLETED!")
+print(" Total Execution Time: " + toString(elapsed) + " seconds")
+print(" Throughput: " + toString(1000000000 // elapsed) + " iterations / sec")
+print("════════════════════════════════════════════════════════════════════")

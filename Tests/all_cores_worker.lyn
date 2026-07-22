@@ -1,0 +1,7 @@
+# Single worker task file executed across all CPU logical processors simultaneously
+var counter = 0
+let limit = 50000000
+
+while counter < limit {
+    counter = counter + 1
+}

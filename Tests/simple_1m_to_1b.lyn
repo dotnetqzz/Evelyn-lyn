@@ -1,0 +1,19 @@
+# Simple Benchmark: 1 Million to 1 Billion Loops
+
+def runBenchmark(target, name) {
+    let start = dateNow()
+    var i = 0
+    while i < target {
+        i = i + 1
+    }
+    let end = dateNow()
+    let secs = (end - start) / 1000.0
+    print("[" + name + "] (" + toString(target) + " iterations) -> Time: " + toString(secs) + " seconds")
+}
+
+runBenchmark(1000000, "1 Million")
+runBenchmark(10000000, "10 Million")
+runBenchmark(50000000, "50 Million")
+runBenchmark(100000000, "100 Million")
+runBenchmark(500000000, "500 Million")
+runBenchmark(1000000000, "1 Billion")

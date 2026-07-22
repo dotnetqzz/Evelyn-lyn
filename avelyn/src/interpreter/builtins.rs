@@ -27,8 +27,8 @@ pub fn native_input(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynV
     Ok(AvelynVal::str(line.trim_end_matches(&['\n', '\r'])))
 }
 pub fn native_time(_: &mut Interpreter, _: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
-    let ns = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos();
-    Ok(AvelynVal::Float(ns as f64))
+    let ms = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis();
+    Ok(AvelynVal::Float(ms as f64))
 }
 pub fn native_exit(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     std::process::exit(arg(&args, 0).as_i64() as i32);
@@ -48,7 +48,8 @@ pub fn native_str(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal
             if r >= 2 && r <= 36 {
                 let n = *n;
                 let neg = n < 0;
-                let mut u = if neg { (-(n as i128)) as u64 } else { n as u64 };
+                // Safely handle i64::MIN: use wrapping_neg to get the positive magnitude as u64
+                let mut u: u64 = if neg { (n as u64).wrapping_neg() } else { n as u64 };
                 let mut chars: Vec<char> = Vec::new();
                 if u == 0 { chars.push('0'); }
                 while u > 0 {
@@ -106,7 +107,7 @@ pub fn native_to_number(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<Ave
 pub fn native_len(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     let n = match arg(&args, 0) {
         AvelynVal::List(l) => l.borrow().len() as i64,
-        AvelynVal::Str(s)  => s.len() as i64,
+        AvelynVal::Str(s)  => s.chars().count() as i64,  // char count, not byte count
         AvelynVal::Map(m)  => m.borrow().len() as i64,
         AvelynVal::ByteArray(b) => b.borrow().len() as i64,
         _ => 0,
@@ -223,7 +224,11 @@ pub fn native_ends_with(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<Ave
 }
 pub fn native_index_of(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     let s = arg(&args, 0).as_str(); let needle = arg(&args, 1).as_str();
-    Ok(AvelynVal::Int(s.find(needle.as_str()).map(|i| i as i64).unwrap_or(-1)))
+    // Return char-offset, not byte-offset
+    let char_idx = s.find(needle.as_str()).map(|byte_pos| {
+        s[..byte_pos].chars().count() as i64
+    }).unwrap_or(-1);
+    Ok(AvelynVal::Int(char_idx))
 }
 pub fn native_substring(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     let s = arg(&args, 0).as_str();
@@ -345,7 +350,9 @@ pub fn native_sys_regex_groups(_: &mut Interpreter, args: Vec<AvelynVal>) -> Res
     Ok(AvelynVal::list(vec![AvelynVal::str(&text), AvelynVal::str("id=\"104\" role=\"admin\" status=\"active\"")]))
 }
 pub fn native_repeat(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
-    Ok(AvelynVal::str(arg(&args, 0).as_str().repeat(arg(&args, 1).as_i64() as usize)))
+    let n = arg(&args, 1).as_i64();
+    if n <= 0 { return Ok(AvelynVal::str("")); }
+    Ok(AvelynVal::str(arg(&args, 0).as_str().repeat(n as usize)))
 }
 pub fn native_char_code(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     Ok(AvelynVal::Int(arg(&args, 0).as_str().chars().next().map(|c| c as i64).unwrap_or(0)))
@@ -382,8 +389,15 @@ pub fn native_array_unshift(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result
     Ok(arr)
 }
 pub fn native_array_insert(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
-    let arr = arg(&args, 0); let idx = arg(&args, 1).as_i64() as usize; let item = arg(&args, 2);
-    if let AvelynVal::List(l) = &arr { let mut v = l.borrow_mut(); let i = idx.min(v.len()); v.insert(i, item); }
+    let arr = arg(&args, 0);
+    let raw_idx = arg(&args, 1).as_i64();
+    let item = arg(&args, 2);
+    if let AvelynVal::List(l) = &arr {
+        let mut v = l.borrow_mut();
+        let len = v.len() as i64;
+        let idx = if raw_idx < 0 { (len + raw_idx).max(0) as usize } else { (raw_idx as usize).min(v.len()) };
+        v.insert(idx, item);
+    }
     Ok(arr)
 }
 pub fn native_array_remove(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
@@ -411,6 +425,7 @@ pub fn native_array_slice(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<A
         let v = l.borrow(); let len = v.len() as i64;
         let s = { let r = arg(&args, 1).as_i64(); ((if r < 0 { len + r } else { r }).max(0) as usize).min(v.len()) };
         let e = match args.get(2) { Some(x) if !x.is_null() => { let r = x.as_i64(); ((if r < 0 { len + r } else { r }).max(0) as usize).min(v.len()) } _ => v.len() };
+        let (s, e) = (s.min(e), s.max(e)); // ensure s <= e
         return Ok(AvelynVal::list(v[s..e].to_vec()));
     }
     Ok(AvelynVal::Null)
@@ -608,8 +623,13 @@ fn split_json(s: &str) -> Vec<String> {
 
 pub fn native_string_at(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     let s = arg(&args, 0).as_str();
-    let idx = arg(&args, 1).as_i64() as usize;
-    Ok(s.chars().nth(idx).map(|c| AvelynVal::str(c.to_string())).unwrap_or(AvelynVal::Null))
+    let idx = arg(&args, 1).as_i64();
+    let chars: Vec<char> = s.chars().collect();
+    let len = chars.len() as i64;
+    let pos = if idx < 0 { len + idx } else { idx };
+    if pos >= 0 {
+        Ok(chars.get(pos as usize).map(|c| AvelynVal::str(c.to_string())).unwrap_or(AvelynVal::Null))
+    } else { Ok(AvelynVal::Null) }
 }
 
 pub fn native_time_sec(_: &mut Interpreter, _: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
@@ -977,9 +997,6 @@ pub fn native_write_file(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Resu
 pub fn native_file_exists(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     interp.capabilities.check_fs_read().map_err(AvelynError::fmt)?;
     let p = arg(&args, 0).as_str();
-    if p.contains("_shutil_dest_temp") {
-        return Ok(AvelynVal::Bool(false));
-    }
     Ok(AvelynVal::Bool(std::path::Path::new(&p).exists()))
 }
 pub fn native_append_file(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
@@ -1156,4 +1173,48 @@ pub fn native_unmarshal(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<Ave
     } else {
         Err(AvelynError::msg("unmarshal: expected bytearray"))
     }
+}
+
+// ─── Parallel Multi-Thread CPU Spawner ────────────────────────────────────────
+
+pub fn native_num_cpus(_: &mut Interpreter, _: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    let cpus = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1);
+    Ok(AvelynVal::Int(cpus as i64))
+}
+
+pub fn native_spawn_workers(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    let script_file = arg(&args, 0).as_str();
+    let num_threads = if args.len() > 1 { arg(&args, 1).as_i64() as usize } else {
+        std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1)
+    };
+
+    let source = match std::fs::read_to_string(&script_file) {
+        Ok(s) => s,
+        Err(e) => return Err(AvelynError::fmt(format!("spawnWorkers IOError: {}", e))),
+    };
+
+    let mut handles = Vec::new();
+    for i in 0..num_threads {
+        let src = source.clone();
+        let f = script_file.clone();
+        let handle = std::thread::Builder::new()
+            .name(format!("avelyn-worker-{}", i))
+            .stack_size(128 * 1024 * 1024)
+            .spawn(move || {
+                let mut interp = Interpreter::new();
+                interp.current_file = f;
+                let mut lexer = crate::lexer::Lexer::new(&src);
+                let tokens = lexer.tokenize();
+                let mut parser = crate::parser::Parser::new(tokens);
+                let ast = parser.parse();
+                interp.eval_ast(&ast).ok();
+            }).map_err(|e| AvelynError::fmt(e.to_string()))?;
+        handles.push(handle);
+    }
+
+    for h in handles {
+        h.join().ok();
+    }
+
+    Ok(AvelynVal::Bool(true))
 }

@@ -99,6 +99,7 @@ pub fn native_array_slice(_vm: &mut Vm, args: &[SylVal]) -> Result<SylVal, SylEr
             None => items.len(),
         };
         let start = start.min(items.len());
+        let end = end.min(items.len()).max(start); // start <= end always
         let sliced = items[start..end].to_vec();
         return Ok(SylVal::List(Rc::new(RefCell::new(sliced))));
     }

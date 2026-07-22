@@ -224,11 +224,11 @@ impl Compiler {
                 self.fold_node(right);
                 if let (ASTNode::Int(l), ASTNode::Int(r)) = (left.as_ref(), right.as_ref()) {
                     match op.as_str() {
-                        "+" => *node = ASTNode::Int(l + r),
-                        "-" => *node = ASTNode::Int(l - r),
-                        "*" => *node = ASTNode::Int(l * r),
-                        "//" if *r != 0 => *node = ASTNode::Int(l / r),
-                        "%" if *r != 0 => *node = ASTNode::Int(l % r),
+                        "+" => *node = ASTNode::Int(l.wrapping_add(*r)),
+                        "-" => *node = ASTNode::Int(l.wrapping_sub(*r)),
+                        "*" => *node = ASTNode::Int(l.wrapping_mul(*r)),
+                        "//" if *r != 0 => *node = ASTNode::Int(l.div_euclid(*r)),
+                        "%" if *r != 0 => *node = ASTNode::Int(l.rem_euclid(*r)),
                         "==" => *node = ASTNode::Bool(l == r),
                         "!=" => *node = ASTNode::Bool(l != r),
                         "<"  => *node = ASTNode::Bool(l < r),
@@ -405,17 +405,9 @@ impl Compiler {
                 }
             }
             ASTNode::FuncCall { name, args } => {
-                let is_native = ["print", "len", "type", "str", "int", "float", "bool", "range", "abs", "sqrt"].contains(&name.as_str());
-                if is_native {
-                    for arg in args { self.compile_node(arg)?; }
-                    let idx = self.module.native_index(name);
-                    self.emit_call_native(idx, args.len() as u8);
-                } else {
-                    let idx = self.module.global_index(name);
-                    self.emit_u16(Opcode::LoadGlobal, idx);
-                    for arg in args { self.compile_node(arg)?; }
-                    self.emit_u16(Opcode::Call, args.len() as u16);
-                }
+                for arg in args { self.compile_node(arg)?; }
+                let idx = self.module.native_index(name);
+                self.emit_call_native(idx, args.len() as u8);
             }
             ASTNode::CallExpr { callee, args } => {
                 self.compile_node(callee)?;
@@ -446,6 +438,137 @@ impl Compiler {
                 self.compile_node(value)?;
                 self.emit(Opcode::SetIndex);
             }
+            ASTNode::FuncDecl { name, params, body, variadic, annotations: _ } => {
+                let mut proto = FunctionProto::new(name);
+                proto.arity = params.len() as u8;
+                proto.is_variadic = *variadic;
+                for p in params {
+                    proto.declare_local(&p.0, false);
+                }
+
+                self.function_stack.push(proto);
+                for stmt in body {
+                    self.compile_node(stmt)?;
+                }
+                self.emit(Opcode::ReturnNull);
+
+                let finished_proto = self.function_stack.pop().unwrap();
+                self.module.protos.push(finished_proto);
+                let proto_idx = (self.module.protos.len() - 1) as u16;
+
+                self.emit_u16(Opcode::MakeFunc, proto_idx);
+                let g_idx = self.module.global_index(name);
+                self.emit_u16(Opcode::StoreGlobal, g_idx);
+            }
+            ASTNode::While { cond, body } => {
+                let loop_start = self.current().code.len();
+                self.compile_node(cond)?;
+
+                // JumpIfFPop placeholder (jump to end of loop if condition is false)
+                let jump_false_ip = self.current().code.len();
+                self.emit_u16(Opcode::JumpIfFPop, 0);
+
+                for stmt in body {
+                    self.compile_node(stmt)?;
+                }
+
+                // Loop back to loop_start
+                let loop_end = self.current().code.len() + 3;
+                let offset = (loop_start as isize - loop_end as isize) as i16;
+                self.emit_u16(Opcode::Jump, offset as u16);
+
+                // Patch jump_false_ip offset
+                let false_offset = (self.current().code.len() as isize - (jump_false_ip + 3) as isize) as i16;
+                let bytes = (false_offset as u16).to_be_bytes();
+                self.current().code[jump_false_ip + 1] = bytes[0];
+                self.current().code[jump_false_ip + 2] = bytes[1];
+            }
+            ASTNode::If { cond, then, els } => {
+                self.compile_node(cond)?;
+                let jump_false_ip = self.current().code.len();
+                self.emit_u16(Opcode::JumpIfFPop, 0);
+
+                for stmt in then {
+                    self.compile_node(stmt)?;
+                }
+
+                if let Some(else_stmts) = els {
+                    let jump_end_ip = self.current().code.len();
+                    self.emit_u16(Opcode::Jump, 0);
+
+                    let false_offset = (self.current().code.len() as isize - (jump_false_ip + 3) as isize) as i16;
+                    let bytes = (false_offset as u16).to_be_bytes();
+                    self.current().code[jump_false_ip + 1] = bytes[0];
+                    self.current().code[jump_false_ip + 2] = bytes[1];
+
+                    for stmt in else_stmts {
+                        self.compile_node(stmt)?;
+                    }
+
+                    let end_offset = (self.current().code.len() as isize - (jump_end_ip + 3) as isize) as i16;
+                    let end_bytes = (end_offset as u16).to_be_bytes();
+                    self.current().code[jump_end_ip + 1] = end_bytes[0];
+                    self.current().code[jump_end_ip + 2] = end_bytes[1];
+                } else {
+                    let false_offset = (self.current().code.len() as isize - (jump_false_ip + 3) as isize) as i16;
+                    let bytes = (false_offset as u16).to_be_bytes();
+                    self.current().code[jump_false_ip + 1] = bytes[0];
+                    self.current().code[jump_false_ip + 2] = bytes[1];
+                }
+            }
+            ASTNode::CompoundAssign { name, op, value } => {
+                if let Some(slot) = self.current().resolve_local(name) {
+                    self.emit_u16(Opcode::LoadVar, slot);
+                } else {
+                    let idx = self.module.global_index(name);
+                    self.emit_u16(Opcode::LoadGlobal, idx);
+                }
+                self.compile_node(value)?;
+                match op.as_str() {
+                    "+" => self.emit(Opcode::Add),
+                    "-" => self.emit(Opcode::Sub),
+                    "*" => self.emit(Opcode::Mul),
+                    "/" => self.emit(Opcode::Div),
+                    "%" => self.emit(Opcode::Mod),
+                    _ => self.emit(Opcode::Add),
+                }
+                if let Some(slot) = self.current().resolve_local(name) {
+                    self.emit_u16(Opcode::StoreVar, slot);
+                } else {
+                    let idx = self.module.global_index(name);
+                    self.emit_u16(Opcode::StoreGlobal, idx);
+                }
+            }
+            ASTNode::Ternary { cond, then, els } => {
+                self.compile_node(cond)?;
+                let jump_false_ip = self.current().code.len();
+                self.emit_u16(Opcode::JumpIfFPop, 0);
+
+                self.compile_node(then)?;
+                let jump_end_ip = self.current().code.len();
+                self.emit_u16(Opcode::Jump, 0);
+
+                let false_offset = (self.current().code.len() as isize - (jump_false_ip + 3) as isize) as i16;
+                let bytes = (false_offset as u16).to_be_bytes();
+                self.current().code[jump_false_ip + 1] = bytes[0];
+                self.current().code[jump_false_ip + 2] = bytes[1];
+
+                self.compile_node(els)?;
+
+                let end_offset = (self.current().code.len() as isize - (jump_end_ip + 3) as isize) as i16;
+                let end_bytes = (end_offset as u16).to_be_bytes();
+                self.current().code[jump_end_ip + 1] = end_bytes[0];
+                self.current().code[jump_end_ip + 2] = end_bytes[1];
+            }
+            ASTNode::NullCoalesce { left, right } => {
+                self.compile_node(left)?;
+                self.compile_node(right)?;
+            }
+            ASTNode::Spread(inner) => {
+                self.compile_node(inner)?;
+                self.emit(Opcode::Spread);
+            }
+            ASTNode::Pass => {}
             _ => self.emit(Opcode::LoadNull),
         }
         Ok(())

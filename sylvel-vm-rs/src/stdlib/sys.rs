@@ -155,6 +155,49 @@ pub fn native_sys_url_parse(_vm: &mut Vm, args: &[SylVal]) -> Result<SylVal, Syl
     Ok(SylVal::Map(Rc::new(RefCell::new(map))))
 }
 
+pub fn native_num_cpus(_vm: &mut Vm, _args: &[SylVal]) -> Result<SylVal, SylError> {
+    let cpus = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1);
+    Ok(SylVal::Int(cpus as i64))
+}
+
+pub fn native_spawn_workers(_vm: &mut Vm, args: &[SylVal]) -> Result<SylVal, SylError> {
+    let script_file = arg(args, 0).format();
+    let num_threads = if args.len() > 1 { arg(args, 1).as_i64() as usize } else {
+        std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1)
+    };
+
+    let bytecode_path = if script_file.ends_with(".lyn") {
+        script_file.replace(".lyn", ".lync")
+    } else {
+        script_file.clone()
+    };
+
+    let mut handles = Vec::new();
+    for i in 0..num_threads {
+        let b_path = bytecode_path.clone();
+        let s_path = script_file.clone();
+        let handle = std::thread::Builder::new()
+            .name(format!("sylvel-worker-{}", i))
+            .stack_size(128 * 1024 * 1024)
+            .spawn(move || {
+                let module = match crate::bytecode::load_file(&b_path).or_else(|_| crate::bytecode::load_file(&s_path)) {
+                    Ok(m) => m,
+                    Err(_) => return,
+                };
+                let mut worker_vm = Vm::new();
+                crate::stdlib::register_all(&mut worker_vm);
+                worker_vm.run_module(&module).ok();
+            }).map_err(|e| SylError::fmt(e.to_string()))?;
+        handles.push(handle);
+    }
+
+    for h in handles {
+        h.join().ok();
+    }
+
+    Ok(SylVal::Bool(true))
+}
+
 pub fn register(vm: &mut Vm) {
     vm.register_native("sysPlatform",           native_sys_platform);
     vm.register_native("sysArch",               native_sys_arch);
@@ -174,4 +217,6 @@ pub fn register(vm: &mut Vm) {
     vm.register_native("sysUrlParse",           native_sys_url_parse);
     vm.register_native("urlEncode",             native_url_encode);
     vm.register_native("urlDecode",             native_url_decode);
+    vm.register_native("numCpus",               native_num_cpus);
+    vm.register_native("spawnWorkers",          native_spawn_workers);
 }

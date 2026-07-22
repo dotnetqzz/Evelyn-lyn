@@ -20,6 +20,16 @@ use interpreter::Interpreter;
 use compiler::{Compiler, writer::BytecodeWriter, loader::BytecodeLoader, verifier::BytecodeVerifier};
 
 fn main() {
+    // Increase stack size to 128MB for deep AST recursion resilience in production
+    std::thread::Builder::new()
+        .stack_size(128 * 1024 * 1024)
+        .spawn(run_cli)
+        .unwrap()
+        .join()
+        .unwrap();
+}
+
+fn run_cli() {
     let args: Vec<String> = std_env::args().collect();
     if args.len() < 2 {
         run_repl();
@@ -107,10 +117,10 @@ fn print_usage() {
 fn run_interpreter_file(path: &str) {
     let lync_path = format!("{}.lync", path.trim_end_matches(".lyn"));
 
-    // Check for cached bytecode
-    if let Ok(metadata) = std::fs::metadata(path) {
-        if let Ok(lync_metadata) = std::fs::metadata(&lync_path) {
-            if lync_metadata.modified().unwrap() > metadata.modified().unwrap() {
+    // Check for cached bytecode — only use cache if mtime is available
+    if let (Ok(src_meta), Ok(lync_meta)) = (std::fs::metadata(path), std::fs::metadata(&lync_path)) {
+        if let (Ok(src_mtime), Ok(lync_mtime)) = (src_meta.modified(), lync_meta.modified()) {
+            if lync_mtime > src_mtime {
                 run_vm_file(&lync_path);
                 return;
             }
@@ -331,6 +341,7 @@ fn run_sandboxed_file(path: &str) {
 }
 
 fn run_test_runner(path: &str) {
+    use rayon::prelude::*;
     println!("avelyn Test Runner");
     println!("Scanning: {}", path);
 
@@ -338,44 +349,54 @@ fn run_test_runner(path: &str) {
     let meta = std::fs::metadata(path).unwrap();
     if meta.is_file() {
         files.push(path.to_string());
-    } else {
-        if let Ok(entries) = std::fs::read_dir(path) {
-            for entry in entries.flatten() {
-                let p = entry.path();
-                if p.extension().map(|e| e == "lyn").unwrap_or(false) {
-                    files.push(p.to_string_lossy().to_string());
-                }
+    } else if let Ok(entries) = std::fs::read_dir(path) {
+        for entry in entries.flatten() {
+            let p = entry.path();
+            if p.extension().map(|e| e == "lyn").unwrap_or(false) {
+                files.push(p.to_string_lossy().to_string());
             }
         }
     }
+    files.sort();
+
+    // Configure Rayon worker threads with 128MB stack size
+    let pool = rayon::ThreadPoolBuilder::new()
+        .stack_size(128 * 1024 * 1024)
+        .build()
+        .unwrap();
+
+    let results: Vec<(String, bool, String)> = pool.install(|| {
+        files.par_iter().map(|f| {
+            let source = match std::fs::read_to_string(f) {
+                Ok(s) => s,
+                Err(e) => return (f.clone(), false, format!("IOError: {}", e)),
+            };
+            let mut interp = Interpreter::new();
+            interp.current_file = f.clone();
+
+            let mut lexer = Lexer::new(&source);
+            let tokens = lexer.tokenize();
+            let mut parser = Parser::new(tokens);
+            let ast = parser.parse();
+
+            match interp.eval_ast(&ast) {
+                Ok(_) => (f.clone(), true, String::new()),
+                Err(e) => (f.clone(), false, format!("{}", e)),
+            }
+        }).collect()
+    });
 
     let mut passed = 0;
     let mut failed = 0;
 
-    for f in &files {
+    for (f, ok, msg) in results {
         print!("Test {} ... ", f);
-        io::stdout().flush().unwrap();
-
-        // Run in a separate process or capture output?
-        // Let's run in-process for now, but catch errors.
-        let source = std::fs::read_to_string(f).unwrap();
-        let mut interp = Interpreter::new();
-        interp.current_file = f.clone();
-
-        let mut lexer = Lexer::new(&source);
-        let tokens = lexer.tokenize();
-        let mut parser = Parser::new(tokens);
-        let ast = parser.parse();
-
-        match interp.eval_ast(&ast) {
-            Ok(_) => {
-                println!("PASSED");
-                passed += 1;
-            }
-            Err(e) => {
-                println!("FAILED: {}", e);
-                failed += 1;
-            }
+        if ok {
+            println!("PASSED");
+            passed += 1;
+        } else {
+            println!("FAILED: {}", msg);
+            failed += 1;
         }
     }
 

@@ -1,0 +1,25 @@
+# Avelyn Language — 100% All Cores & Threads CPU Stress Test
+# Spawns parallel interpreter worker threads across ALL logical CPU cores simultaneously
+
+print("════════════════════════════════════════════════════════════════════")
+print(" AVELYN 100% ALL-CORES & THREADS CPU STRESS TEST")
+print("════════════════════════════════════════════════════════════════════")
+
+let cpus = numCpus()
+print("Detected Logical CPU Processors: " + toString(cpus))
+print("Spawning " + toString(cpus) + " parallel worker threads (50,000,000 iterations per core)...")
+print("Total Workload: " + toString(cpus * 50000000) + " total iterations across ALL cores!")
+
+let startTime = timeSec()
+
+# Spawn parallel worker threads on ALL CPU cores
+spawnWorkers("k:/Evelyn-lyn/Tests/all_cores_worker.lyn", cpus)
+
+let endTime = timeSec()
+let elapsed = endTime - startTime
+
+print("\n════════════════════════════════════════════════════════════════════")
+print(" SUCCESS: ALL " + toString(cpus) + " CORES & THREADS STRESSED AT 100%!")
+print(" Total Workload Executed: " + toString(cpus * 50000000) + " iterations")
+print(" Elapsed Time: " + toString(elapsed) + " seconds")
+print("════════════════════════════════════════════════════════════════════")

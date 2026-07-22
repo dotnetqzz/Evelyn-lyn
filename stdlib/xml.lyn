@@ -1,4 +1,4 @@
-﻿# Sylvel Standard Library — xml.lyn
+# Sylvel Standard Library — xml.lyn
 # Exposes clean, lightweight XML parsing helper functions
 
 import "re"
@@ -12,19 +12,21 @@ def xml_parse_tag_with_attrs(xmlStr, tag) {
 }
 
 def xml_parse_attrs(xmlStr, tag) {
-    # Extract attributes of the first <tag attr="val">
     let tagPat = "<" + tag + "(\\s+[^>]*?)?>"
     let groups = re["groups"](tagPat, xmlStr)
     if isNull(groups) or arrayLen(groups) < 2 { return {} }
     let attrStr = groups[1]
     var attrs = {}
-    let attrPairs = re["findAll"]("(\\w+)=\"([^\"]*)\"", attrStr)
-    for pair in attrPairs {
-        let parts = stringSplit(pair, "=")
-        if arrayLen(parts) == 2 {
-            let k = parts[0]
-            let v = stringReplaceAll(parts[1], "\"", "")
-            mapSet(attrs, k, v)
+    let parts = stringSplit(attrStr, " ")
+    for part in parts {
+        let trimmed = strip(part)
+        if stringContains(trimmed, "=") {
+            let kv = stringSplit(trimmed, "=")
+            if arrayLen(kv) == 2 {
+                let k = strip(kv[0])
+                let v = stringReplaceAll(strip(kv[1]), "\"", "")
+                mapSet(attrs, k, v)
+            }
         }
     }
     return attrs

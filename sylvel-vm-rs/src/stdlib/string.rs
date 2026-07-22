@@ -80,15 +80,15 @@ pub fn native_index_of(_vm: &mut Vm, args: &[SylVal]) -> Result<SylVal, SylError
 
 pub fn native_substring(_vm: &mut Vm, args: &[SylVal]) -> Result<SylVal, SylError> {
     let s = get_str(&arg(args, 0));
-    let start = arg(args, 1).as_i64() as usize;
-    let end_val = arg(args, 2);
-    let end = match &end_val {
-        SylVal::Null => s.len(),
-        _ => end_val.as_i64() as usize,
+    let chars: Vec<char> = s.chars().collect();
+    let len = chars.len();
+    let start = (arg(args, 1).as_i64() as usize).min(len);
+    let end = match &arg(args, 2) {
+        SylVal::Null => len,
+        v => (v.as_i64() as usize).min(len),
     };
-    let start = start.min(s.len());
-    let end = end.min(s.len());
-    Ok(SylVal::Str(Rc::new(s[start..end].to_string())))
+    let end = end.max(start); // prevent start > end panic
+    Ok(SylVal::Str(Rc::new(chars[start..end].iter().collect())))
 }
 
 pub fn native_repeat(_vm: &mut Vm, args: &[SylVal]) -> Result<SylVal, SylError> {
@@ -110,24 +110,28 @@ pub fn native_char_from_code(_vm: &mut Vm, args: &[SylVal]) -> Result<SylVal, Sy
 
 pub fn native_pad_start(_vm: &mut Vm, args: &[SylVal]) -> Result<SylVal, SylError> {
     let s = get_str(&arg(args, 0));
-    let len = arg(args, 1).as_i64() as usize;
+    let target_len = arg(args, 1).as_i64() as usize;
     let pad = get_str(&arg(args, 2));
     let pad = if pad.is_empty() { " ".to_string() } else { pad };
-    if s.len() >= len { return Ok(SylVal::Str(Rc::new(s))); }
-    let needed = len - s.len();
-    let filler = pad.repeat((needed / pad.len()) + 1);
-    Ok(SylVal::Str(Rc::new(format!("{}{}", &filler[..needed], s))))
+    let s_chars: Vec<char> = s.chars().collect();
+    let pad_chars: Vec<char> = pad.chars().collect();
+    if s_chars.len() >= target_len { return Ok(SylVal::Str(Rc::new(s))); }
+    let needed = target_len - s_chars.len();
+    let filler: String = pad_chars.iter().cycle().take(needed).collect();
+    Ok(SylVal::Str(Rc::new(format!("{}{}", filler, s))))
 }
 
 pub fn native_pad_end(_vm: &mut Vm, args: &[SylVal]) -> Result<SylVal, SylError> {
     let s = get_str(&arg(args, 0));
-    let len = arg(args, 1).as_i64() as usize;
+    let target_len = arg(args, 1).as_i64() as usize;
     let pad = get_str(&arg(args, 2));
     let pad = if pad.is_empty() { " ".to_string() } else { pad };
-    if s.len() >= len { return Ok(SylVal::Str(Rc::new(s))); }
-    let needed = len - s.len();
-    let filler = pad.repeat((needed / pad.len()) + 1);
-    Ok(SylVal::Str(Rc::new(format!("{}{}", s, &filler[..needed]))))
+    let s_chars: Vec<char> = s.chars().collect();
+    let pad_chars: Vec<char> = pad.chars().collect();
+    if s_chars.len() >= target_len { return Ok(SylVal::Str(Rc::new(s))); }
+    let needed = target_len - s_chars.len();
+    let filler: String = pad_chars.iter().cycle().take(needed).collect();
+    Ok(SylVal::Str(Rc::new(format!("{}{}", s, filler))))
 }
 
 pub fn register(vm: &mut Vm) {

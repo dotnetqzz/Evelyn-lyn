@@ -38,14 +38,9 @@ impl Env {
         self.parent.as_ref()?.get(name)
     }
 
-    fn find_owner(&self, name: &str) -> Option<&Env> {
-        if self.vars.borrow().contains_key(name) { return Some(self); }
-        // SAFETY: parent lifetime >= self lifetime in our usage
-        self.parent.as_ref().and_then(|p| {
-            // We need to traverse the parent chain. Since parents are Rc,
-            // we can just recurse through a raw pointer here.
-            unsafe { (p.as_ref() as *const Env).as_ref()?.find_owner(name) }
-        })
+    fn find_owner(self: &Rc<Self>, name: &str) -> Option<Rc<Env>> {
+        if self.vars.borrow().contains_key(name) { return Some(self.clone()); }
+        self.parent.as_ref()?.find_owner(name)
     }
 }
 

@@ -7,6 +7,7 @@
 
 mod value;
 mod bytecode;
+mod verifier;
 mod vm;
 mod stdlib;
 
@@ -57,22 +58,26 @@ fn main() {
         std::process::exit(1);
     }
 
-    // Load module
-    let module = match bytecode::load_file(path) {
-        Ok(m) => m,
-        Err(e) => {
-            eprintln!("sylvel-vm: cannot load '{}': {}", path, e);
+    let path_str = path.to_string();
+    let builder = std::thread::Builder::new()
+        .name("sylvel-vm-main".to_string())
+        .stack_size(128 * 1024 * 1024);
+
+    let handler = builder.spawn(move || {
+        let module = match bytecode::load_file(&path_str) {
+            Ok(m) => m,
+            Err(e) => {
+                eprintln!("sylvel-vm: cannot load '{}': {}", path_str, e);
+                std::process::exit(1);
+            }
+        };
+        let mut vm = Vm::new();
+        stdlib::register_all(&mut vm);
+        if let Err(e) = vm.run_module(&module) {
+            eprintln!("Runtime error: {}", e);
             std::process::exit(1);
         }
-    };
+    }).unwrap();
 
-    // Create VM and register builtins
-    let mut vm = Vm::new();
-    stdlib::register_all(&mut vm);
-
-    // Execute
-    if let Err(e) = vm.run_module(&module) {
-        eprintln!("Runtime error: {}", e);
-        std::process::exit(1);
-    }
+    handler.join().unwrap();
 }

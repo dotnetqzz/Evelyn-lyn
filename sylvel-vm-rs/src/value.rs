@@ -62,9 +62,8 @@ impl SylIter {
                 }
             }
             SylVal::Str(s) => {
-                let bytes = s.as_bytes();
-                if self.pos < bytes.len() {
-                    let ch = bytes[self.pos] as char;
+                // pos counts chars, not bytes
+                if let Some(ch) = s.chars().nth(self.pos) {
                     self.pos += 1;
                     SylVal::Str(Rc::new(ch.to_string()))
                 } else {

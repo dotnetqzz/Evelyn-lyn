@@ -126,7 +126,9 @@ impl AvelynVal {
             AvelynVal::Bool(b)   => b.to_string(),
             AvelynVal::Int(i)    => i.to_string(),
             AvelynVal::Float(f)  => {
-                if f.fract() == 0.0 && f.abs() < 1e15 { format!("{}", *f as i64) }
+                if f.is_nan() { "NaN".to_string() }
+                else if f.is_infinite() { if *f > 0.0 { "Infinity".to_string() } else { "-Infinity".to_string() } }
+                else if f.fract() == 0.0 && f.abs() < 9.007199254740992e15 { format!("{}", *f as i64) }
                 else { f.to_string() }
             }
             AvelynVal::Str(s)    => s.as_ref().clone(),
@@ -266,7 +268,23 @@ impl AvelynVal {
             AvelynVal::Float(f) => {
                 if f.fract() == 0.0 && f.abs() < 1e15 { format!("{}", *f as i64) } else { f.to_string() }
             }
-            AvelynVal::Str(s) => format!("\"{}\"", s.replace('"', "\\\"")),
+            AvelynVal::Str(s) => {
+                let mut escaped = String::with_capacity(s.len() + 2);
+                escaped.push('"');
+                for c in s.chars() {
+                    match c {
+                        '"' => escaped.push_str("\\\""),
+                        '\\' => escaped.push_str("\\\\"),
+                        '\n' => escaped.push_str("\\n"),
+                        '\r' => escaped.push_str("\\r"),
+                        '\t' => escaped.push_str("\\t"),
+                        c if (c as u32) < 0x20 => { let _ = std::fmt::Write::write_fmt(&mut escaped, format_args!("\\u{:04X}", c as u32)); }
+                        c => escaped.push(c),
+                    }
+                }
+                escaped.push('"');
+                escaped
+            }
             AvelynVal::List(l) => {
                 let items: Vec<String> = l.borrow().iter().map(|v| v.json_str()).collect();
                 format!("[{}]", items.join(","))
@@ -346,18 +364,25 @@ impl AvelynVal {
         let mut pos = 1;
         match tag {
             0 => (AvelynVal::Null, 1),
-            1 => (AvelynVal::Bool(bytes[1] != 0), 2),
+            1 => {
+                if bytes.len() < 2 { return (AvelynVal::Null, 1); }
+                (AvelynVal::Bool(bytes[1] != 0), 2)
+            }
             2 => {
+                if bytes.len() < pos + 8 { return (AvelynVal::Null, bytes.len()); }
                 let i = i64::from_be_bytes(bytes[pos..pos+8].try_into().unwrap());
                 (AvelynVal::Int(i), 9)
             }
             3 => {
+                if bytes.len() < pos + 8 { return (AvelynVal::Null, bytes.len()); }
                 let f = f64::from_be_bytes(bytes[pos..pos+8].try_into().unwrap());
                 (AvelynVal::Float(f), 9)
             }
             4 => {
+                if bytes.len() < pos + 4 { return (AvelynVal::Null, bytes.len()); }
                 let len = u32::from_be_bytes(bytes[pos..pos+4].try_into().unwrap()) as usize;
                 pos += 4;
+                if bytes.len() < pos + len { return (AvelynVal::Null, bytes.len()); }
                 let s = String::from_utf8_lossy(&bytes[pos..pos+len]).to_string();
                 (AvelynVal::str(s), pos + len)
             }

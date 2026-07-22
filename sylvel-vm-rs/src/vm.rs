@@ -8,73 +8,74 @@ use indexmap::IndexMap;
 
 use crate::bytecode::{Module, Proto};
 use crate::value::{NativeFn, SylError, SylVal};
+use crate::verifier;
 
 // ---------------------------------------------------------------------------
 // Opcodes (must match Instruction.swift exactly)
 // ---------------------------------------------------------------------------
 
-const OP_LOAD_CONST:    u8 = 0x01;
-const OP_LOAD_NULL:     u8 = 0x02;
-const OP_LOAD_TRUE:     u8 = 0x03;
-const OP_LOAD_FALSE:    u8 = 0x04;
-const OP_LOAD_VAR:      u8 = 0x05;
-const OP_STORE_VAR:     u8 = 0x06;
-const OP_LOAD_GLOBAL:   u8 = 0x07;
-const OP_STORE_GLOBAL:  u8 = 0x08;
-const OP_DELETE_VAR:    u8 = 0x09;
-const OP_POP:           u8 = 0x0A;
-const OP_DUP:           u8 = 0x0B;
-const OP_SWAP:          u8 = 0x0C;
-const OP_ADD:           u8 = 0x10;
-const OP_SUB:           u8 = 0x11;
-const OP_MUL:           u8 = 0x12;
-const OP_DIV:           u8 = 0x13;
-const OP_MOD:           u8 = 0x14;
-const OP_POW:           u8 = 0x15;
-const OP_FLOORDIV:      u8 = 0x16;
-const OP_NEG:           u8 = 0x17;
-const OP_EQ:            u8 = 0x20;
-const OP_NEQ:           u8 = 0x21;
-const OP_LT:            u8 = 0x22;
-const OP_GT:            u8 = 0x23;
-const OP_LTE:           u8 = 0x24;
-const OP_GTE:           u8 = 0x25;
-const OP_NOT:           u8 = 0x30;
-const OP_AND:           u8 = 0x31;
-const OP_OR:            u8 = 0x32;
-const OP_BAND:          u8 = 0x38;
-const OP_BOR:           u8 = 0x39;
-const OP_BXOR:          u8 = 0x3A;
-const OP_BNOT:          u8 = 0x3B;
-const OP_SHL:           u8 = 0x3C;
-const OP_SHR:           u8 = 0x3D;
-const OP_USHR:          u8 = 0x3E;
-const OP_JUMP:          u8 = 0x40;
-const OP_JUMP_IF_F:     u8 = 0x41;
-const OP_JUMP_IF_T:     u8 = 0x42;
-const OP_JUMP_IF_F_POP: u8 = 0x43;
-const OP_JUMP_IF_T_POP: u8 = 0x44;
-const OP_MAKE_FUNC:     u8 = 0x50;
-const OP_CALL:          u8 = 0x51;
-const OP_CALL_NATIVE:   u8 = 0x52;
-const OP_RETURN:        u8 = 0x53;
-const OP_RETURN_NULL:   u8 = 0x54;
-const OP_MAKE_LIST:     u8 = 0x60;
-const OP_MAKE_MAP:      u8 = 0x61;
-const OP_GET_INDEX:     u8 = 0x62;
-const OP_SET_INDEX:     u8 = 0x63;
-const OP_SPREAD:        u8 = 0x64;
-const OP_GET_ATTR:      u8 = 0x68;
-const OP_SET_ATTR:      u8 = 0x69;
-const OP_THROW:         u8 = 0x70;
-const OP_TRY_BEGIN:     u8 = 0x71;
-const OP_TRY_END:       u8 = 0x72;
-const OP_CATCH_STORE:   u8 = 0x73;
-const OP_STR_CONCAT:    u8 = 0x78;
-const OP_FORMAT_VAL:    u8 = 0x79;
-const OP_IMPORT:        u8 = 0x80;
-const OP_LINE:          u8 = 0xFE;
-const OP_NOP:           u8 = 0xFF;
+pub(crate) const OP_LOAD_CONST:    u8 = 0x01;
+pub(crate) const OP_LOAD_NULL:     u8 = 0x02;
+pub(crate) const OP_LOAD_TRUE:     u8 = 0x03;
+pub(crate) const OP_LOAD_FALSE:    u8 = 0x04;
+pub(crate) const OP_LOAD_VAR:      u8 = 0x05;
+pub(crate) const OP_STORE_VAR:     u8 = 0x06;
+pub(crate) const OP_LOAD_GLOBAL:   u8 = 0x07;
+pub(crate) const OP_STORE_GLOBAL:  u8 = 0x08;
+pub(crate) const OP_DELETE_VAR:    u8 = 0x09;
+pub(crate) const OP_POP:           u8 = 0x0A;
+pub(crate) const OP_DUP:           u8 = 0x0B;
+pub(crate) const OP_SWAP:          u8 = 0x0C;
+pub(crate) const OP_ADD:           u8 = 0x10;
+pub(crate) const OP_SUB:           u8 = 0x11;
+pub(crate) const OP_MUL:           u8 = 0x12;
+pub(crate) const OP_DIV:           u8 = 0x13;
+pub(crate) const OP_MOD:           u8 = 0x14;
+pub(crate) const OP_POW:           u8 = 0x15;
+pub(crate) const OP_FLOORDIV:      u8 = 0x16;
+pub(crate) const OP_NEG:           u8 = 0x17;
+pub(crate) const OP_EQ:            u8 = 0x20;
+pub(crate) const OP_NEQ:           u8 = 0x21;
+pub(crate) const OP_LT:            u8 = 0x22;
+pub(crate) const OP_GT:            u8 = 0x23;
+pub(crate) const OP_LTE:           u8 = 0x24;
+pub(crate) const OP_GTE:           u8 = 0x25;
+pub(crate) const OP_NOT:           u8 = 0x30;
+pub(crate) const OP_AND:           u8 = 0x31;
+pub(crate) const OP_OR:            u8 = 0x32;
+pub(crate) const OP_BAND:          u8 = 0x38;
+pub(crate) const OP_BOR:           u8 = 0x39;
+pub(crate) const OP_BXOR:          u8 = 0x3A;
+pub(crate) const OP_BNOT:          u8 = 0x3B;
+pub(crate) const OP_SHL:           u8 = 0x3C;
+pub(crate) const OP_SHR:           u8 = 0x3D;
+pub(crate) const OP_USHR:          u8 = 0x3E;
+pub(crate) const OP_JUMP:          u8 = 0x40;
+pub(crate) const OP_JUMP_IF_F:     u8 = 0x41;
+pub(crate) const OP_JUMP_IF_T:     u8 = 0x42;
+pub(crate) const OP_JUMP_IF_F_POP: u8 = 0x43;
+pub(crate) const OP_JUMP_IF_T_POP: u8 = 0x44;
+pub(crate) const OP_MAKE_FUNC:     u8 = 0x50;
+pub(crate) const OP_CALL:          u8 = 0x51;
+pub(crate) const OP_CALL_NATIVE:   u8 = 0x52;
+pub(crate) const OP_RETURN:        u8 = 0x53;
+pub(crate) const OP_RETURN_NULL:   u8 = 0x54;
+pub(crate) const OP_MAKE_LIST:     u8 = 0x60;
+pub(crate) const OP_MAKE_MAP:      u8 = 0x61;
+pub(crate) const OP_GET_INDEX:     u8 = 0x62;
+pub(crate) const OP_SET_INDEX:     u8 = 0x63;
+pub(crate) const OP_SPREAD:        u8 = 0x64;
+pub(crate) const OP_GET_ATTR:      u8 = 0x68;
+pub(crate) const OP_SET_ATTR:      u8 = 0x69;
+pub(crate) const OP_THROW:         u8 = 0x70;
+pub(crate) const OP_TRY_BEGIN:     u8 = 0x71;
+pub(crate) const OP_TRY_END:       u8 = 0x72;
+pub(crate) const OP_CATCH_STORE:   u8 = 0x73;
+pub(crate) const OP_STR_CONCAT:    u8 = 0x78;
+pub(crate) const OP_FORMAT_VAL:    u8 = 0x79;
+pub(crate) const OP_IMPORT:        u8 = 0x80;
+pub(crate) const OP_LINE:          u8 = 0xFE;
+pub(crate) const OP_NOP:           u8 = 0xFF;
 
 // ---------------------------------------------------------------------------
 // Call frame
@@ -141,7 +142,8 @@ impl Vm {
     pub fn run_module(&mut self, module: &Module) -> Result<(), String> {
         if module.protos.is_empty() { return Ok(()); }
 
-        // Load pool constants into globals that are functions (keep pool available)
+        verifier::verify_module(module)?;
+
         let main_proto = module.protos.last().unwrap().clone();
         let result = self.exec_frame(module, main_proto, vec![]);
         match result {
@@ -429,11 +431,12 @@ impl Vm {
                         }
                         SylVal::Str(s) => {
                             let i = idx.as_i64();
-                            let bytes = s.as_bytes();
-                            let len = bytes.len() as i64;
-                            let i = if i < 0 { len + i } else { i };
-                            if i >= 0 && (i as usize) < bytes.len() {
-                                SylVal::Str(Rc::new((bytes[i as usize] as char).to_string()))
+                            let char_count = s.chars().count() as i64;
+                            let i = if i < 0 { char_count + i } else { i };
+                            if i >= 0 {
+                                if let Some(ch) = s.chars().nth(i as usize) {
+                                    SylVal::Str(Rc::new(ch.to_string()))
+                                } else { SylVal::Null }
                             } else { SylVal::Null }
                         }
                         _ => SylVal::Null,
@@ -446,9 +449,11 @@ impl Vm {
                     let obj = self.stack.pop().unwrap_or(SylVal::Null);
                     match &obj {
                         SylVal::List(l) => {
-                            let i = idx.as_i64() as usize;
+                            let i = idx.as_i64();
                             let mut items = l.borrow_mut();
-                            if i < items.len() { items[i] = val; }
+                            let len = items.len() as i64;
+                            let i = if i < 0 { len + i } else { i };
+                            if i >= 0 && (i as usize) < items.len() { items[i as usize] = val; }
                         }
                         SylVal::Map(m) => {
                             m.borrow_mut().insert(idx.format(), val);
@@ -529,6 +534,9 @@ impl Vm {
                     let argc = fetch_u16!() as usize;
                     // stack: ... callee arg0 arg1 ... arg(n-1)
                     let stack_len = self.stack.len();
+                    if stack_len < argc + 1 {
+                        return Err(SylError::msg("call: stack underflow"));
+                    }
                     let callee = self.stack[stack_len - argc - 1].clone();
                     let args: Vec<SylVal> = self.stack.drain(stack_len - argc..).collect();
                     self.stack.pop(); // remove callee
@@ -590,7 +598,15 @@ impl Vm {
                             self.stack.push(ret);
                         }
                         None => {
-                            return Err(SylError::fmt(format!("undefined native '{}'", name)));
+                            if let Some(SylVal::Func(proto)) = self.globals.get(name).cloned() {
+                                let ret = match self.exec_frame(module, proto, args) {
+                                    Ok(v) => v,
+                                    Err(e) => return Err(e),
+                                };
+                                self.stack.push(ret);
+                            } else {
+                                return Err(SylError::fmt(format!("undefined native or function '{}'", name)));
+                            }
                         }
                     }
                 }

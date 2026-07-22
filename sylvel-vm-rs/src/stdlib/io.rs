@@ -23,8 +23,30 @@ pub fn native_print_no_newline(_vm: &mut Vm, args: &[SylVal]) -> Result<SylVal, 
 
 pub fn native_time(_vm: &mut Vm, _args: &[SylVal]) -> Result<SylVal, SylError> {
     use std::time::{SystemTime, UNIX_EPOCH};
-    let ns = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos();
-    Ok(SylVal::Float(ns as f64))
+    let ms = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis();
+    Ok(SylVal::Float(ms as f64))
+}
+
+pub fn native_time_sec(_vm: &mut Vm, _args: &[SylVal]) -> Result<SylVal, SylError> {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let secs = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs();
+    Ok(SylVal::Float(secs as f64))
+}
+
+pub fn native_time_ms(_vm: &mut Vm, _args: &[SylVal]) -> Result<SylVal, SylError> {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let ms = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis();
+    Ok(SylVal::Float(ms as f64))
+}
+
+pub fn native_sleep(_vm: &mut Vm, args: &[SylVal]) -> Result<SylVal, SylError> {
+    let ms = arg(args, 0).as_i64();
+    std::thread::sleep(std::time::Duration::from_millis(ms as u64));
+    Ok(SylVal::Null)
+}
+
+pub fn native_to_string(vm: &mut Vm, args: &[SylVal]) -> Result<SylVal, SylError> {
+    native_str(vm, args)
 }
 
 pub fn native_make_iter(_vm: &mut Vm, args: &[SylVal]) -> Result<SylVal, SylError> {
@@ -45,7 +67,7 @@ pub fn native_len(_vm: &mut Vm, args: &[SylVal]) -> Result<SylVal, SylError> {
     let v = arg(args, 0);
     let n = match &v {
         SylVal::List(l) => l.borrow().len() as i64,
-        SylVal::Str(s) => s.len() as i64,
+        SylVal::Str(s) => s.chars().count() as i64,
         SylVal::Map(m) => m.borrow().len() as i64,
         _ => 0,
     };
@@ -62,8 +84,9 @@ pub fn native_str(_vm: &mut Vm, args: &[SylVal]) -> Result<SylVal, SylError> {
     if radix != 10 && radix >= 2 && radix <= 36 {
         if let SylVal::Int(n) = &v {
             let n = *n;
+            // i64::MIN-safe negation
             let is_neg = n < 0;
-            let mut u = if is_neg { -(n as i128) as u64 } else { n as u64 };
+            let mut u: u64 = if is_neg { (n as i64).wrapping_neg() as u64 } else { n as u64 };
             let mut chars = Vec::new();
             if u == 0 { chars.push('0'); }
             while u > 0 {
@@ -162,6 +185,10 @@ pub fn native_call_with_args(vm: &mut Vm, args: &[SylVal]) -> Result<SylVal, Syl
     };
     match callee {
         SylVal::Native(f) => f(vm, &arg_list),
+        SylVal::Func(_) => {
+            // Func needs a module ref — not available here; push error
+            Err(SylError::msg("__call_with_args__: cannot call Sylvel function without module context"))
+        }
         _ => Ok(SylVal::Null),
     }
 }
@@ -171,6 +198,12 @@ pub fn register(vm: &mut Vm) {
     vm.register_native("print",              native_print);
     vm.register_native("__print_no_nl__",    native_print_no_newline);
     vm.register_native("__time__",           native_time);
+    vm.register_native("dateNow",            native_time);
+    vm.register_native("timeSec",            native_time_sec);
+    vm.register_native("timeMs",             native_time_ms);
+    vm.register_native("timeSleep",           native_sleep);
+    vm.register_native("toString",           native_to_string);
+    vm.register_native("numToString",        native_to_string);
     vm.register_native("__make_iter__",      native_make_iter);
     vm.register_native("__iter_next__",      native_iter_next);
     vm.register_native("len",                native_len);
