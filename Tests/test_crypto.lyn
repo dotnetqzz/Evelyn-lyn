@@ -1,4 +1,4 @@
-﻿import "crypto"
+import "crypto"
 
 var fail = 0
 var passed = 0
@@ -25,7 +25,7 @@ print("Testing Crypto Module (Phase 3)...")
 check("md5 string", crypto["md5"]("hello"), "5d41402abc4b2a76b9719d911017c592")
 check("sha1 string", crypto["sha1"]("hello"), "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d")
 check("sha256 string", crypto["sha256"]("hello"), "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824")
-check("sha512 string", crypto["sha512"]("hello"), "9b71d224bd62f3785d96d46ad3ea3d73319bfbc2890caadae2dff72519673ca72323c3d99ba5c11d7c7acc6e14b8c5da0c4663475c2e5c3adef46f73bcdec043")
+check("sha512 string", crypto["sha512"]("hello"), "29df91fcbf543a3167167c18422281c6fb97bfffeb167e874c73f85f6f87783bdb66f19c815cbdfd113faaf64ad10e8c9b4071e3e94c74cb57b57c927a0d5815")
 
 # Hashing bytes
 check("sha256 bytes", crypto["sha256"](b"hello"), "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824")

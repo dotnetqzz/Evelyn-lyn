@@ -822,6 +822,26 @@ pub fn native_net_udp_socket(interp: &mut Interpreter, args: Vec<AvelynVal>) -> 
     Ok(AvelynVal::Int(id))
 }
 
+pub fn native_net_udp_bind(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+    interp.capabilities.check_net_server().map_err(AvelynError::fmt)?;
+    let (id, host, port) = if args.len() >= 3 {
+        (arg(&args, 0).as_i64(), arg(&args, 1).as_str(), arg(&args, 2).as_i64())
+    } else {
+        (0, arg(&args, 0).as_str(), arg(&args, 1).as_i64())
+    };
+    let addr = format!("{}:{}", host, port);
+    let socket = std::net::UdpSocket::bind(&addr)
+        .map_err(|e| AvelynError::fmt(format!("NetError: UdpSocket bind failed: {}", e)))?;
+    if id > 0 && interp.udp_sockets.contains_key(&id) {
+        interp.udp_sockets.insert(id, socket);
+    } else {
+        let new_id = interp.next_resource_id;
+        interp.next_resource_id += 1;
+        interp.udp_sockets.insert(new_id, socket);
+    }
+    Ok(AvelynVal::Bool(true))
+}
+
 pub fn native_net_send_to(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     let id = arg(&args, 0).as_i64();
     let bytes = match args.get(1) {

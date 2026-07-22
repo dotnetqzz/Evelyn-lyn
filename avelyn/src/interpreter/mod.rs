@@ -295,7 +295,7 @@ impl Interpreter {
         reg!("netPortScan", builtins::native_net_port_scan);
         reg!("netClose", builtins::native_noop);
         reg!("netRecvFrom", builtins::native_net_recv_from);
-        reg!("netUdpBind", builtins::native_net_udp_socket);
+        reg!("netUdpBind", builtins::native_net_udp_bind);
         reg!("netUdpSocket", builtins::native_net_udp_socket);
         reg!("aesEncrypt", builtins::native_aes_encrypt);
         reg!("aesDecrypt", builtins::native_aes_decrypt);
@@ -1195,14 +1195,15 @@ impl Interpreter {
                     "TypeError: unsupported operand types for '*': '{}' and '{}'",
                     l.type_name(), r.type_name())))),
             },
-            "/" => {
-                // True division (like Python's /): always returns float
-                let denom = r.as_f64();
-                if denom == 0.0 {
-                    return Err(Signal::Error(AvelynError::msg("ZeroDivisionError: division by zero")));
+            "/" => match (l, r) {
+                (AvelynVal::Int(_), AvelynVal::Int(b)) if *b == 0 => {
+                    Err(Signal::Error(AvelynError::msg("ZeroDivisionError: division by zero")))
                 }
-                Ok(AvelynVal::Float(l.as_f64() / denom))
-            }
+                _ => {
+                    let denom = r.as_f64();
+                    Ok(AvelynVal::Float(l.as_f64() / denom))
+                }
+            },
             "//" => match (l, r) {
                 (AvelynVal::Int(a), AvelynVal::Int(b)) => {
                     if *b == 0 { return Err(Signal::Error(AvelynError::msg("ZeroDivisionError: integer division by zero"))); }
