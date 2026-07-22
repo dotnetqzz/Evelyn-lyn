@@ -60,6 +60,12 @@ impl Interpreter {
         interp
     }
 
+    pub fn new_with_capabilities(capabilities: Capabilities) -> Self {
+        let mut interp = Self::new();
+        interp.capabilities = capabilities;
+        interp
+    }
+
     pub fn dummy() -> Self {
         Interpreter {
             globals: Env::new(),
@@ -339,9 +345,12 @@ impl Interpreter {
             match self.eval_node(node, env) {
                 Ok(v) => last = v,
                 Err(Signal::Return(v)) => return Ok(v),
-                Err(Signal::Error(e)) => return Err(e),
-                Err(Signal::Break) => return Err(AvelynError::msg("SyntaxError: break outside loop")),
-                Err(Signal::Continue) => return Err(AvelynError::msg("SyntaxError: continue outside loop")),
+                Err(Signal::Error(mut e)) => {
+                    if e.line == 0 { e = e.with_line(self.current_line, &self.current_file); }
+                    return Err(e);
+                }
+                Err(Signal::Break) => return Err(AvelynError::msg("SyntaxError: break outside loop").with_line(self.current_line, &self.current_file)),
+                Err(Signal::Continue) => return Err(AvelynError::msg("SyntaxError: continue outside loop").with_line(self.current_line, &self.current_file)),
             }
         }
         Ok(last)
@@ -1105,6 +1114,7 @@ impl Interpreter {
         }
     }
 
+    #[allow(dead_code)]
     pub fn call_func(&mut self, callee: &AvelynVal, args: Vec<AvelynVal>) -> Result<AvelynVal, Signal> {
         match callee {
             AvelynVal::Native(n_fn) => n_fn(self, args).map_err(Signal::Error),
@@ -1147,13 +1157,13 @@ impl Interpreter {
         }
     }
 
-    fn eval_bin_op(&self, l: &AvelynVal, op: &str, r: &AvelynVal) -> Result<AvelynVal, Signal> {
+    pub(crate) fn eval_bin_op(&self, l: &AvelynVal, op: &str, r: &AvelynVal) -> Result<AvelynVal, Signal> {
         match op {
             "+" => match (l, r) {
-                (AvelynVal::Int(a), AvelynVal::Int(b)) => Ok(match a.checked_add(*b) {
-                    Some(v) => AvelynVal::Int(v),
-                    None => AvelynVal::Float(*a as f64 + *b as f64),
-                }),
+                (AvelynVal::Int(a), AvelynVal::Int(b)) => match a.checked_add(*b) {
+                    Some(v) => Ok(AvelynVal::Int(v)),
+                    None => Err(Signal::Error(AvelynError::msg("OverflowError: integer addition overflow"))),
+                },
                 (AvelynVal::Float(a), AvelynVal::Float(b)) => Ok(AvelynVal::Float(a + b)),
                 (AvelynVal::Int(a), AvelynVal::Float(b)) => Ok(AvelynVal::Float(*a as f64 + b)),
                 (AvelynVal::Float(a), AvelynVal::Int(b)) => Ok(AvelynVal::Float(a + *b as f64)),
@@ -1170,10 +1180,10 @@ impl Interpreter {
                     l.type_name(), r.type_name())))),
             },
             "-" => match (l, r) {
-                (AvelynVal::Int(a), AvelynVal::Int(b)) => Ok(match a.checked_sub(*b) {
-                    Some(v) => AvelynVal::Int(v),
-                    None => AvelynVal::Float(*a as f64 - *b as f64),
-                }),
+                (AvelynVal::Int(a), AvelynVal::Int(b)) => match a.checked_sub(*b) {
+                    Some(v) => Ok(AvelynVal::Int(v)),
+                    None => Err(Signal::Error(AvelynError::msg("OverflowError: integer subtraction overflow"))),
+                },
                 (AvelynVal::Float(a), AvelynVal::Float(b)) => Ok(AvelynVal::Float(a - b)),
                 (AvelynVal::Int(a), AvelynVal::Float(b)) => Ok(AvelynVal::Float(*a as f64 - b)),
                 (AvelynVal::Float(a), AvelynVal::Int(b)) => Ok(AvelynVal::Float(a - *b as f64)),
@@ -1184,10 +1194,10 @@ impl Interpreter {
             "*" => match (l, r) {
                 (AvelynVal::Str(s), AvelynVal::Int(n)) => Ok(AvelynVal::str(s.repeat((*n as usize).max(0)))),
                 (AvelynVal::Int(n), AvelynVal::Str(s)) => Ok(AvelynVal::str(s.repeat((*n as usize).max(0)))),
-                (AvelynVal::Int(a), AvelynVal::Int(b)) => Ok(match a.checked_mul(*b) {
-                    Some(v) => AvelynVal::Int(v),
-                    None => AvelynVal::Float(*a as f64 * *b as f64),
-                }),
+                (AvelynVal::Int(a), AvelynVal::Int(b)) => match a.checked_mul(*b) {
+                    Some(v) => Ok(AvelynVal::Int(v)),
+                    None => Err(Signal::Error(AvelynError::msg("OverflowError: integer multiplication overflow"))),
+                },
                 (AvelynVal::Float(a), AvelynVal::Float(b)) => Ok(AvelynVal::Float(a * b)),
                 (AvelynVal::Int(a), AvelynVal::Float(b)) => Ok(AvelynVal::Float(*a as f64 * b)),
                 (AvelynVal::Float(a), AvelynVal::Int(b)) => Ok(AvelynVal::Float(a * *b as f64)),
@@ -1223,11 +1233,10 @@ impl Interpreter {
                 }
             },
             "**" => match (l, r) {
-                // Integer exponentiation with overflow promotion
                 (AvelynVal::Int(base), AvelynVal::Int(exp)) if *exp >= 0 && *exp <= 62 => {
                     match base.checked_pow(*exp as u32) {
                         Some(v) => Ok(AvelynVal::Int(v)),
-                        None => Ok(AvelynVal::Float((*base as f64).powf(*exp as f64))),
+                        None => Err(Signal::Error(AvelynError::msg("OverflowError: integer exponentiation overflow"))),
                     }
                 }
                 _ => Ok(AvelynVal::Float(l.as_f64().powf(r.as_f64()))),
@@ -1236,38 +1245,38 @@ impl Interpreter {
             "==" => Ok(AvelynVal::Bool(l.deep_equal(r))),
             "!=" => Ok(AvelynVal::Bool(!l.deep_equal(r))),
             // String-aware relational operators
-            "<" => Ok(AvelynVal::Bool(match (l, r) {
-                (AvelynVal::Str(a), AvelynVal::Str(b)) => a.as_str() < b.as_str(),
-                (AvelynVal::Int(a), AvelynVal::Int(b)) => a < b,
-                (AvelynVal::Float(a), AvelynVal::Float(b)) => a < b,
-                (AvelynVal::Int(a), AvelynVal::Float(b)) => (*a as f64) < *b,
-                (AvelynVal::Float(a), AvelynVal::Int(b)) => *a < (*b as f64),
-                _ => l.as_f64() < r.as_f64(),
-            })),
-            ">" => Ok(AvelynVal::Bool(match (l, r) {
-                (AvelynVal::Str(a), AvelynVal::Str(b)) => a.as_str() > b.as_str(),
-                (AvelynVal::Int(a), AvelynVal::Int(b)) => a > b,
-                (AvelynVal::Float(a), AvelynVal::Float(b)) => a > b,
-                (AvelynVal::Int(a), AvelynVal::Float(b)) => (*a as f64) > *b,
-                (AvelynVal::Float(a), AvelynVal::Int(b)) => *a > (*b as f64),
-                _ => l.as_f64() > r.as_f64(),
-            })),
-            "<=" => Ok(AvelynVal::Bool(match (l, r) {
-                (AvelynVal::Str(a), AvelynVal::Str(b)) => a.as_str() <= b.as_str(),
-                (AvelynVal::Int(a), AvelynVal::Int(b)) => a <= b,
-                (AvelynVal::Float(a), AvelynVal::Float(b)) => a <= b,
-                (AvelynVal::Int(a), AvelynVal::Float(b)) => (*a as f64) <= *b,
-                (AvelynVal::Float(a), AvelynVal::Int(b)) => *a <= (*b as f64),
-                _ => l.as_f64() <= r.as_f64(),
-            })),
-            ">=" => Ok(AvelynVal::Bool(match (l, r) {
-                (AvelynVal::Str(a), AvelynVal::Str(b)) => a.as_str() >= b.as_str(),
-                (AvelynVal::Int(a), AvelynVal::Int(b)) => a >= b,
-                (AvelynVal::Float(a), AvelynVal::Float(b)) => a >= b,
-                (AvelynVal::Int(a), AvelynVal::Float(b)) => (*a as f64) >= *b,
-                (AvelynVal::Float(a), AvelynVal::Int(b)) => *a >= (*b as f64),
-                _ => l.as_f64() >= r.as_f64(),
-            })),
+            "<" => match (l, r) {
+                (AvelynVal::Str(a), AvelynVal::Str(b)) => Ok(AvelynVal::Bool(a.as_str() < b.as_str())),
+                (AvelynVal::Int(a), AvelynVal::Int(b)) => Ok(AvelynVal::Bool(a < b)),
+                (AvelynVal::Float(a), AvelynVal::Float(b)) => Ok(AvelynVal::Bool(a < b)),
+                (AvelynVal::Int(a), AvelynVal::Float(b)) => Ok(AvelynVal::Bool((*a as f64) < *b)),
+                (AvelynVal::Float(a), AvelynVal::Int(b)) => Ok(AvelynVal::Bool(*a < (*b as f64))),
+                _ => Err(Signal::Error(AvelynError::fmt(format!("TypeError: unsupported operand types for <: '{}' and '{}'", l.type_name(), r.type_name())))),
+            },
+            ">" => match (l, r) {
+                (AvelynVal::Str(a), AvelynVal::Str(b)) => Ok(AvelynVal::Bool(a.as_str() > b.as_str())),
+                (AvelynVal::Int(a), AvelynVal::Int(b)) => Ok(AvelynVal::Bool(a > b)),
+                (AvelynVal::Float(a), AvelynVal::Float(b)) => Ok(AvelynVal::Bool(a > b)),
+                (AvelynVal::Int(a), AvelynVal::Float(b)) => Ok(AvelynVal::Bool((*a as f64) > *b)),
+                (AvelynVal::Float(a), AvelynVal::Int(b)) => Ok(AvelynVal::Bool(*a > (*b as f64))),
+                _ => Err(Signal::Error(AvelynError::fmt(format!("TypeError: unsupported operand types for >: '{}' and '{}'", l.type_name(), r.type_name())))),
+            },
+            "<=" => match (l, r) {
+                (AvelynVal::Str(a), AvelynVal::Str(b)) => Ok(AvelynVal::Bool(a.as_str() <= b.as_str())),
+                (AvelynVal::Int(a), AvelynVal::Int(b)) => Ok(AvelynVal::Bool(a <= b)),
+                (AvelynVal::Float(a), AvelynVal::Float(b)) => Ok(AvelynVal::Bool(a <= b)),
+                (AvelynVal::Int(a), AvelynVal::Float(b)) => Ok(AvelynVal::Bool((*a as f64) <= *b)),
+                (AvelynVal::Float(a), AvelynVal::Int(b)) => Ok(AvelynVal::Bool(*a <= (*b as f64))),
+                _ => Err(Signal::Error(AvelynError::fmt(format!("TypeError: unsupported operand types for <=: '{}' and '{}'", l.type_name(), r.type_name())))),
+            },
+            ">=" => match (l, r) {
+                (AvelynVal::Str(a), AvelynVal::Str(b)) => Ok(AvelynVal::Bool(a.as_str() >= b.as_str())),
+                (AvelynVal::Int(a), AvelynVal::Int(b)) => Ok(AvelynVal::Bool(a >= b)),
+                (AvelynVal::Float(a), AvelynVal::Float(b)) => Ok(AvelynVal::Bool(a >= b)),
+                (AvelynVal::Int(a), AvelynVal::Float(b)) => Ok(AvelynVal::Bool((*a as f64) >= *b)),
+                (AvelynVal::Float(a), AvelynVal::Int(b)) => Ok(AvelynVal::Bool(*a >= (*b as f64))),
+                _ => Err(Signal::Error(AvelynError::fmt(format!("TypeError: unsupported operand types for >=: '{}' and '{}'", l.type_name(), r.type_name())))),
+            },
 
             "&"  => Ok(AvelynVal::Int(l.as_i64() & r.as_i64())),
             "|"  => Ok(AvelynVal::Int(l.as_i64() | r.as_i64())),

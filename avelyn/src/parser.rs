@@ -5,6 +5,7 @@ use crate::ast::{ASTNode, Param, Token};
 
 pub struct Parser {
     tokens: Vec<Token>,
+    #[allow(dead_code)]
     lines:  Vec<u32>,
     pos:    usize,
 }
@@ -24,6 +25,7 @@ impl Parser {
         self.tokens.get(self.pos + offset).unwrap_or(&Token::Eof)
     }
     fn advance(&mut self) { if self.pos < self.tokens.len() { self.pos += 1; } }
+    #[allow(dead_code)]
     fn consume(&mut self, expected: &Token) -> bool {
         if std::mem::discriminant(self.cur()) == std::mem::discriminant(expected) {
             self.advance(); true

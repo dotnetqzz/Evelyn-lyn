@@ -406,12 +406,14 @@ impl AvelynVal {
                 Some(3) => c.f64().map(AvelynVal::Float).unwrap_or(AvelynVal::Null),
                 Some(4) => c.str().map(AvelynVal::str).unwrap_or(AvelynVal::Null),
                 Some(5) => {
-                    let count = c.u32().unwrap_or(0) as usize;
+                    let rem = c.data.len().saturating_sub(c.pos);
+                    let count = (c.u32().unwrap_or(0) as usize).min(rem);
                     let list: Vec<AvelynVal> = (0..count).map(|_| parse(c)).collect();
                     AvelynVal::list(list)
                 }
                 Some(6) => {
-                    let count = c.u32().unwrap_or(0) as usize;
+                    let rem = c.data.len().saturating_sub(c.pos);
+                    let count = (c.u32().unwrap_or(0) as usize).min(rem);
                     let mut map = IndexMap::new();
                     for _ in 0..count {
                         let k = c.str().unwrap_or_default();
@@ -422,7 +424,8 @@ impl AvelynVal {
                 }
                 Some(7) => {
                     let type_name = c.str().unwrap_or_default();
-                    let flen = c.u32().unwrap_or(0) as usize;
+                    let rem = c.data.len().saturating_sub(c.pos);
+                    let flen = (c.u32().unwrap_or(0) as usize).min(rem);
                     let mut fields = IndexMap::new();
                     for _ in 0..flen {
                         let k = c.str().unwrap_or_default();
@@ -434,7 +437,8 @@ impl AvelynVal {
                 Some(8) => {
                     let type_name = c.str().unwrap_or_default();
                     let variant_name = c.str().unwrap_or_default();
-                    let vcount = c.u32().unwrap_or(0) as usize;
+                    let rem = c.data.len().saturating_sub(c.pos);
+                    let vcount = (c.u32().unwrap_or(0) as usize).min(rem);
                     let values: Vec<AvelynVal> = (0..vcount).map(|_| parse(c)).collect();
                     AvelynVal::Variant(Rc::new(EnumVariantInstance { type_name, variant_name, values }))
                 }

@@ -8,6 +8,7 @@ pub struct Capabilities {
     pub net_server: bool,
     pub sys_exec: bool,
     pub env_read: bool,
+    pub ffi_load: bool,
 }
 
 impl Capabilities {
@@ -19,6 +20,7 @@ impl Capabilities {
             net_server: true,
             sys_exec: true,
             env_read: true,
+            ffi_load: true,
         }
     }
 
@@ -30,6 +32,7 @@ impl Capabilities {
             net_server: false,
             sys_exec: false,
             env_read: false,
+            ffi_load: false,
         }
     }
 
@@ -55,5 +58,9 @@ impl Capabilities {
 
     pub fn check_env_read(&self) -> Result<(), String> {
         if self.env_read { Ok(()) } else { Err("SecurityError: Environment variable access denied".to_string()) }
+    }
+
+    pub fn check_ffi_load(&self) -> Result<(), String> {
+        if self.ffi_load { Ok(()) } else { Err("SecurityError: Native FFI/plugin loading access denied".to_string()) }
     }
 }

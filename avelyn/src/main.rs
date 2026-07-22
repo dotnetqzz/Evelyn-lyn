@@ -493,3 +493,50 @@ fn run_vm_file(path: &str) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::interpreter::capabilities::Capabilities;
+    use crate::value::AvelynVal;
+
+    #[test]
+    fn test_worker_sandbox_propagation() {
+        let interp = Interpreter::new_with_capabilities(Capabilities::none());
+        assert!(interp.capabilities.check_fs_write().is_err());
+        let caps = interp.capabilities.clone();
+        let worker_interp = Interpreter::new_with_capabilities(caps);
+        assert!(worker_interp.capabilities.check_fs_write().is_err());
+    }
+
+    #[test]
+    fn test_unmarshal_dos_protection() {
+        let mut payload = vec![5u8];
+        payload.extend_from_slice(&0xFFFF_FFFFu32.to_be_bytes());
+        let (val, _pos) = AvelynVal::unmarshal(&payload);
+        assert!(matches!(val, AvelynVal::List(_)));
+    }
+
+    #[test]
+    fn test_relational_type_safety() {
+        let interp = Interpreter::new();
+        let err = interp.eval_bin_op(&AvelynVal::Null, "<", &AvelynVal::Int(5));
+        assert!(err.is_err());
+    }
+
+    #[test]
+    fn test_integer_overflow_error() {
+        let interp = Interpreter::new();
+        let err = interp.eval_bin_op(&AvelynVal::Int(i64::MAX), "+", &AvelynVal::Int(1));
+        assert!(err.is_err());
+    }
+
+    #[test]
+    fn test_substring_negative_index() {
+        let mut interp = Interpreter::new();
+        let s = AvelynVal::str("hello world");
+        let start = AvelynVal::Int(-5);
+        let res = crate::interpreter::builtins::native_substring(&mut interp, vec![s, start]).unwrap();
+        assert_eq!(res.as_str(), "world");
+    }
+}

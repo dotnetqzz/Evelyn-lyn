@@ -14,6 +14,7 @@ impl PluginManager {
     }
 
     pub fn load(&mut self, path: &str, interp: &mut Interpreter) -> Result<(), String> {
+        interp.capabilities.check_ffi_load()?;
         // SAFETY: Loading arbitrary shared libraries is inherently unsafe.
         let lib = unsafe { Library::new(path).map_err(|e| format!("FFIError: Failed to load library: {}", e))? };
 

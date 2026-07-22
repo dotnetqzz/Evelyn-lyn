@@ -48,6 +48,7 @@ pub enum Pattern {
     Struct { name: String, fields: Vec<(String, Pattern)> },
     Enum { type_name: String, variant: String, args: Vec<Pattern> },
     List(Vec<Pattern>),
+    #[allow(dead_code)]
     Or(Vec<Pattern>),
 }
 

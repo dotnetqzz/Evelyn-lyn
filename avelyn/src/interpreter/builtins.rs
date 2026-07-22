@@ -233,18 +233,25 @@ pub fn native_index_of(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<Avel
 pub fn native_substring(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     let s = arg(&args, 0).as_str();
     let chars: Vec<char> = s.chars().collect();
-    let len = chars.len();
-    let start = (arg(&args, 1).as_i64() as usize).min(len);
-    let end = match args.get(2) {
+    let len = chars.len() as i64;
+    
+    let raw_start = arg(&args, 1).as_i64();
+    let start_idx = if raw_start < 0 { (len + raw_start).max(0) as usize } else { (raw_start as usize).min(chars.len()) };
+    
+    let end_idx = match args.get(2) {
         Some(v) if !v.is_null() => {
-            let arg2 = v.as_i64() as usize;
-            // If arg2 + start <= len or used as length in stdlib
-            if start + arg2 <= len { start + arg2 } else { arg2.min(len) }
+            let raw_end = v.as_i64();
+            if raw_end < 0 {
+                (len + raw_end).max(0) as usize
+            } else {
+                let as_len = start_idx + (raw_end as usize);
+                if as_len <= chars.len() { as_len } else { (raw_end as usize).min(chars.len()) }
+            }
         }
-        _ => len,
+        _ => chars.len(),
     };
-    if start >= end { return Ok(AvelynVal::str("")); }
-    let sub: String = chars[start..end].iter().collect();
+    if start_idx >= end_idx { return Ok(AvelynVal::str("")); }
+    let sub: String = chars[start_idx..end_idx].iter().collect();
     Ok(AvelynVal::str(sub))
 }
 
@@ -725,7 +732,11 @@ pub fn native_sys_remove_file(interp: &mut Interpreter, args: Vec<AvelynVal>) ->
 }
 
 pub fn native_sys_random_bytes(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
-    let len = arg(&args, 0).as_i64() as usize;
+    let raw_len = arg(&args, 0).as_i64();
+    if raw_len < 0 {
+        return Err(AvelynError::msg("ValueError: randomBytes count cannot be negative"));
+    }
+    let len = (raw_len as usize).min(64 * 1024 * 1024);
     let seed = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().subsec_nanos();
     let bytes: Vec<u8> = (0..len).map(|i| ((seed as usize + i * 31) % 256) as u8).collect();
     Ok(AvelynVal::ByteArray(Rc::new(RefCell::new(bytes))))
@@ -861,7 +872,8 @@ pub fn native_net_send_to(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Res
 
 pub fn native_net_recv_from(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     let id = arg(&args, 0).as_i64();
-    let size = if args.len() > 1 { arg(&args, 1).as_i64() as usize } else { 4096 };
+    let raw_size = if args.len() > 1 { arg(&args, 1).as_i64() } else { 4096 };
+    let size = (raw_size.max(0) as usize).min(64 * 1024 * 1024);
     let socket = interp.udp_sockets.get(&id)
         .ok_or_else(|| AvelynError::fmt(format!("NetError: invalid UDP socket handle {}", id)))?;
     let mut buf = vec![0u8; size];
@@ -935,7 +947,8 @@ pub fn native_net_send(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result
 pub fn native_net_recv(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     use std::io::Read;
     let id = arg(&args, 0).as_i64();
-    let size = if args.len() > 1 { arg(&args, 1).as_i64() as usize } else { 4096 };
+    let raw_size = if args.len() > 1 { arg(&args, 1).as_i64() } else { 4096 };
+    let size = (raw_size.max(0) as usize).min(64 * 1024 * 1024);
     let stream = interp.tcp_streams.get_mut(&id)
         .ok_or_else(|| AvelynError::fmt(format!("NetError: invalid stream handle {}", id)))?;
     let mut buf = vec![0u8; size];
@@ -1416,12 +1429,21 @@ pub fn native_sys_env(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<
 pub fn native_sys_execute(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     interp.capabilities.check_sys_exec().map_err(AvelynError::fmt)?;
     let cmd = arg(&args, 0).as_str();
-    let out = if cfg!(windows) {
+    let res = if cfg!(windows) {
         std::process::Command::new("cmd").args(["/C", &cmd]).output()
     } else {
         std::process::Command::new("sh").args(["-c", &cmd]).output()
     };
-    Ok(out.map(|o| AvelynVal::str(String::from_utf8_lossy(&o.stdout).to_string())).unwrap_or(AvelynVal::Null))
+    match res {
+        Ok(out) => {
+            let mut map = IndexMap::new();
+            map.insert("stdout".into(), AvelynVal::str(String::from_utf8_lossy(&out.stdout).to_string()));
+            map.insert("stderr".into(), AvelynVal::str(String::from_utf8_lossy(&out.stderr).to_string()));
+            map.insert("exit_code".into(), AvelynVal::Int(out.status.code().unwrap_or(-1) as i64));
+            Ok(AvelynVal::map(map))
+        }
+        Err(e) => Err(AvelynError::fmt(format!("SysExecuteError: command execution failed: {}", e))),
+    }
 }
 pub fn native_sys_random_double(_: &mut Interpreter, _: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     let seed = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().subsec_nanos();
@@ -1483,6 +1505,7 @@ pub fn native_reversed(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<Avel
 pub fn native_noop(_: &mut Interpreter, _: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     Ok(AvelynVal::Null)
 }
+#[allow(dead_code)]
 pub fn native_pass_through(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     Ok(arg(&args, 0))
 }
@@ -1572,7 +1595,7 @@ pub fn native_num_cpus(_: &mut Interpreter, _: Vec<AvelynVal>) -> Result<AvelynV
     Ok(AvelynVal::Int(cpus as i64))
 }
 
-pub fn native_spawn_workers(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
+pub fn native_spawn_workers(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     let script_file = arg(&args, 0).as_str();
     let num_threads = if args.len() > 1 { arg(&args, 1).as_i64() as usize } else {
         std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1)
@@ -1583,15 +1606,17 @@ pub fn native_spawn_workers(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result
         Err(e) => return Err(AvelynError::fmt(format!("spawnWorkers IOError: {}", e))),
     };
 
+    let caps = interp.capabilities.clone();
     let mut handles = Vec::new();
     for i in 0..num_threads {
         let src = source.clone();
         let f = script_file.clone();
+        let worker_caps = caps.clone();
         let handle = std::thread::Builder::new()
             .name(format!("avelyn-worker-{}", i))
             .stack_size(128 * 1024 * 1024)
             .spawn(move || {
-                let mut interp = Interpreter::new();
+                let mut interp = Interpreter::new_with_capabilities(worker_caps);
                 interp.current_file = f;
                 let mut lexer = crate::lexer::Lexer::new(&src);
                 let tokens = lexer.tokenize();
