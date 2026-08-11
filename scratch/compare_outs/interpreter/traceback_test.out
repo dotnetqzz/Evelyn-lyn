@@ -1,7 +1,0 @@
-Result of traceback execution:
-Traceback (most recent call last):
-  File "Tests\traceback_test.lyn", line 12, in <top-level>
-  File "Tests\traceback_test.lyn", line 13, in nested_one
-  File "Tests\traceback_test.lyn", line 9, in nested_two
-Error: nested_error
-PASS: traceback support
