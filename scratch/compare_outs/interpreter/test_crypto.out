@@ -1,0 +1,17 @@
+Testing Crypto Module (Phase 3)...
+PASS: md5 string
+PASS: sha1 string
+PASS: sha256 string
+PASS: sha512 string
+PASS: sha256 bytes
+PASS: hmac sha256
+PASS: randomBytes length
+PASS: randomInt in bounds
+PASS: hexEncode
+PASS: hexDecode
+PASS: base64Encode
+PASS: base64Decode
+PASS: aes ECB roundtrip
+PASS: aes CBC roundtrip
+
+Crypto Tests: 14 passed, 0 failed

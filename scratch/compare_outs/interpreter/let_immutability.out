@@ -1,0 +1,2 @@
+PASS: immutable let caught: ImmutabilityError: cannot assign to immutable binding 'x' declared with 'let'
+PASS: let immutability

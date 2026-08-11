@@ -23,6 +23,8 @@ pub struct Interpreter {
     pub current_file: String,
     pub current_line: u32,
     pub call_stack: Vec<(String, String, u32)>, // (func_name, file, line)
+    pub last_error: Option<AvelynError>,
+    pub last_error_stack: Vec<(String, String, u32)>,
     pub call_depth: usize,                       // recursion depth guard
     pub native_registry: HashMap<String, NativeFn>,
     pub module_manager: ModuleManager,
@@ -44,6 +46,8 @@ impl Interpreter {
             current_file: "<main>".into(),
             current_line: 1,
             call_stack: Vec::new(),
+            last_error: None,
+            last_error_stack: Vec::new(),
             call_depth: 0,
             native_registry: HashMap::new(),
             module_manager: ModuleManager::new(),
@@ -72,6 +76,8 @@ impl Interpreter {
             current_file: "".into(),
             current_line: 0,
             call_stack: Vec::new(),
+            last_error: None,
+            last_error_stack: Vec::new(),
             call_depth: 0,
             native_registry: HashMap::new(),
             module_manager: ModuleManager::new(),
@@ -339,7 +345,15 @@ impl Interpreter {
         self.eval_ast_with_env(ast, &self.globals.clone())
     }
 
+    fn update_last_error_stack(&mut self, stack: Vec<(String, String, u32)>) {
+        if self.last_error_stack.len() < stack.len() {
+            self.last_error_stack = stack;
+        }
+    }
+
     pub fn eval_ast_with_env(&mut self, ast: &[ASTNode], env: &Rc<Env>) -> Result<AvelynVal, AvelynError> {
+        self.last_error = None;
+        self.last_error_stack.clear();
         let mut last = AvelynVal::Null;
         for node in ast {
             match self.eval_node(node, env) {
@@ -347,6 +361,8 @@ impl Interpreter {
                 Err(Signal::Return(v)) => return Ok(v),
                 Err(Signal::Error(mut e)) => {
                     if e.line == 0 { e = e.with_line(self.current_line, &self.current_file); }
+                    self.last_error = Some(e.clone());
+                    self.update_last_error_stack(self.call_stack.clone());
                     return Err(e);
                 }
                 Err(Signal::Break) => return Err(AvelynError::msg("SyntaxError: break outside loop").with_line(self.current_line, &self.current_file)),
@@ -364,6 +380,10 @@ impl Interpreter {
             ASTNode::Bool(b) => Ok(AvelynVal::Bool(*b)),
             ASTNode::Null => Ok(AvelynVal::Null),
             ASTNode::ByteArray(b) => Ok(AvelynVal::ByteArray(Rc::new(std::cell::RefCell::new(b.clone())))),
+            ASTNode::Line(line, inner) => {
+                self.current_line = *line;
+                self.eval_node(inner, env)
+            }
 
             ASTNode::Var(name) => {
                 if let Some(v) = env.get(name) { Ok(v) }
@@ -821,11 +841,21 @@ impl Interpreter {
             }
 
             ASTNode::TryCatch { body, catches, finally_body } => {
+                self.last_error = None;
+                self.last_error_stack.clear();
+                let mut pushed_top_level = false;
+                if self.call_stack.is_empty() {
+                    self.call_stack.push(("<top-level>".to_string(), self.current_file.clone(), self.current_line));
+                    pushed_top_level = true;
+                }
                 let res = (|| {
                     for stmt in body { self.eval_node(stmt, env)?; }
                     Ok(AvelynVal::Null)
                 })();
-
+                if pushed_top_level {
+                    self.call_stack.pop();
+                }
+ 
                 let mut res = res;
                 if let Err(Signal::Error(err)) = &res {
                     let mut handled = false;
@@ -841,8 +871,9 @@ impl Interpreter {
                                 }
                             }
                         };
-
+ 
                         if matches {
+                            self.last_error = Some(err.clone());
                             let catch_env = Env::child(env.clone());
                             catch_env.declare(catch_var, err.val.clone(), true); // catch variable is mutable
                             for stmt in catch_body { self.eval_node(stmt, &catch_env)?; }
@@ -853,7 +884,7 @@ impl Interpreter {
                     }
                     if !handled { return res; }
                 }
-
+ 
                 if let Some(fin_stmts) = finally_body {
                     for stmt in fin_stmts { self.eval_node(stmt, env)?; }
                 }
@@ -1106,8 +1137,16 @@ impl Interpreter {
                     }
                 }
 
+                let error_stack_snapshot = if matches!(result, Err(Signal::Error(_))) {
+                    Some(self.call_stack.clone())
+                } else {
+                    None
+                };
                 self.call_depth -= 1;
                 self.call_stack.pop();
+                if let Some(stack) = error_stack_snapshot {
+                    self.update_last_error_stack(stack);
+                }
                 result
             }
             _ => Err(Signal::Error(AvelynError::fmt(format!("TypeError: '{}' is not callable", callee.type_name())))),
@@ -1149,8 +1188,16 @@ impl Interpreter {
                         Err(other) => { result = Err(other); break; }
                     }
                 }
+                let error_stack_snapshot = if matches!(result, Err(Signal::Error(_))) {
+                    Some(self.call_stack.clone())
+                } else {
+                    None
+                };
                 self.call_depth -= 1;
                 self.call_stack.pop();
+                if let Some(stack) = error_stack_snapshot {
+                    self.update_last_error_stack(stack);
+                }
                 result
             }
             _ => Err(Signal::Error(AvelynError::fmt(format!("TypeError: '{}' is not callable", callee.type_name())))),

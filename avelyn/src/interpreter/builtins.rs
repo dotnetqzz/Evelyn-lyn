@@ -28,7 +28,7 @@ pub fn native_input(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynV
 }
 pub fn native_time(_: &mut Interpreter, _: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     let ms = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis();
-    Ok(AvelynVal::Float(ms as f64))
+    Ok(AvelynVal::Int(ms as i64))
 }
 pub fn native_exit(_: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
     std::process::exit(arg(&args, 0).as_i64() as i32);
@@ -1644,13 +1644,22 @@ pub fn native_spawn_workers(interp: &mut Interpreter, args: Vec<AvelynVal>) -> R
 }
 
 pub fn native_sys_last_error_traceback(interp: &mut Interpreter, _: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {
-    let mut lines = Vec::new();
-    for (func, file, line) in interp.call_stack.iter().rev() {
-        lines.push(format!("  at {} ({}:{})", func, file, line));
+    let stack = if interp.call_stack.is_empty() {
+        &interp.last_error_stack
+    } else {
+        &interp.call_stack
+    };
+
+    let mut lines = vec!["Traceback (most recent call last):".to_string()];
+    for (func, file, line) in stack.iter() {
+        lines.push(format!(r#"  File "{}", line {}, in {}"#, file, line, func));
     }
-    if lines.is_empty() {
+    if let Some(err) = &interp.last_error {
+        lines.push(format!("Error: {}", err.val.format()));
+    }
+    if lines.len() == 1 {
         Ok(AvelynVal::str("No active traceback"))
     } else {
-        Ok(AvelynVal::str(format!("Traceback (most recent call first):\n{}", lines.join("\n"))))
+        Ok(AvelynVal::str(lines.join("\n")))
     }
 }
