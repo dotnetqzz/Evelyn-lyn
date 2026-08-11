@@ -20,6 +20,8 @@ impl Parser {
         Parser { tokens, lines, pos: 0 }
     }
 
+    fn cur_line(&self) -> u32 { *self.lines.get(self.pos).unwrap_or(&0) }
+
     fn cur(&self) -> &Token { self.tokens.get(self.pos).unwrap_or(&Token::Eof) }
     fn peek(&self, offset: usize) -> &Token {
         self.tokens.get(self.pos + offset).unwrap_or(&Token::Eof)
@@ -233,8 +235,9 @@ impl Parser {
     // ── Statements ────────────────────────────────────────────────────────────
 
     fn parse_stmt(&mut self) -> Option<ASTNode> {
+        let line = self.cur_line();
         let annotations = self.parse_annotations();
-        match self.cur().clone() {
+        let node = match self.cur().clone() {
 
             Token::Export => {
                 self.advance();
@@ -583,7 +586,8 @@ impl Parser {
             }
 
             _ => Some(self.parse_expr()),
-        }
+        };
+        node.map(|node| ASTNode::Line(line, Box::new(node)))
     }
 
     fn parse_elif_chain(&mut self) -> Option<ASTNode> {

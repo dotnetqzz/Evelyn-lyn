@@ -1,0 +1,2 @@
+PASS: ImmutabilityError: cannot assign to immutable binding 'val' declared with 'let'
+PASS: let scoping in functions

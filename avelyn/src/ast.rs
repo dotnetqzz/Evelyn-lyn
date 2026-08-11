@@ -119,14 +119,16 @@ pub enum ASTNode {
     Import(String),
     Include(String),
     Export(Box<ASTNode>),
+    Line(u32, Box<ASTNode>),
 }
-
+ 
 impl ASTNode {
     pub fn to_string_key(&self) -> String {
         match self {
             ASTNode::Str(s) => s.clone(),
             ASTNode::Var(s) => s.clone(),
             ASTNode::FuncCall { name, .. } => name.clone(),
+            ASTNode::Line(_, inner) => inner.to_string_key(),
             _ => format!("{:?}", self),
         }
     }

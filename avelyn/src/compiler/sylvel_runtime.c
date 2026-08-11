@@ -11,6 +11,7 @@
 #include <windows.h>
 #else
 #include <unistd.h>
+#include <sys/time.h>
 #endif
 
 static inline double bits_to_double(int64_t bits) {
@@ -55,6 +56,43 @@ void sylvel_rt_make_float(SylvelVal* out, double val) {
 
 double sylvel_rt_get_float(const SylvelVal* val) {
     return val ? bits_to_double(val->data) : 0.0;
+}
+
+// Helper: produce a C string representation for a value into a supplied buffer.
+// If the value is a string, returns its internal chars pointer (no copy).
+// For other primitive values, writes into buf and returns buf. For list/map
+// values this will JSON-serialize into buf (temporaries released).
+static const char* sylvel_rt_val_to_cstr(const SylvelVal* val, char* buf, size_t bufsize) {
+    if (!buf || bufsize == 0) return "";
+    if (!val) { buf[0] = '\0'; return buf; }
+    if (val->tag == VAL_STR && val->data != 0) {
+        SylvelString* s = (SylvelString*)(uintptr_t)val->data;
+        return s ? s->chars : "";
+    }
+    if (val->tag == VAL_INT) {
+        snprintf(buf, bufsize, "%lld", (long long)val->data);
+        return buf;
+    }
+    if (val->tag == VAL_FLOAT) {
+        snprintf(buf, bufsize, "%g", bits_to_double(val->data));
+        return buf;
+    }
+    if (val->tag == VAL_BOOL) {
+        snprintf(buf, bufsize, "%s", val->data ? "true" : "false");
+        return buf;
+    }
+    if (val->tag == VAL_LIST || val->tag == VAL_MAP) {
+        SylvelVal tmp;
+        sylvel_rt_builtin_jsonStringify(&tmp, val);
+        const char* res = (tmp.tag == VAL_STR && tmp.data != 0) ? ((SylvelString*)(uintptr_t)tmp.data)->chars : "";
+        // copy into caller buffer and release temporary
+        strncpy(buf, res, bufsize - 1);
+        buf[bufsize - 1] = '\0';
+        sylvel_rt_release(&tmp);
+        return buf;
+    }
+    buf[0] = '\0';
+    return buf;
 }
 
 void sylvel_rt_alloc_string_len(SylvelVal* out, const char* str, int64_t len) {
@@ -270,15 +308,18 @@ void sylvel_rt_print(const SylvelVal* val) {
 
 void sylvel_rt_str_concat(SylvelVal* out, const SylvelVal* a, const SylvelVal* b) {
     SylvelVal str_a, str_b;
+    int need_release_a = 0, need_release_b = 0;
     if (a && a->tag == VAL_STR) {
         str_a = *a;
     } else {
         sylvel_rt_builtin_toString(&str_a, a);
+        need_release_a = 1;
     }
     if (b && b->tag == VAL_STR) {
         str_b = *b;
     } else {
         sylvel_rt_builtin_toString(&str_b, b);
+        need_release_b = 1;
     }
 
     SylvelString* sa = (SylvelString*)(uintptr_t)str_a.data;
@@ -288,12 +329,19 @@ void sylvel_rt_str_concat(SylvelVal* out, const SylvelVal* a, const SylvelVal* b
     int64_t lenb = sb ? sb->len : 0;
 
     sylvel_rt_alloc_string_len(out, NULL, lena + lenb);
-    if (!out || out->data == 0) return;
+    if (!out || out->data == 0) {
+        if (need_release_a) sylvel_rt_release(&str_a);
+        if (need_release_b) sylvel_rt_release(&str_b);
+        return;
+    }
     SylvelString* sr = (SylvelString*)(uintptr_t)out->data;
 
     if (sa && lena > 0) memcpy(sr->chars, sa->chars, lena);
     if (sb && lenb > 0) memcpy(sr->chars + lena, sb->chars, lenb);
     sr->chars[lena + lenb] = '\0';
+
+    if (need_release_a) sylvel_rt_release(&str_a);
+    if (need_release_b) sylvel_rt_release(&str_b);
 }
 
 void sylvel_rt_list_push(SylvelVal* list, const SylvelVal* item) {
@@ -624,6 +672,26 @@ void sylvel_rt_exit_try(void) { if (g_in_try_block > 0) g_in_try_block--; }
 int32_t sylvel_rt_has_error(void) { return g_has_error; }
 void sylvel_rt_clear_error(void) { g_has_error = 0; }
 
+void sylvel_rt_raise_error(const char* msg) {
+    if (msg && msg[0] != '\0') {
+        fprintf(stderr, "%s\n", msg);
+    } else {
+        fprintf(stderr, "Error\n");
+    }
+    fflush(stderr);
+    exit(1);
+}
+
+void sylvel_rt_throw_val(const SylvelVal* val) {
+    char _tmpbuf[1024];
+    const char* s = sylvel_rt_val_to_cstr(val, _tmpbuf, sizeof(_tmpbuf));
+    if (g_in_try_block > 0) {
+        g_has_error = 1;
+        return;
+    }
+    sylvel_rt_raise_error(s);
+}
+
 void sylvel_rt_builtin_assert(SylvelVal* out, const SylvelVal* cond, const SylvelVal* msg) {
     if (!sylvel_rt_to_bool(cond)) {
         if (g_in_try_block > 0) {
@@ -647,7 +715,21 @@ void sylvel_rt_builtin_spawnWorkers(SylvelVal* out, const SylvelVal* script, con
 }
 
 void sylvel_rt_builtin_dateNow(SylvelVal* out) {
-    sylvel_rt_make_float(out, (double)time(NULL) * 1000.0);
+#if defined(_WIN32)
+    FILETIME ft;
+    GetSystemTimeAsFileTime(&ft);
+    unsigned long long timestamp = ((unsigned long long)ft.dwHighDateTime << 32) | ft.dwLowDateTime;
+    unsigned long long unix_time_ms = (timestamp - 116444736000000000ULL) / 10000ULL;
+    sylvel_rt_make_int(out, (int64_t)unix_time_ms);
+#else
+    struct timeval tv;
+    if (gettimeofday(&tv, NULL) == 0) {
+        int64_t ms = (int64_t)tv.tv_sec * 1000 + tv.tv_usec / 1000;
+        sylvel_rt_make_int(out, ms);
+    } else {
+        sylvel_rt_make_int(out, (int64_t)time(NULL) * 1000);
+    }
+#endif
 }
 
 void sylvel_rt_builtin_Set(SylvelVal* out) {
@@ -659,9 +741,8 @@ static const char b64_table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstu
 
 void sylvel_rt_builtin_b64encode(SylvelVal* out, const SylvelVal* val) {
     if (!out) return;
-    SylvelVal str_v;
-    sylvel_rt_builtin_toString(&str_v, val);
-    const char* in = (str_v.tag == VAL_STR && str_v.data != 0) ? ((SylvelString*)(uintptr_t)str_v.data)->chars : "";
+    char _tmpbuf[1024];
+    const char* in = sylvel_rt_val_to_cstr(val, _tmpbuf, sizeof(_tmpbuf));
     size_t in_len = strlen(in);
     size_t out_len = 4 * ((in_len + 2) / 3);
     char* encoded = (char*) malloc(out_len + 1);
@@ -686,9 +767,8 @@ void sylvel_rt_builtin_b64encode(SylvelVal* out, const SylvelVal* val) {
 
 void sylvel_rt_builtin_b64decode(SylvelVal* out, const SylvelVal* val) {
     if (!out) return;
-    SylvelVal str_v;
-    sylvel_rt_builtin_toString(&str_v, val);
-    const char* in = (str_v.tag == VAL_STR && str_v.data != 0) ? ((SylvelString*)(uintptr_t)str_v.data)->chars : "";
+    char _tmpbuf[1024];
+    const char* in = sylvel_rt_val_to_cstr(val, _tmpbuf, sizeof(_tmpbuf));
     size_t in_len = strlen(in);
 
     sylvel_rt_alloc_list(out, in_len);
@@ -742,9 +822,8 @@ void sylvel_rt_builtin_sysSecureRandomBytes(SylvelVal* out, const SylvelVal* nby
 // Hex Encoding
 void sylvel_rt_builtin_hexEncode(SylvelVal* out, const SylvelVal* val) {
     if (!out) return;
-    SylvelVal str_v;
-    sylvel_rt_builtin_toString(&str_v, val);
-    const char* in = (str_v.tag == VAL_STR && str_v.data != 0) ? ((SylvelString*)(uintptr_t)str_v.data)->chars : "";
+    char _tmpbuf[1024];
+    const char* in = sylvel_rt_val_to_cstr(val, _tmpbuf, sizeof(_tmpbuf));
     size_t in_len = strlen(in);
     char* hex_str = (char*) malloc(in_len * 2 + 1);
     for (size_t i = 0; i < in_len; i++) {
@@ -757,9 +836,8 @@ void sylvel_rt_builtin_hexEncode(SylvelVal* out, const SylvelVal* val) {
 
 void sylvel_rt_builtin_hexDecode(SylvelVal* out, const SylvelVal* val) {
     if (!out) return;
-    SylvelVal str_v;
-    sylvel_rt_builtin_toString(&str_v, val);
-    const char* in = (str_v.tag == VAL_STR && str_v.data != 0) ? ((SylvelString*)(uintptr_t)str_v.data)->chars : "";
+    char _tmpbuf[1024];
+    const char* in = sylvel_rt_val_to_cstr(val, _tmpbuf, sizeof(_tmpbuf));
     size_t in_len = strlen(in);
     sylvel_rt_alloc_list(out, in_len / 2);
     for (size_t i = 0; i + 1 < in_len; i += 2) {
@@ -774,15 +852,11 @@ void sylvel_rt_builtin_hexDecode(SylvelVal* out, const SylvelVal* val) {
 // MD5 & SHA1 Mock/Implementation
 void sylvel_rt_builtin_md5(SylvelVal* out, const SylvelVal* val) {
     if (!out) return;
-    SylvelVal str_v;
-    sylvel_rt_builtin_toString(&str_v, val);
     sylvel_rt_alloc_string(out, "d41d8cd98f00b204e9800998ecf8427e");
 }
 
 void sylvel_rt_builtin_sha1(SylvelVal* out, const SylvelVal* val) {
     if (!out) return;
-    SylvelVal str_v;
-    sylvel_rt_builtin_toString(&str_v, val);
     sylvel_rt_alloc_string(out, "da39a3ee5e6b4b0d3255bfef95601890afd80709");
 }
 
@@ -917,9 +991,8 @@ static void sha256_hash_str(const char* in, char out_str[65]) {
 
 void sylvel_rt_builtin_sha256(SylvelVal* out, const SylvelVal* val) {
     if (!out) return;
-    SylvelVal str_val;
-    sylvel_rt_builtin_toString(&str_val, val);
-    const char* input = (str_val.tag == VAL_STR && str_val.data != 0) ? ((SylvelString*)(uintptr_t)str_val.data)->chars : "";
+    char _tmpbuf[4096];
+    const char* input = sylvel_rt_val_to_cstr(val, _tmpbuf, sizeof(_tmpbuf));
     char hash_str[65];
     sha256_hash_str(input, hash_str);
     sylvel_rt_alloc_string(out, hash_str);

@@ -1,0 +1,6 @@
+[1 Million] (1000000 iterations) -> Time: 0.153 seconds
+[10 Million] (10000000 iterations) -> Time: 1.557 seconds
+[50 Million] (50000000 iterations) -> Time: 8.097 seconds
+[100 Million] (100000000 iterations) -> Time: 15.974 seconds
+[500 Million] (500000000 iterations) -> Time: 77.663 seconds
+[1 Billion] (1000000000 iterations) -> Time: 158.228 seconds

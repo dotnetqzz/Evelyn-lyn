@@ -9,6 +9,7 @@ pub struct LLVMCodeGen {
     lambda_count: usize,
     str_constants: Vec<(String, String)>, // (label, content)
     scopes: Vec<HashMap<String, String>>,  // var_name -> llvm_var_ptr
+    immutable_vars: HashSet<String>, // set of names declared with `let`
     current_loop_labels: Vec<(String, String)>, // (break_label, continue_label)
     current_func_out_ptr: Option<String>,
     user_func_names: HashSet<String>,
@@ -25,13 +26,14 @@ impl LLVMCodeGen {
             lambda_count: 0,
             str_constants: Vec::new(),
             scopes: vec![HashMap::new()],
-            current_loop_labels: Vec::new(),
-            current_func_out_ptr: None,
-            user_func_names: HashSet::new(),
-            declared_func_signatures: HashMap::new(),
-            entry_allocas: String::new(),
-            extra_user_funcs_ir: String::new(),
-        }
+                    immutable_vars: HashSet::new(),
+                    current_loop_labels: Vec::new(),
+                    current_func_out_ptr: None,
+                    user_func_names: HashSet::new(),
+                    declared_func_signatures: HashMap::new(),
+                    entry_allocas: String::new(),
+                    extra_user_funcs_ir: String::new(),
+                }
     }
 
     fn new_temp_ptr(&mut self, is_sylvel_val: bool) -> String {
@@ -138,10 +140,13 @@ impl LLVMCodeGen {
 
         // Pre-register top-level declared variables in global scope
         for node in ast {
-            if let ASTNode::Decl { name, .. } = node {
+            if let ASTNode::Decl { name, mutable, .. } = node {
                 if self.lookup_var(name).is_none() {
                     let ptr = self.new_temp_ptr(true);
-                    self.set_var(name, ptr);
+                    self.set_var(name, ptr.clone());
+                    if !mutable {
+                        self.immutable_vars.insert(name.clone());
+                    }
                 }
             }
         }
@@ -159,7 +164,6 @@ impl LLVMCodeGen {
             }
         }
 
-        self.entry_allocas.clear();
         let mut main_body = String::new();
 
         for node in top_level_nodes {
@@ -206,12 +210,13 @@ impl LLVMCodeGen {
         header.push_str("declare void @sylvel_rt_exit_try()\n");
         header.push_str("declare i32 @sylvel_rt_has_error()\n");
         header.push_str("declare void @sylvel_rt_clear_error()\n");
-        header.push_str("declare i64 @sylvel_rt_len(%SylvelVal*)\n");
-        header.push_str("declare i1 @sylvel_rt_to_bool(%SylvelVal*)\n");
-        header.push_str("declare i64 @sylvel_rt_to_int(%SylvelVal*)\n");
-        header.push_str("declare double @sylvel_rt_to_float(%SylvelVal*)\n");
-        header.push_str("declare void @sylvel_rt_retain(%SylvelVal*)\n");
-        header.push_str("declare void @sylvel_rt_release(%SylvelVal*)\n\n");
+                header.push_str("declare void @sylvel_rt_raise_error(i8*)\n");
+                header.push_str("declare i64 @sylvel_rt_len(%SylvelVal*)\n");
+                header.push_str("declare i1 @sylvel_rt_to_bool(%SylvelVal*)\n");
+                header.push_str("declare i64 @sylvel_rt_to_int(%SylvelVal*)\n");
+                header.push_str("declare double @sylvel_rt_to_float(%SylvelVal*)\n");
+                header.push_str("declare void @sylvel_rt_retain(%SylvelVal*)\n");
+                header.push_str("declare void @sylvel_rt_release(%SylvelVal*)\n\n");
 
         // Declarations for dynamically discovered functions & builtins
         for (fn_name, arity) in &self.declared_func_signatures {
@@ -377,13 +382,14 @@ impl LLVMCodeGen {
                     Ok(res_ptr)
                 }
             }
-            ASTNode::Decl { name, value, .. } | ASTNode::Assign { name, value } => {
+            ASTNode::Decl { name, value, mutable, .. } => {
                 let val_ptr = self.gen_node(value, out)?;
                 let var_ptr = if let Some(p) = self.lookup_var(name) {
                     p
                 } else {
                     let ptr = self.new_temp_ptr(true);
                     self.set_var(name, ptr.clone());
+                    if !mutable { self.immutable_vars.insert(name.clone()); }
                     ptr
                 };
                 self.temp_count += 1;
@@ -391,6 +397,34 @@ impl LLVMCodeGen {
                 out.push_str(&format!("  {} = load %SylvelVal, %SylvelVal* {}\n", v_load, val_ptr));
                 out.push_str(&format!("  store %SylvelVal {}, %SylvelVal* {}\n", v_load, var_ptr));
                 Ok(var_ptr)
+            }
+            ASTNode::Assign { name, value } => {
+                let val_ptr = self.gen_node(value, out)?;
+                if self.immutable_vars.contains(name) {
+                    let msg = format!("ImmutabilityError: cannot assign to immutable binding '{}' declared with 'let'", name);
+                    let label = self.add_string_constant(&msg);
+                    let len = msg.as_bytes().len() + 1;
+                    self.temp_count += 1;
+                    let ptr_temp = format!("%t{}", self.temp_count);
+                    out.push_str(&format!("  {} = getelementptr inbounds [{} x i8], [{} x i8]* {}, i64 0, i64 0\n", ptr_temp, len, len, label));
+                    out.push_str(&format!("  call void @sylvel_rt_raise_error(i8* {})\n", ptr_temp));
+                    let res_ptr = self.new_temp_ptr(true);
+                    out.push_str(&format!("  call void @sylvel_rt_make_null(%SylvelVal* {})\n", res_ptr));
+                    Ok(res_ptr)
+                } else {
+                    let var_ptr = if let Some(p) = self.lookup_var(name) {
+                        p
+                    } else {
+                        let ptr = self.new_temp_ptr(true);
+                        self.set_var(name, ptr.clone());
+                        ptr
+                    };
+                    self.temp_count += 1;
+                    let v_load = format!("%t{}", self.temp_count);
+                    out.push_str(&format!("  {} = load %SylvelVal, %SylvelVal* {}\n", v_load, val_ptr));
+                    out.push_str(&format!("  store %SylvelVal {}, %SylvelVal* {}\n", v_load, var_ptr));
+                    Ok(var_ptr)
+                }
             }
             ASTNode::CompoundAssign { name, op, value } => {
                 let bin_op_node = ASTNode::BinOp {
@@ -405,6 +439,19 @@ impl LLVMCodeGen {
                 self.gen_node(&assign_node, out)
             }
             ASTNode::IndexAssign { target, index, value } => {
+                // Check immutability of the target binding (e.g., assigning to an immutable var's subscript)
+                if self.immutable_vars.contains(target) {
+                    let msg = format!("ImmutabilityError: cannot assign to immutable binding '{}' declared with 'let'", target);
+                    let label = self.add_string_constant(&msg);
+                    let len = msg.as_bytes().len() + 1;
+                    self.temp_count += 1;
+                    let ptr_temp = format!("%t{}", self.temp_count);
+                    out.push_str(&format!("  {} = getelementptr inbounds [{} x i8], [{} x i8]* {}, i64 0, i64 0\n", ptr_temp, len, len, label));
+                    out.push_str(&format!("  call void @sylvel_rt_raise_error(i8* {})\n", ptr_temp));
+                    let res_ptr = self.new_temp_ptr(true);
+                    out.push_str(&format!("  call void @sylvel_rt_make_null(%SylvelVal* {})\n", res_ptr));
+                    return Ok(res_ptr);
+                }
                 let target_ptr = self.lookup_var(target).unwrap_or_else(|| self.new_temp_ptr(true));
                 let index_ptr = self.gen_node(index, out)?;
                 let val_ptr = self.gen_node(value, out)?;
@@ -1106,7 +1153,10 @@ impl LLVMCodeGen {
                 Ok(last_ptr)
             }
             ASTNode::Throw(expr) => {
-                let res_ptr = self.gen_node(expr, out)?;
+                let val_ptr = self.gen_node(expr, out)?;
+                out.push_str(&format!("  call void @sylvel_rt_throw_val(%SylvelVal* {})\n", val_ptr));
+                let res_ptr = self.new_temp_ptr(true);
+                out.push_str(&format!("  call void @sylvel_rt_make_null(%SylvelVal* {})\n", res_ptr));
                 Ok(res_ptr)
             }
             _ => {

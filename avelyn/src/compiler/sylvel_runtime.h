@@ -74,6 +74,8 @@ void sylvel_rt_enter_try(void);
 void sylvel_rt_exit_try(void);
 int32_t sylvel_rt_has_error(void);
 void sylvel_rt_clear_error(void);
+void sylvel_rt_raise_error(const char* msg);
+void sylvel_rt_throw_val(const SylvelVal* val);
 
 // Operations & Builtins
 void sylvel_rt_print(const SylvelVal* val);
