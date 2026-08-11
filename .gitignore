@@ -12,3 +12,5 @@ ledger_block.txt
 stress_test.log
 examples
 target
+.ll
+.exe

@@ -1,0 +1,73 @@
+# Real-world Application: CLI Task Manager & Event Tracker
+# Demonstrates objects/maps, arrays, string searches, assertions, and JSON serialization in Avelyn
+
+def create_task(id, title, priority) {
+    let task = {
+        "id": id,
+        "title": title,
+        "priority": priority,
+        "completed": false,
+        "created_at": dateNow()
+    }
+    return task
+}
+
+def mark_completed(task) {
+    task["completed"] = true
+    return task
+}
+
+def task_to_string(task) {
+    let status = "PENDING"
+    if task["completed"] {
+        status = "DONE"
+    }
+    return "[" + status + "] Task #" + toString(task["id"]) + " (" + task["priority"] + "): " + task["title"]
+}
+
+print("=== AVELYN TASK MANAGER APPLICATION ===")
+
+var tasks = []
+let task1 = create_task(1, "Fix LLVM Native Compiler Backend", "HIGH")
+let task2 = create_task(2, "Add Standard Library Modules", "MEDIUM")
+let task3 = create_task(3, "Benchmark 1 Billion Loop Performance", "HIGH")
+let task4 = create_task(4, "Write Real-world Applications", "LOW")
+
+tasks = [task1, task2, task3, task4]
+
+assert(len(tasks) == 4, "Initial task count must be 4")
+print("Added " + toString(len(tasks)) + " tasks successfully.")
+
+# Complete task 1 and task 3
+mark_completed(task1)
+mark_completed(task3)
+
+# Print all tasks and count completed
+var completed_count = 0
+for t in tasks {
+    print(" - " + task_to_string(t))
+    if t["completed"] {
+        completed_count += 1
+    }
+}
+
+assert(completed_count == 2, "Completed task count must be 2")
+print("Completed tasks: " + toString(completed_count) + " / " + toString(len(tasks)))
+
+# Search tasks by keyword
+def search_tasks(task_list, keyword) {
+    var matches = []
+    for t in task_list {
+        if stringContains(t["title"], keyword) {
+            matches = matches + [t]
+        }
+    }
+    return matches
+}
+
+let llvm_tasks = search_tasks(tasks, "LLVM")
+assert(len(llvm_tasks) == 1, "Should find 1 task matching 'LLVM'")
+print("Search for 'LLVM' found: " + task_to_string(llvm_tasks[0]))
+
+print("JSON Export: " + jsonStringify(tasks))
+print("=== TASK MANAGER APP PASSED ===")

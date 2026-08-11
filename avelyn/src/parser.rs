@@ -492,14 +492,33 @@ impl Parser {
 
             Token::Def => {
                 self.advance();
-                let name = self.ident_name()?; self.advance();
-                self.consume_exact(&Token::LParen);
-                let (params, variadic) = self.parse_param_list();
-                self.consume_exact(&Token::RParen);
-                let kind = self.open_block();
-                let body = self.parse_block(kind);
-                self.close_block(kind);
-                Some(ASTNode::FuncDecl { name, params, body, variadic, annotations })
+                if self.cur() == &Token::LParen {
+                    self.consume_exact(&Token::LParen);
+                    let (params, variadic) = self.parse_param_list();
+                    self.consume_exact(&Token::RParen);
+                    if self.cur() == &Token::Arrow {
+                        self.advance();
+                        let expr = self.parse_expr();
+                        return Some(ASTNode::Lambda { params, body: vec![ASTNode::Return(Box::new(expr))], variadic, annotations });
+                    }
+                    let kind = self.open_block();
+                    let body = self.parse_block(kind);
+                    self.close_block(kind);
+                    Some(ASTNode::Lambda { params, body, variadic, annotations })
+                } else {
+                    let name = match self.ident_name() {
+                        Some(n) => n,
+                        None => return None,
+                    };
+                    self.advance();
+                    self.consume_exact(&Token::LParen);
+                    let (params, variadic) = self.parse_param_list();
+                    self.consume_exact(&Token::RParen);
+                    let kind = self.open_block();
+                    let body = self.parse_block(kind);
+                    self.close_block(kind);
+                    Some(ASTNode::FuncDecl { name, params, body, variadic, annotations })
+                }
             }
 
             Token::Return => {

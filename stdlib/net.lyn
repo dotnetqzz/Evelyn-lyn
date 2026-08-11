@@ -1,4 +1,4 @@
-﻿# Avelyn Standard Library: net
+# Avelyn Standard Library: net
 # Provides advanced low-level networking primitives for Phase 2.
 
 let net = {
@@ -11,7 +11,7 @@ let net = {
     
     "udpSocket": fn() => netUdpSocket(),
     "udpBind": fn(sock, host, port) => netUdpBind(sock, host, port),
-    "sendTo": fn(sock, host, port, data) => netSendTo(sock, host, port, data),
+    "sendTo": fn(sock, host, port, data) => netSendTo(sock, data, host, port),
     "recvFrom": fn(sock, maxLen) => netRecvFrom(sock, maxLen),
     
     "setTimeout": fn(sock, ms) => netSetTimeout(sock, ms),

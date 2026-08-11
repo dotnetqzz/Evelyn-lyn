@@ -1,0 +1,79 @@
+# Real-world Application: Bank Account & Financial Transaction Ledger System
+# Demonstrates object state, interest calculation, transactions, cryptographic hashing, and assertions
+
+def create_account(acc_number, owner_name, initial_deposit) {
+    return {
+        "acc_number": acc_number,
+        "owner": owner_name,
+        "balance": initial_deposit,
+        "transactions": []
+    }
+}
+
+def deposit(account, amount) {
+    if amount <= 0 {
+        throw "Deposit amount must be positive"
+    }
+    account["balance"] = account["balance"] + amount
+    let tx = "DEPOSIT: +" + toString(amount) + " | New Balance: " + toString(account["balance"])
+    account["transactions"] = account["transactions"] + [tx]
+    return account["balance"]
+}
+
+def withdraw(account, amount) {
+    if amount <= 0 {
+        throw "Withdrawal amount must be positive"
+    }
+    if account["balance"] < amount {
+        throw "Insufficient funds"
+    }
+    account["balance"] = account["balance"] - amount
+    let tx = "WITHDRAWAL: -" + toString(amount) + " | New Balance: " + toString(account["balance"])
+    account["transactions"] = account["transactions"] + [tx]
+    return account["balance"]
+}
+
+def transfer(from_acc, to_acc, amount) {
+    withdraw(from_acc, amount)
+    deposit(to_acc, amount)
+    print("Transferred $" + toString(amount) + " from " + from_acc["owner"] + " to " + to_acc["owner"])
+}
+
+def apply_compound_interest(account, rate_percent, years) {
+    var principal = account["balance"]
+    var yr = 0
+    while yr < years {
+        let interest = principal * (rate_percent / 100.0)
+        principal = principal + interest
+        yr += 1
+    }
+    account["balance"] = principal
+    return principal
+}
+
+print("=== AVELYN BANKING & LEDGER APPLICATION ===")
+
+let acc_alice = create_account("ACC-1001", "Alice Vance", 5000.0)
+let acc_bob = create_account("ACC-1002", "Bob Smith", 1200.0)
+
+deposit(acc_alice, 2500.0)
+assert(acc_alice["balance"] == 7500.0, "Alice balance after deposit should be 7500")
+
+withdraw(acc_alice, 1500.0)
+assert(acc_alice["balance"] == 6000.0, "Alice balance after withdrawal should be 6000")
+
+transfer(acc_alice, acc_bob, 2000.0)
+assert(acc_alice["balance"] == 4000.0, "Alice final balance should be 4000")
+assert(acc_bob["balance"] == 3200.0, "Bob final balance should be 3200")
+
+# Calculate compound interest on Alice's account (5% for 3 years)
+let final_bal = apply_compound_interest(acc_alice, 5.0, 3)
+print("Alice's balance after 3 years @ 5% interest: $" + toString(final_bal))
+
+# Audit hash of ledger
+let ledger_summary = jsonStringify(acc_alice["transactions"]) + jsonStringify(acc_bob["transactions"])
+let audit_hash = sha256(ledger_summary)
+print("Ledger Integrity SHA-256 Audit Hash: " + audit_hash)
+
+assert(len(audit_hash) == 64, "SHA256 audit hash must be 64 characters")
+print("=== BANKING SYSTEM APP PASSED ===")

@@ -1,0 +1,83 @@
+# Real-world Application: Markdown to HTML Converter
+# Demonstrates string manipulation, parsing logic, functions, and formatting in Avelyn
+
+def convert_line(line) {
+    let trimmed = stringTrim(line)
+    if len(trimmed) == 0 {
+        return ""
+    }
+
+    # Headers
+    if stringStartsWith(trimmed, "### ") {
+        let content = stringSub(trimmed, 4, len(trimmed))
+        return "<h3>" + content + "</h3>"
+    }
+    if stringStartsWith(trimmed, "## ") {
+        let content = stringSub(trimmed, 3, len(trimmed))
+        return "<h2>" + content + "</h2>"
+    }
+    if stringStartsWith(trimmed, "# ") {
+        let content = stringSub(trimmed, 2, len(trimmed))
+        return "<h1>" + content + "</h1>"
+    }
+
+    # Bullet lists
+    if stringStartsWith(trimmed, "- ") {
+        let content = stringSub(trimmed, 2, len(trimmed))
+        return "<li>" + content + "</li>"
+    }
+
+    # Paragraph
+    return "<p>" + trimmed + "</p>"
+}
+
+def parse_markdown(md_text) {
+    var lines = [
+        "# Avelyn Language",
+        "## High Performance LLVM Compiler",
+        "### Features",
+        "- Direct LLVM IR Generation",
+        "- Standalone Native Executables",
+        "- Fully Dynamic Type System",
+        "Avelyn delivers extreme performance and clean syntax."
+    ]
+
+    var html_output = "<article>\n"
+    var in_list = false
+
+    for line in lines {
+        let html_line = convert_line(line)
+        if stringStartsWith(html_line, "<li>") {
+            if !in_list {
+                html_output = html_output + "<ul>\n"
+                in_list = true
+            }
+            html_output = html_output + "  " + html_line + "\n"
+        } else {
+            if in_list {
+                html_output = html_output + "</ul>\n"
+                in_list = false
+            }
+            if len(html_line) > 0 {
+                html_output = html_output + html_line + "\n"
+            }
+        }
+    }
+
+    if in_list {
+        html_output = html_output + "</ul>\n"
+    }
+    html_output = html_output + "</article>"
+    return html_output
+}
+
+print("=== AVELYN MARKDOWN TO HTML CONVERTER ===")
+let html = parse_markdown("")
+print(html)
+
+assert(stringContains(html, "<h1>Avelyn Language</h1>"), "H1 tag missing")
+assert(stringContains(html, "<h2>High Performance LLVM Compiler</h2>"), "H2 tag missing")
+assert(stringContains(html, "<ul>"), "UL tag missing")
+assert(stringContains(html, "<li>Direct LLVM IR Generation</li>"), "LI tag missing")
+
+print("=== MARKDOWN CONVERTER APP PASSED ===")

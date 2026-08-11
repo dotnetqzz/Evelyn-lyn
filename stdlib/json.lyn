@@ -1,4 +1,4 @@
-﻿# Sylvel Standard Library — json.lyn
+# Sylvel Standard Library — json.lyn
 # Full JSON module: parse, stringify, pretty-print, merge, diff
 
 def jsonLoads(s)  { return jsonParse(s) }
@@ -100,12 +100,16 @@ def jsonFlatten(obj) {
 }
 
 def json_validate(s) {
-    let parsed = jsonParse(s)
-    if isNull(parsed) {
-        let trimmed = stringTrim(s)
-        return trimmed == "null"
+    try {
+        let parsed = jsonParse(s)
+        if isNull(parsed) {
+            let trimmed = stringTrim(s)
+            return trimmed == "null"
+        }
+        return true
+    } catch _ {
+        return false
     }
-    return true
 }
 
 let json = {
