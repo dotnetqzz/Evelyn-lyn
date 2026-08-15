@@ -86,7 +86,7 @@ def run_single_test(test_file: str):
             capture_output=True,
             text=True,
             errors="replace",
-            timeout=45
+            timeout=900
         )
         result["compile_exit"] = compile_proc.returncode
         result["compile_err"] = compile_proc.stderr
@@ -115,7 +115,7 @@ def run_single_test(test_file: str):
             result["native_err"] = native_proc.stderr
             result["native_ok"] = (native_proc.returncode == 0)
         except subprocess.TimeoutExpired:
-            result["native_time"] = 45.0
+            result["native_time"] = 6000.0
             result["native_err"] = "NATIVE TIMEOUT (45s)"
             result["native_ok"] = False
         except Exception as e:

@@ -11,7 +11,7 @@ _test_out.txt
 ledger_block.txt
 stress_test.log
 examples
-target
+
 .ll
 dual_test_bins
 exe
