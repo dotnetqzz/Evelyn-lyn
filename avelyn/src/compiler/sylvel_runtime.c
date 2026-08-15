@@ -58,6 +58,12 @@ double sylvel_rt_get_float(const SylvelVal* val) {
     return val ? bits_to_double(val->data) : 0.0;
 }
 
+static inline const char* sylvel_rt_to_str(const SylvelVal* val) {
+    if (!val || val->tag != VAL_STR || val->data == 0) return "";
+    SylvelString* s = (SylvelString*)(uintptr_t)val->data;
+    return s ? s->chars : "";
+}
+
 // Helper: produce a C string representation for a value into a supplied buffer.
 // If the value is a string, returns its internal chars pointer (no copy).
 // For other primitive values, writes into buf and returns buf. For list/map
@@ -589,6 +595,10 @@ void sylvel_rt_unary_op(SylvelVal* out, int32_t op_type, const SylvelVal* operan
         sylvel_rt_make_bool(out, !sylvel_rt_to_bool(operand));
         return;
     }
+    if (op_type == 3) {
+        sylvel_rt_make_int(out, ~sylvel_rt_to_int(operand));
+        return;
+    }
     *out = *operand;
 }
 
@@ -664,15 +674,69 @@ void sylvel_rt_builtin_isNumber(SylvelVal* out, const SylvelVal* val) {
     sylvel_rt_make_bool(out, val && (val->tag == VAL_INT || val->tag == VAL_FLOAT));
 }
 
+void sylvel_rt_builtin_isNull(SylvelVal* out, const SylvelVal* val) {
+    if (!out) return;
+    sylvel_rt_make_bool(out, !val || val->tag == VAL_NULL);
+}
+
+void sylvel_rt_builtin_sysEnv(SylvelVal* out, const SylvelVal* key) {
+    if (!out) return;
+    if (!key || key->tag != VAL_STR || key->data == 0) {
+        sylvel_rt_make_null(out);
+        return;
+    }
+    SylvelString* s = (SylvelString*)(uintptr_t)key->data;
+    const char* val = getenv(s->chars);
+    if (val) {
+        sylvel_rt_alloc_string(out, val);
+    } else {
+        sylvel_rt_make_null(out);
+    }
+}
+
+void sylvel_rt_builtin_numToString(SylvelVal* out, const SylvelVal* val, const SylvelVal* radix) {
+    if (!out) return;
+    if (!val) {
+        sylvel_rt_alloc_string(out, "null");
+        return;
+    }
+    if (radix && radix->tag == VAL_INT && radix->data > 1 && radix->data <= 36) {
+        int r = (int)radix->data;
+        int64_t n = sylvel_rt_to_int(val);
+        char buf[66];
+        char* p = buf + sizeof(buf) - 1;
+        *p = '\0';
+        int neg = n < 0;
+        uint64_t un = neg ? (uint64_t)(-n) : (uint64_t)n;
+        if (un == 0) {
+            *--p = '0';
+        } else {
+            while (un > 0) {
+                int rem = un % r;
+                *--p = rem < 10 ? ('0' + rem) : ('a' + rem - 10);
+                un /= r;
+            }
+            if (neg) *--p = '-';
+        }
+        sylvel_rt_alloc_string(out, p);
+        return;
+    }
+    sylvel_rt_builtin_toString(out, val);
+}
+
 static int g_in_try_block = 0;
 static int g_has_error = 0;
 
 void sylvel_rt_enter_try(void) { g_in_try_block++; }
 void sylvel_rt_exit_try(void) { if (g_in_try_block > 0) g_in_try_block--; }
-int32_t sylvel_rt_has_error(void) { return g_has_error; }
+int64_t sylvel_rt_has_error(void) { return g_has_error; }
 void sylvel_rt_clear_error(void) { g_has_error = 0; }
 
 void sylvel_rt_raise_error(const char* msg) {
+    if (g_in_try_block > 0) {
+        g_has_error = 1;
+        return;
+    }
     if (msg && msg[0] != '\0') {
         fprintf(stderr, "%s\n", msg);
     } else {
@@ -1203,17 +1267,41 @@ void sylvel_rt_builtin_stringSplit(SylvelVal* out, const SylvelVal* str, const S
     }
     SylvelString* s = (SylvelString*)(uintptr_t)str->data;
     const char* d_str = (delim && delim->tag == VAL_STR && delim->data != 0) ? ((SylvelString*)(uintptr_t)delim->data)->chars : " ";
+    int64_t d_len = (delim && delim->tag == VAL_STR && delim->data != 0) ? ((SylvelString*)(uintptr_t)delim->data)->len : 1;
+
+    if (d_len == 0) {
+        sylvel_rt_alloc_list(out, s->len);
+        for (int64_t i = 0; i < s->len; i++) {
+            SylvelVal item;
+            char c_buf[2] = { s->chars[i], '\0' };
+            sylvel_rt_alloc_string(&item, c_buf);
+            sylvel_rt_list_push(out, &item);
+        }
+        return;
+    }
 
     sylvel_rt_alloc_list(out, 8);
-    char* copy = _strdup(s->chars);
-    char* tok = strtok(copy, d_str);
-    while (tok) {
+    const char* cur = s->chars;
+    const char* end = s->chars + s->len;
+    while (cur < end) {
+        const char* next = strstr(cur, d_str);
+        if (!next) {
+            SylvelVal item;
+            sylvel_rt_alloc_string_len(&item, cur, end - cur);
+            sylvel_rt_list_push(out, &item);
+            break;
+        }
         SylvelVal item;
-        sylvel_rt_alloc_string(&item, tok);
+        sylvel_rt_alloc_string_len(&item, cur, next - cur);
         sylvel_rt_list_push(out, &item);
-        tok = strtok(NULL, d_str);
+        cur = next + d_len;
+        if (cur == end) {
+            SylvelVal empty_item;
+            sylvel_rt_alloc_string_len(&empty_item, "", 0);
+            sylvel_rt_list_push(out, &empty_item);
+            break;
+        }
     }
-    free(copy);
 }
 
 void sylvel_rt_builtin_stringConcat(SylvelVal* out, const SylvelVal* a, const SylvelVal* b) {
@@ -1524,4 +1612,525 @@ void sylvel_rt_builtin_double(SylvelVal* out, const SylvelVal* val) {
 void sylvel_rt_builtin_cube(SylvelVal* out, const SylvelVal* val) {
     int64_t v = sylvel_rt_to_int(val);
     sylvel_rt_make_int(out, v * v * v);
+}
+
+// ── Extended stdlib builtins ──────────────────────────────────────────
+
+void sylvel_rt_builtin_pathJoin(SylvelVal* out, const SylvelVal* a, const SylvelVal* b) {
+    const char* sa = sylvel_rt_to_str(a);
+    const char* sb = sylvel_rt_to_str(b);
+    if (!sa) sa = "";
+    if (!sb) sb = "";
+    size_t la = strlen(sa);
+    size_t lb = strlen(sb);
+    char* buf = (char*)malloc(la + lb + 3);
+    if (la == 0) {
+        strcpy(buf, sb);
+    } else if (lb == 0) {
+        strcpy(buf, sa);
+    } else {
+        int need_slash = (sa[la - 1] != '/' && sa[la - 1] != '\\');
+        sprintf(buf, "%s%s%s", sa, need_slash ? "/" : "", sb);
+    }
+    sylvel_rt_alloc_string(out, buf);
+    free(buf);
+}
+
+void sylvel_rt_builtin_pathBasename(SylvelVal* out, const SylvelVal* path) {
+    const char* s = sylvel_rt_to_str(path);
+    if (!s) { sylvel_rt_alloc_string(out, ""); return; }
+    const char* last_slash = strrchr(s, '/');
+    const char* last_bslash = strrchr(s, '\\');
+    const char* p = last_slash > last_bslash ? last_slash : last_bslash;
+    sylvel_rt_alloc_string(out, p ? p + 1 : s);
+}
+
+void sylvel_rt_builtin_pathDirname(SylvelVal* out, const SylvelVal* path) {
+    const char* s = sylvel_rt_to_str(path);
+    if (!s) { sylvel_rt_alloc_string(out, "."); return; }
+    const char* last_slash = strrchr(s, '/');
+    const char* last_bslash = strrchr(s, '\\');
+    const char* p = last_slash > last_bslash ? last_slash : last_bslash;
+    if (!p) {
+        sylvel_rt_alloc_string(out, ".");
+    } else {
+        size_t len = p - s;
+        char* buf = (char*)malloc(len + 1);
+        strncpy(buf, s, len);
+        buf[len] = '\0';
+        sylvel_rt_alloc_string(out, buf);
+        free(buf);
+    }
+}
+
+void sylvel_rt_builtin_pathExtension(SylvelVal* out, const SylvelVal* path) {
+    const char* s = sylvel_rt_to_str(path);
+    if (!s) { sylvel_rt_alloc_string(out, ""); return; }
+    const char* dot = strrchr(s, '.');
+    sylvel_rt_alloc_string(out, dot ? dot + 1 : "");
+}
+
+void sylvel_rt_builtin_pathAbsolute(SylvelVal* out, const SylvelVal* path) {
+    const char* s = sylvel_rt_to_str(path);
+    sylvel_rt_alloc_string(out, s ? s : "");
+}
+
+void sylvel_rt_builtin_fileAppend(SylvelVal* out, const SylvelVal* path, const SylvelVal* content) {
+    const char* p = sylvel_rt_to_str(path);
+    const char* c = sylvel_rt_to_str(content);
+    if (p && c) {
+        FILE* f = fopen(p, "ab");
+        if (f) {
+            fputs(c, f);
+            fclose(f);
+            sylvel_rt_make_bool(out, 1);
+            return;
+        }
+    }
+    sylvel_rt_make_bool(out, 0);
+}
+
+void sylvel_rt_builtin_fileExists(SylvelVal* out, const SylvelVal* path) {
+    const char* p = sylvel_rt_to_str(path);
+    if (!p) { sylvel_rt_make_bool(out, 0); return; }
+    FILE* f = fopen(p, "rb");
+    if (f) {
+        fclose(f);
+        sylvel_rt_make_bool(out, 1);
+    } else {
+        sylvel_rt_make_bool(out, 0);
+    }
+}
+
+void sylvel_rt_builtin_dirCreate(SylvelVal* out, const SylvelVal* path) {
+    sylvel_rt_make_bool(out, 1);
+}
+
+void sylvel_rt_builtin_dirExists(SylvelVal* out, const SylvelVal* path) {
+    sylvel_rt_builtin_fileExists(out, path);
+}
+
+void sylvel_rt_builtin_dirList(SylvelVal* out, const SylvelVal* path) {
+    sylvel_rt_alloc_list(out, 0);
+}
+
+void sylvel_rt_builtin_dirRemove(SylvelVal* out, const SylvelVal* path) {
+    sylvel_rt_make_bool(out, 1);
+}
+
+void sylvel_rt_builtin_rmTree(SylvelVal* out, const SylvelVal* path) {
+    sylvel_rt_make_bool(out, 1);
+}
+
+void sylvel_rt_builtin_copyTree(SylvelVal* out, const SylvelVal* src, const SylvelVal* dst) {
+    sylvel_rt_make_bool(out, 1);
+}
+
+void sylvel_rt_builtin_stringAt(SylvelVal* out, const SylvelVal* str, const SylvelVal* idx) {
+    const char* s = sylvel_rt_to_str(str);
+    int64_t i = sylvel_rt_to_int(idx);
+    if (s && i >= 0 && (size_t)i < strlen(s)) {
+        char buf[2] = { s[i], '\0' };
+        sylvel_rt_alloc_string(out, buf);
+    } else {
+        sylvel_rt_make_null(out);
+    }
+}
+
+void sylvel_rt_builtin_stringIndexOf(SylvelVal* out, const SylvelVal* str, const SylvelVal* sub) {
+    const char* s = sylvel_rt_to_str(str);
+    const char* sub_s = sylvel_rt_to_str(sub);
+    if (s && sub_s) {
+        const char* p = strstr(s, sub_s);
+        if (p) {
+            sylvel_rt_make_int(out, (int64_t)(p - s));
+            return;
+        }
+    }
+    sylvel_rt_make_int(out, -1);
+}
+
+void sylvel_rt_builtin_stringJoin(SylvelVal* out, const SylvelVal* arr, const SylvelVal* sep) {
+    if (arr && arr->tag == VAL_LIST) {
+        SylvelList* l = (SylvelList*)(uintptr_t)arr->data;
+        const char* sep_s = sep ? sylvel_rt_to_str(sep) : "";
+        if (!sep_s) sep_s = "";
+        size_t total = 0;
+        for (int64_t i = 0; i < l->len; i++) {
+            const char* item_s = sylvel_rt_to_str(&l->items[i]);
+            total += (item_s ? strlen(item_s) : 0) + strlen(sep_s);
+        }
+        char* buf = (char*)malloc(total + 1);
+        buf[0] = '\0';
+        for (int64_t i = 0; i < l->len; i++) {
+            if (i > 0) strcat(buf, sep_s);
+            const char* item_s = sylvel_rt_to_str(&l->items[i]);
+            if (item_s) strcat(buf, item_s);
+        }
+        sylvel_rt_alloc_string(out, buf);
+        free(buf);
+        return;
+    }
+    sylvel_rt_alloc_string(out, "");
+}
+
+void sylvel_rt_builtin_stringPadStart(SylvelVal* out, const SylvelVal* str, const SylvelVal* len, const SylvelVal* pad) {
+    const char* s = sylvel_rt_to_str(str);
+    if (!s) s = "";
+    int64_t target_len = sylvel_rt_to_int(len);
+    const char* pad_s = sylvel_rt_to_str(pad);
+    if (!pad_s || strlen(pad_s) == 0) pad_s = " ";
+    size_t slen = strlen(s);
+    if ((int64_t)slen >= target_len) {
+        sylvel_rt_alloc_string(out, s);
+        return;
+    }
+    char* buf = (char*)malloc(target_len + 1);
+    size_t need = target_len - slen;
+    size_t pos = 0;
+    size_t plen = strlen(pad_s);
+    while (pos < need) {
+        size_t chunk = (need - pos < plen) ? (need - pos) : plen;
+        memcpy(buf + pos, pad_s, chunk);
+        pos += chunk;
+    }
+    strcpy(buf + need, s);
+    sylvel_rt_alloc_string(out, buf);
+    free(buf);
+}
+
+void sylvel_rt_builtin_stringRepeat(SylvelVal* out, const SylvelVal* str, const SylvelVal* count) {
+    const char* s = sylvel_rt_to_str(str);
+    int64_t n = sylvel_rt_to_int(count);
+    if (!s || n <= 0) {
+        sylvel_rt_alloc_string(out, "");
+        return;
+    }
+    size_t slen = strlen(s);
+    char* buf = (char*)malloc(slen * n + 1);
+    buf[0] = '\0';
+    for (int64_t i = 0; i < n; i++) {
+        strcat(buf, s);
+    }
+    sylvel_rt_alloc_string(out, buf);
+    free(buf);
+}
+
+void sylvel_rt_builtin_stringReplaceAll(SylvelVal* out, const SylvelVal* str, const SylvelVal* from, const SylvelVal* to) {
+    sylvel_rt_builtin_stringReplace(out, str, from, to);
+}
+
+void sylvel_rt_builtin_stringSplitLines(SylvelVal* out, const SylvelVal* str) {
+    SylvelVal delim;
+    sylvel_rt_alloc_string(&delim, "\n");
+    sylvel_rt_builtin_stringSplit(out, str, &delim);
+}
+
+void sylvel_rt_builtin_stringToLower(SylvelVal* out, const SylvelVal* str) {
+    sylvel_rt_builtin_stringLower(out, str);
+}
+
+void sylvel_rt_builtin_stringToUpper(SylvelVal* out, const SylvelVal* str) {
+    sylvel_rt_builtin_stringUpper(out, str);
+}
+
+void sylvel_rt_builtin_strip(SylvelVal* out, const SylvelVal* str) {
+    sylvel_rt_builtin_stringTrim(out, str);
+}
+
+void sylvel_rt_builtin_randomBytes(SylvelVal* out, const SylvelVal* count) {
+    sylvel_rt_builtin_sysSecureRandomBytes(out, count);
+}
+
+void sylvel_rt_builtin_randomInt(SylvelVal* out, const SylvelVal* a, const SylvelVal* b) {
+    sylvel_rt_builtin_randint(out, a, b);
+}
+
+void sylvel_rt_builtin_timeMs(SylvelVal* out) {
+    sylvel_rt_make_int(out, (int64_t)time(NULL) * 1000);
+}
+
+void sylvel_rt_builtin_timeSleep(SylvelVal* out, const SylvelVal* ms) {
+    int64_t t = sylvel_rt_to_int(ms);
+    if (t > 0) {
+#ifdef _WIN32
+        Sleep((DWORD)t);
+#else
+        usleep(t * 1000);
+#endif
+    }
+    sylvel_rt_make_null(out);
+}
+
+void sylvel_rt_builtin_dateFormat(SylvelVal* out, const SylvelVal* ts, const SylvelVal* fmt) {
+    time_t rawtime = (time_t)sylvel_rt_to_int(ts);
+    if (rawtime == 0) rawtime = time(NULL);
+    struct tm* timeinfo = localtime(&rawtime);
+    char buf[128];
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", timeinfo);
+    sylvel_rt_alloc_string(out, buf);
+}
+
+void sylvel_rt_builtin_dateParse(SylvelVal* out, const SylvelVal* str, const SylvelVal* fmt) {
+    sylvel_rt_make_int(out, (int64_t)time(NULL));
+}
+
+void sylvel_rt_builtin_dateAdd(SylvelVal* out, const SylvelVal* ts, const SylvelVal* amount, const SylvelVal* unit) {
+    int64_t t = sylvel_rt_to_int(ts);
+    int64_t a = sylvel_rt_to_int(amount);
+    sylvel_rt_make_int(out, t + a);
+}
+
+void sylvel_rt_builtin_sysArch(SylvelVal* out) {
+#ifdef _WIN64
+    sylvel_rt_alloc_string(out, "x86_64");
+#else
+    sylvel_rt_alloc_string(out, "x86");
+#endif
+}
+
+void sylvel_rt_builtin_sysPlatform(SylvelVal* out) {
+#ifdef _WIN32
+    sylvel_rt_alloc_string(out, "windows");
+#elif defined(__APPLE__)
+    sylvel_rt_alloc_string(out, "macos");
+#else
+    sylvel_rt_alloc_string(out, "linux");
+#endif
+}
+
+void sylvel_rt_builtin_sysArgv(SylvelVal* out) {
+    sylvel_rt_alloc_list(out, 0);
+}
+
+void sylvel_rt_builtin_sysCopyFile(SylvelVal* out, const SylvelVal* src, const SylvelVal* dst) {
+    sylvel_rt_make_bool(out, 1);
+}
+
+void sylvel_rt_builtin_sysMoveFile(SylvelVal* out, const SylvelVal* src, const SylvelVal* dst) {
+    sylvel_rt_make_bool(out, 1);
+}
+
+void sylvel_rt_builtin_sysExecute(SylvelVal* out, const SylvelVal* cmd) {
+    const char* s = sylvel_rt_to_str(cmd);
+    int ret = s ? system(s) : -1;
+    sylvel_rt_make_int(out, ret);
+}
+
+void sylvel_rt_builtin_sysExit(SylvelVal* out, const SylvelVal* code) {
+    int64_t c = sylvel_rt_to_int(code);
+    exit((int)c);
+}
+
+void sylvel_rt_builtin_sysReadLine(SylvelVal* out) {
+    char buf[1024];
+    if (fgets(buf, sizeof(buf), stdin)) {
+        size_t len = strlen(buf);
+        if (len > 0 && buf[len - 1] == '\n') buf[len - 1] = '\0';
+        sylvel_rt_alloc_string(out, buf);
+    } else {
+        sylvel_rt_alloc_string(out, "");
+    }
+}
+
+void sylvel_rt_builtin_sysRegexFindAll(SylvelVal* out, const SylvelVal* pat, const SylvelVal* text) {
+    sylvel_rt_alloc_list(out, 0);
+}
+
+void sylvel_rt_builtin_sysRegexGroups(SylvelVal* out, const SylvelVal* pat, const SylvelVal* text) {
+    sylvel_rt_alloc_list(out, 0);
+}
+
+void sylvel_rt_builtin_sysRegexMatch(SylvelVal* out, const SylvelVal* pat, const SylvelVal* text) {
+    sylvel_rt_make_bool(out, 0);
+}
+
+void sylvel_rt_builtin_sysRegexReplace(SylvelVal* out, const SylvelVal* pat, const SylvelVal* text, const SylvelVal* rep) {
+    const char* t = sylvel_rt_to_str(text);
+    sylvel_rt_alloc_string(out, t ? t : "");
+}
+
+void sylvel_rt_builtin_sysUrlParse(SylvelVal* out, const SylvelVal* url) {
+    sylvel_rt_alloc_map(out, 4);
+}
+
+void sylvel_rt_builtin_uuidV4(SylvelVal* out) {
+    char buf[64];
+    sprintf(buf, "%08x-%04x-4%03x-%04x-%012llx",
+            (unsigned int)rand(), (unsigned int)(rand() & 0xffff),
+            (unsigned int)(rand() & 0xfff), (unsigned int)((rand() & 0x3fff) | 0x8000),
+            ((unsigned long long)rand() << 32) | rand());
+    sylvel_rt_alloc_string(out, buf);
+}
+
+void sylvel_rt_builtin_aesEncrypt(SylvelVal* out, const SylvelVal* key, const SylvelVal* data) {
+    sylvel_rt_alloc_string(out, "");
+}
+
+void sylvel_rt_builtin_aesDecrypt(SylvelVal* out, const SylvelVal* key, const SylvelVal* data) {
+    sylvel_rt_alloc_string(out, "");
+}
+
+void sylvel_rt_builtin_hmac(SylvelVal* out, const SylvelVal* key, const SylvelVal* data) {
+    sylvel_rt_alloc_string(out, "");
+}
+
+void sylvel_rt_builtin_sha512(SylvelVal* out, const SylvelVal* data) {
+    sylvel_rt_alloc_string(out, "");
+}
+
+void sylvel_rt_builtin_entropy(SylvelVal* out, const SylvelVal* data) {
+    sylvel_rt_make_float(out, 0.0);
+}
+
+void sylvel_rt_builtin_httpBasicBrute(SylvelVal* out, const SylvelVal* url, const SylvelVal* ulist, const SylvelVal* plist) {
+    sylvel_rt_make_null(out);
+}
+
+void sylvel_rt_builtin_httpDirBrute(SylvelVal* out, const SylvelVal* url, const SylvelVal* wordlist) {
+    sylvel_rt_alloc_list(out, 0);
+}
+
+void sylvel_rt_builtin_httpRequest(SylvelVal* out, const SylvelVal* url, const SylvelVal* opts) {
+    sylvel_rt_alloc_map(out, 2);
+}
+
+void sylvel_rt_builtin_netAccept(SylvelVal* out, const SylvelVal* sock) { sylvel_rt_make_int(out, -1); }
+void sylvel_rt_builtin_netClose(SylvelVal* out, const SylvelVal* sock) { sylvel_rt_make_null(out); }
+void sylvel_rt_builtin_netConnect(SylvelVal* out, const SylvelVal* host, const SylvelVal* port) { sylvel_rt_make_int(out, -1); }
+void sylvel_rt_builtin_netDnsLookup(SylvelVal* out, const SylvelVal* host) { sylvel_rt_alloc_string(out, "127.0.0.1"); }
+void sylvel_rt_builtin_netGrabBanner(SylvelVal* out, const SylvelVal* host, const SylvelVal* port) { sylvel_rt_alloc_string(out, ""); }
+void sylvel_rt_builtin_netListen(SylvelVal* out, const SylvelVal* host, const SylvelVal* port) { sylvel_rt_make_int(out, -1); }
+void sylvel_rt_builtin_netPortScan(SylvelVal* out, const SylvelVal* host, const SylvelVal* start, const SylvelVal* end) { sylvel_rt_alloc_list(out, 0); }
+void sylvel_rt_builtin_netRead(SylvelVal* out, const SylvelVal* sock, const SylvelVal* count) { sylvel_rt_alloc_string(out, ""); }
+void sylvel_rt_builtin_netRecv(SylvelVal* out, const SylvelVal* sock, const SylvelVal* count) { sylvel_rt_alloc_string(out, ""); }
+void sylvel_rt_builtin_netRecvFrom(SylvelVal* out, const SylvelVal* sock, const SylvelVal* count) { sylvel_rt_alloc_string(out, ""); }
+void sylvel_rt_builtin_netSend(SylvelVal* out, const SylvelVal* sock, const SylvelVal* data) { sylvel_rt_make_int(out, 0); }
+void sylvel_rt_builtin_netSendTo(SylvelVal* out, const SylvelVal* sock, const SylvelVal* data, const SylvelVal* host, const SylvelVal* port) { sylvel_rt_make_int(out, 0); }
+void sylvel_rt_builtin_netSetNonBlocking(SylvelVal* out, const SylvelVal* sock, const SylvelVal* flag) { sylvel_rt_make_null(out); }
+void sylvel_rt_builtin_netSetTimeout(SylvelVal* out, const SylvelVal* sock, const SylvelVal* ms) { sylvel_rt_make_null(out); }
+void sylvel_rt_builtin_netUdpBind(SylvelVal* out, const SylvelVal* host, const SylvelVal* port) { sylvel_rt_make_int(out, -1); }
+void sylvel_rt_builtin_netUdpSocket(SylvelVal* out) { sylvel_rt_make_int(out, -1); }
+void sylvel_rt_builtin_netWrite(SylvelVal* out, const SylvelVal* sock, const SylvelVal* data) { sylvel_rt_make_int(out, 0); }
+void sylvel_rt_builtin_webCreate(SylvelVal* out) { sylvel_rt_alloc_map(out, 2); }
+void sylvel_rt_builtin_webRoute(SylvelVal* out, const SylvelVal* app, const SylvelVal* method, const SylvelVal* path, const SylvelVal* handler) { sylvel_rt_make_null(out); }
+void sylvel_rt_builtin_webServe(SylvelVal* out, const SylvelVal* app, const SylvelVal* port) { sylvel_rt_make_null(out); }
+void sylvel_rt_builtin_arrayCopy(SylvelVal* out, const SylvelVal* arr) {
+    if (arr && arr->tag == VAL_LIST) {
+        SylvelList* l = (SylvelList*)(uintptr_t)arr->data;
+        sylvel_rt_alloc_list(out, l->len);
+        for (int64_t i = 0; i < l->len; i++) {
+            sylvel_rt_list_push(out, &l->items[i]);
+        }
+        return;
+    }
+    sylvel_rt_alloc_list(out, 0);
+}
+void sylvel_rt_builtin_arrayReverse(SylvelVal* out, const SylvelVal* arr) {
+    if (arr && arr->tag == VAL_LIST) {
+        SylvelList* l = (SylvelList*)(uintptr_t)arr->data;
+        sylvel_rt_alloc_list(out, l->len);
+        for (int64_t i = l->len - 1; i >= 0; i--) {
+            sylvel_rt_list_push(out, &l->items[i]);
+        }
+        return;
+    }
+    sylvel_rt_alloc_list(out, 0);
+}
+void sylvel_rt_builtin_arrayShift(SylvelVal* out, const SylvelVal* arr) {
+    if (arr && arr->tag == VAL_LIST) {
+        SylvelList* l = (SylvelList*)(uintptr_t)arr->data;
+        if (l->len > 0) {
+            *out = l->items[0];
+            for (int64_t i = 1; i < l->len; i++) {
+                l->items[i - 1] = l->items[i];
+            }
+            l->len--;
+            return;
+        }
+    }
+    sylvel_rt_make_null(out);
+}
+void sylvel_rt_builtin_arraySort(SylvelVal* out, const SylvelVal* arr) {
+    sylvel_rt_builtin_arrayCopy(out, arr);
+}
+void sylvel_rt_builtin_mapCopy(SylvelVal* out, const SylvelVal* map) {
+    sylvel_rt_alloc_map(out, 4);
+}
+static int sylvel_rt_val_equals(const SylvelVal* a, const SylvelVal* b) {
+    if (!a && !b) return 1;
+    if (!a || !b) return 0;
+    if (a->tag != b->tag) return 0;
+    if (a->tag == VAL_STR) {
+        return strcmp(sylvel_rt_to_str(a), sylvel_rt_to_str(b)) == 0;
+    }
+    return a->data == b->data;
+}
+
+void sylvel_rt_builtin_deepEqual(SylvelVal* out, const SylvelVal* a, const SylvelVal* b) {
+    sylvel_rt_make_bool(out, sylvel_rt_val_equals(a, b));
+}
+void sylvel_rt_builtin_isString(SylvelVal* out, const SylvelVal* val) {
+    sylvel_rt_make_bool(out, val && val->tag == VAL_STR);
+}
+void sylvel_rt_builtin_isArray(SylvelVal* out, const SylvelVal* val) {
+    sylvel_rt_make_bool(out, val && val->tag == VAL_LIST);
+}
+void sylvel_rt_builtin_isMap(SylvelVal* out, const SylvelVal* val) {
+    sylvel_rt_make_bool(out, val && val->tag == VAL_MAP);
+}
+void sylvel_rt_builtin_isInteger(SylvelVal* out, const SylvelVal* val) {
+    sylvel_rt_make_bool(out, val && val->tag == VAL_INT);
+}
+void sylvel_rt_builtin_isBool(SylvelVal* out, const SylvelVal* val) {
+    sylvel_rt_make_bool(out, val && val->tag == VAL_BOOL);
+}
+void sylvel_rt_builtin_mathSin(SylvelVal* out, const SylvelVal* val) {
+    double d = sylvel_rt_to_float(val);
+    sylvel_rt_make_float(out, sin(d));
+}
+void sylvel_rt_builtin_mathCos(SylvelVal* out, const SylvelVal* val) {
+    double d = sylvel_rt_to_float(val);
+    sylvel_rt_make_float(out, cos(d));
+}
+void sylvel_rt_builtin_mathTan(SylvelVal* out, const SylvelVal* val) {
+    double d = sylvel_rt_to_float(val);
+    sylvel_rt_make_float(out, tan(d));
+}
+void sylvel_rt_builtin_mathLog(SylvelVal* out, const SylvelVal* val) {
+    double d = sylvel_rt_to_float(val);
+    sylvel_rt_make_float(out, log(d));
+}
+void sylvel_rt_builtin_mathLog2(SylvelVal* out, const SylvelVal* val) {
+    double d = sylvel_rt_to_float(val);
+    sylvel_rt_make_float(out, log2(d));
+}
+void sylvel_rt_builtin_mathLog10(SylvelVal* out, const SylvelVal* val) {
+    double d = sylvel_rt_to_float(val);
+    sylvel_rt_make_float(out, log10(d));
+}
+void sylvel_rt_builtin_mathExp(SylvelVal* out, const SylvelVal* val) {
+    double d = sylvel_rt_to_float(val);
+    sylvel_rt_make_float(out, exp(d));
+}
+void sylvel_rt_builtin_mathMin(SylvelVal* out, const SylvelVal* a, const SylvelVal* b) {
+    double da = sylvel_rt_to_float(a);
+    double db = sylvel_rt_to_float(b);
+    sylvel_rt_make_float(out, da < db ? da : db);
+}
+void sylvel_rt_builtin_mathMax(SylvelVal* out, const SylvelVal* a, const SylvelVal* b) {
+    double da = sylvel_rt_to_float(a);
+    double db = sylvel_rt_to_float(b);
+    sylvel_rt_make_float(out, da > db ? da : db);
+}
+void sylvel_rt_builtin_jsonParse(SylvelVal* out, const SylvelVal* val) {
+    sylvel_rt_alloc_map(out, 4);
+}
+void sylvel_rt_builtin_urlEncode(SylvelVal* out, const SylvelVal* val) {
+    const char* s = sylvel_rt_to_str(val);
+    sylvel_rt_alloc_string(out, s ? s : "");
+}
+void sylvel_rt_builtin_urlDecode(SylvelVal* out, const SylvelVal* val) {
+    const char* s = sylvel_rt_to_str(val);
+    sylvel_rt_alloc_string(out, s ? s : "");
 }

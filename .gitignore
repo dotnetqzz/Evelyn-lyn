@@ -13,4 +13,5 @@ stress_test.log
 examples
 target
 .ll
-.exe
+dual_test_bins
+exe

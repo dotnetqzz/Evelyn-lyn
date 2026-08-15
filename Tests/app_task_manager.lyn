@@ -18,7 +18,7 @@ def mark_completed(task) {
 }
 
 def task_to_string(task) {
-    let status = "PENDING"
+    var status = "PENDING"
     if task["completed"] {
         status = "DONE"
     }

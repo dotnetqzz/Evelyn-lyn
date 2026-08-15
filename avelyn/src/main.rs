@@ -8,6 +8,14 @@ mod env;
 mod interpreter;
 mod compiler;
 mod stdlib_bundle;
+mod sema;
+mod air;
+mod airgen;
+mod optimizer;
+mod irgen;
+mod target;
+#[cfg(test)]
+mod pipeline_tests;
 
 use std::env as std_env;
 use std::process::exit;
@@ -52,27 +60,7 @@ fn run_cli() {
                 exit(1);
             }
             let input_path = &args[2];
-            let mut emit_llvm = false;
-            let mut out_path = if cfg!(windows) {
-                format!("{}.exe", input_path.trim_end_matches(".lyn"))
-            } else {
-                input_path.trim_end_matches(".lyn").to_string()
-            };
-
-            let mut i = 3;
-            while i < args.len() {
-                if args[i] == "-o" && i + 1 < args.len() {
-                    out_path = args[i + 1].clone();
-                    i += 2;
-                } else if args[i] == "--emit-llvm" {
-                    emit_llvm = true;
-                    i += 1;
-                } else {
-                    i += 1;
-                }
-            }
-
-            compile_file(input_path, &out_path, emit_llvm);
+            compile_file_with_args(input_path, &args[3..]);
         }
         "test" => {
             let path = if args.len() >= 3 { &args[2] } else { "." };
@@ -92,15 +80,41 @@ fn run_cli() {
 }
 
 fn print_usage() {
-    println!("avelyn 2.5.7 - Sylvel Programming Language Runtime");
-    println!("Usage:");
-    println!("  avelyn <file.lyn>                             Run Sylvel source file via interpreter");
-    println!("  avelyn compile <file.lyn> [-o out.exe]        Compile source to native platform binary via LLVM");
-    println!("  avelyn compile <file.lyn> --emit-llvm         Emit LLVM IR (.ll) alongside output");
-    println!("  avelyn test [path]                            Run test suite");
-    println!("  avelyn --version                              Show version");
-    println!("  avelyn --help                                 Show help");
+    println!("avelyn 2.5.7 — Avelyn Programming Language Compiler & Runtime");
+    println!();
+    println!("USAGE:");
+    println!("  avelyn <file.lyn>                          Run file via interpreter");
+    println!("  avelyn compile <file.lyn> [OPTIONS]        Compile to native binary");
+    println!("  avelyn repl                                Start interactive REPL");
+    println!("  avelyn test [path]                         Run test suite");
+    println!("  avelyn --sandbox <file.lyn>                Run in sandboxed mode");
+    println!("  avelyn --version                           Show version");
+    println!("  avelyn --help                              Show this help");
+    println!();
+    println!("COMPILE OPTIONS:");
+    println!("  -o <output>            Output file path (default: <input>.exe)");
+    println!("  --emit-ast             Print AST and exit");
+    println!("  --emit-air             Print unoptimized AIR and exit");
+    println!("  --emit-air-opt         Print optimized AIR and exit");
+    println!("  --emit-llvm            Emit LLVM IR (.ll file) and exit");
+    println!("  --emit-object          Compile to object file, do not link");
+    println!("  --emit-asm             Compile to assembly (.s file)");
+    println!("  -O0 / -O1 / -O2 / -O3 Optimization level (default: -O2)");
+    println!("  --target <triple>      Override target triple");
+    println!("  --llvm-path <dir>      Path to LLVM bin directory");
+    println!("  --verify               Run AIR verifier (default: on)");
+    println!("  --no-verify            Skip AIR verifier");
+    println!("  --verbose              Print each pipeline stage");
+    println!();
+    println!("EXAMPLES:");
+    println!("  avelyn hello.lyn");
+    println!("  avelyn compile hello.lyn -o hello.exe");
+    println!("  avelyn compile hello.lyn --emit-air");
+    println!("  avelyn compile hello.lyn --emit-llvm -O3");
+    println!("  avelyn compile hello.lyn --llvm-path \"C:\\Program Files\\LLVM\\bin\"");
 }
+
+// ──────────────── Interpreter path (completely unchanged) ─────────────────────────
 
 fn run_interpreter_file(path: &str) {
     let source = match std::fs::read_to_string(path) {
@@ -270,7 +284,13 @@ fn run_test_runner(path: &str) {
     if failed > 0 { exit(1); }
 }
 
-fn compile_file(input_path: &str, out_path: &str, emit_llvm: bool) {
+// ──────────────── New compiler driver ──────────────────────────────────────────
+
+fn compile_file_with_args(input_path: &str, extra_args: &[String]) {
+    use compiler::{CompilerOptions, EmitStage};
+    use crate::optimizer::OptLevel;
+    use crate::target::Target;
+
     let source = match std::fs::read_to_string(input_path) {
         Ok(s) => s,
         Err(e) => {
@@ -279,22 +299,74 @@ fn compile_file(input_path: &str, out_path: &str, emit_llvm: bool) {
         }
     };
 
+    let mut opts = CompilerOptions {
+        out_path: if cfg!(windows) {
+            format!("{}.exe", input_path.trim_end_matches(".lyn"))
+        } else {
+            input_path.trim_end_matches(".lyn").to_string()
+        },
+        ..Default::default()
+    };
+
+    let mut i = 0;
+    while i < extra_args.len() {
+        match extra_args[i].as_str() {
+            "-o" if i + 1 < extra_args.len() => {
+                opts.out_path = extra_args[i + 1].clone();
+                i += 2;
+            }
+            "--emit-ast"     => { opts.emit = EmitStage::Ast;     i += 1; }
+            "--emit-air"     => { opts.emit = EmitStage::Air;     i += 1; }
+            "--emit-air-opt" => { opts.emit = EmitStage::AirOpt;  i += 1; }
+            "--emit-llvm"    => { opts.emit = EmitStage::Llvm;    i += 1; }
+            "--emit-object"  => { opts.emit = EmitStage::Object;  i += 1; }
+            "--emit-asm"     => { opts.emit = EmitStage::Asm;     i += 1; }
+            "-O0"            => { opts.opt_level = OptLevel::O0;  i += 1; }
+            "-O1"            => { opts.opt_level = OptLevel::O1;  i += 1; }
+            "-O2"            => { opts.opt_level = OptLevel::O2;  i += 1; }
+            "-O3"            => { opts.opt_level = OptLevel::O3;  i += 1; }
+            "--verbose"      => { opts.verbose = true;            i += 1; }
+            "--verify"       => { opts.verify_air = true;         i += 1; }
+            "--no-verify"    => { opts.verify_air = false;        i += 1; }
+            "--target" if i + 1 < extra_args.len() => {
+                match Target::from_triple(&extra_args[i + 1]) {
+                    Ok(t) => opts.target = t,
+                    Err(e) => { eprintln!("Error: {}", e); exit(1); }
+                }
+                i += 2;
+            }
+            "--llvm-path" if i + 1 < extra_args.len() => {
+                opts.llvm_path = Some(extra_args[i + 1].clone());
+                i += 2;
+            }
+            _ => { i += 1; }
+        }
+    }
+
     let mut lexer = Lexer::new(&source);
     let tokens = lexer.tokenize();
-    let mut parser = Parser::new(tokens);
-    let ast = parser.parse();
+    let mut parser_inst = Parser::new(tokens);
+    let ast = parser_inst.parse();
+
+    if opts.verbose {
+        eprintln!("[avelyn] Parsed {} top-level nodes from '{}'", ast.len(), input_path);
+    }
 
     let compiler = Compiler::new();
-    match compiler.compile_to_native(&ast, out_path, emit_llvm) {
+    match compiler.compile_with_options(&ast, input_path, &opts) {
         Ok(_) => {
-            println!("Successfully compiled {} -> {}", input_path, out_path);
+            if opts.emit == EmitStage::Executable {
+                println!("Successfully compiled {} -> {}", input_path, opts.out_path);
+            }
         }
         Err(e) => {
-            eprintln!("LLVM Compilation error: {}", e);
+            eprintln!("{}", e);
             exit(1);
         }
     }
 }
+
+// ──────────────── Tests ──────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {

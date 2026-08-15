@@ -1,4 +1,4 @@
-﻿# Sylvel Standard Library â€” math.lyn
+﻿# Sylvel Standard Library math.lyn
 # Mirrors Python's math module, implemented in Sylvel
 
 def math_abs(x)    { if x < 0 { return -x } return x }

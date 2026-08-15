@@ -1,5 +1,151 @@
 // ast.rs — Token and ASTNode definitions
 // Ported from CoreInterpreter/AST.swift
+//
+// ─── Compiler pipeline additions ──────────────────────────────────────────────
+// The types below (Span, AvelynType, TypedNode) are used exclusively by the
+// compiler backend (Sema → AIRGen → Optimizer → IRGen).  The interpreter,
+// parser, lexer, and all stdlib code are completely unaffected.
+
+// ─── Source location ─────────────────────────────────────────────────────────
+
+/// A compact, copy-able source location.  `file_id` indexes into a file-name
+/// table held by the compiler driver; 0 = unknown.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct Span {
+    pub file_id: u32,
+    pub line: u32,
+    pub col: u32,
+}
+
+impl Span {
+    pub const UNKNOWN: Span = Span { file_id: 0, line: 0, col: 0 };
+
+    pub fn new(file_id: u32, line: u32, col: u32) -> Self {
+        Span { file_id, line, col }
+    }
+
+    pub fn from_line(line: u32) -> Self {
+        Span { file_id: 0, line, col: 0 }
+    }
+
+    pub fn is_known(&self) -> bool {
+        self.line > 0
+    }
+}
+
+impl std::fmt::Display for Span {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.col > 0 {
+            write!(f, "{}:{}", self.line, self.col)
+        } else {
+            write!(f, "line {}", self.line)
+        }
+    }
+}
+
+// ─── Type system (compiler-only) ──────────────────────────────────────────────
+
+/// Avelyn's static type annotation used during semantic analysis.
+/// Initially conservative: most expressions resolve to `Any` until the type
+/// checker is made more precise in future phases.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum AvelynType {
+    /// Type is not yet known (resolved by type-checker, defaults to Any).
+    Unknown,
+    /// Any dynamic value — the fallback for un-typed positions.
+    Any,
+    Null,
+    Bool,
+    Int,
+    Float,
+    Str,
+    ByteArray,
+    /// Homogeneous list (element type may be Any).
+    List(Box<AvelynType>),
+    /// String-keyed map (value type may be Any).
+    Map(Box<AvelynType>),
+    /// Function: (param types, return type)
+    Func(Vec<AvelynType>, Box<AvelynType>),
+    /// Named struct / enum variant.
+    Named(String),
+    /// Internal: a type that can never be produced (bottom type, after error).
+    Never,
+}
+
+impl AvelynType {
+    /// Returns true if values of this type are guaranteed to be scalars
+    /// (no heap allocation needed in the runtime representation).
+    pub fn is_scalar(&self) -> bool {
+        matches!(self, AvelynType::Null | AvelynType::Bool | AvelynType::Int | AvelynType::Float)
+    }
+
+    /// Returns true if the type is definitely reference-counted at runtime.
+    pub fn is_heap(&self) -> bool {
+        matches!(self, AvelynType::Str | AvelynType::ByteArray
+            | AvelynType::List(_) | AvelynType::Map(_)
+            | AvelynType::Func(..) | AvelynType::Named(_))
+    }
+
+    pub fn is_unknown(&self) -> bool { matches!(self, AvelynType::Unknown) }
+    pub fn is_any(&self) -> bool     { matches!(self, AvelynType::Any) }
+}
+
+impl std::fmt::Display for AvelynType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AvelynType::Unknown => write!(f, "?"),
+            AvelynType::Any     => write!(f, "any"),
+            AvelynType::Null    => write!(f, "null"),
+            AvelynType::Bool    => write!(f, "bool"),
+            AvelynType::Int     => write!(f, "int"),
+            AvelynType::Float   => write!(f, "float"),
+            AvelynType::Str     => write!(f, "str"),
+            AvelynType::ByteArray => write!(f, "bytes"),
+            AvelynType::List(t) => write!(f, "list[{}]", t),
+            AvelynType::Map(t)  => write!(f, "map[{}]", t),
+            AvelynType::Func(ps, r) => {
+                let ps: Vec<String> = ps.iter().map(|t| t.to_string()).collect();
+                write!(f, "fn({}) -> {}", ps.join(", "), r)
+            }
+            AvelynType::Named(n) => write!(f, "{}", n),
+            AvelynType::Never   => write!(f, "never"),
+        }
+    }
+}
+
+// ─── Typed AST node (compiler-only) ───────────────────────────────────────────
+
+/// A wrapper around `ASTNode` that carries the inferred type and source span.
+/// Used by the compiler backend; never constructed by the parser/interpreter.
+#[derive(Debug, Clone)]
+pub struct TypedNode {
+    pub node: ASTNode,
+    pub ty:   AvelynType,
+    pub span: Span,
+}
+
+impl TypedNode {
+    pub fn new(node: ASTNode, ty: AvelynType, span: Span) -> Self {
+        TypedNode { node, ty, span }
+    }
+
+    /// Wrap a node with unknown type and unknown span (to be filled by Sema).
+    pub fn untyped(node: ASTNode) -> Self {
+        TypedNode { node, ty: AvelynType::Unknown, span: Span::UNKNOWN }
+    }
+
+    pub fn with_span(mut self, span: Span) -> Self {
+        self.span = span;
+        self
+    }
+
+    pub fn with_type(mut self, ty: AvelynType) -> Self {
+        self.ty = ty;
+        self
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
