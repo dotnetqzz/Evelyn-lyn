@@ -564,6 +564,10 @@ impl<'a> LlvmIrGen<'a> {
                 let val = ctx.val_name(args[0]);
                 out.push_str(&format!("  call void @sylvel_rt_throw_val(%SylvelVal* {})\n", val));
             }
+            RuntimeFn::GetErrorVal => {
+                let val = ctx.val_name(args[0]);
+                out.push_str(&format!("  call void @sylvel_rt_get_error_val(%SylvelVal* {})\n", val));
+            }
 
             // ── Assert ────────────────────────────────────────────────────────
 

@@ -1,12 +1,12 @@
-﻿# Sylvel Standard Library — web.lyn
+# Sylvel Standard Library — web.lyn
 # Flask/FastAPI-like web framework
 
 def webApp() {
     let _id = webCreate()
-    let _middlewares = []
+    var _middlewares = []
 
     let use = def(middlewareFn) {
-        arrayAppend(_middlewares, middlewareFn)
+        _middlewares = arrayAppend(_middlewares, middlewareFn)
     }
 
     let get = def(path, handler) {

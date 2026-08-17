@@ -1,31 +1,40 @@
-﻿# Sylvel Standard Library — functional.lyn
+# Sylvel Standard Library — functional.lyn
 # High-level functional programming utilities
 
+var _partial_fn = null
+var _partial_preset = []
+
 def fn_partial(func, presetArgs) {
+    _partial_fn = func
+    _partial_preset = presetArgs
     return def(...args) {
-        var merged = arraySlice(presetArgs, 0, arrayLen(presetArgs))
+        var merged = arraySlice(_partial_preset, 0, arrayLen(_partial_preset))
         for arg in args {
-            arrayAppend(merged, arg)
+            merged = arrayAppend(merged, arg)
         }
         let n = arrayLen(merged)
-        if n == 0 { return func() }
-        if n == 1 { return func(merged[0]) }
-        if n == 2 { return func(merged[0], merged[1]) }
-        if n == 3 { return func(merged[0], merged[1], merged[2]) }
-        if n == 4 { return func(merged[0], merged[1], merged[2], merged[3]) }
-        return func(merged[0], merged[1], merged[2], merged[3], merged[4])
+        if n == 0 { return _partial_fn() }
+        if n == 1 { return _partial_fn(merged[0]) }
+        if n == 2 { return _partial_fn(merged[0], merged[1]) }
+        if n == 3 { return _partial_fn(merged[0], merged[1], merged[2]) }
+        if n == 4 { return _partial_fn(merged[0], merged[1], merged[2], merged[3]) }
+        return _partial_fn(merged[0], merged[1], merged[2], merged[3], merged[4])
     }
 }
 
+var _memoize_cache = {}
+var _memoize_fn = null
+
 def fn_memoize(func) {
-    var cache = {}
+    _memoize_fn = func
+    _memoize_cache = {}
     return def(arg) {
-        let key = numToString(arg)
-        if not mapHas(cache, key) {
-            let res = func(arg)
-            mapSet(cache, key, res)
+        let key = toString(arg)
+        if not mapHas(_memoize_cache, key) {
+            let res = _memoize_fn(arg)
+            mapSet(_memoize_cache, key, res)
         }
-        return mapGet(cache, key)
+        return mapGet(_memoize_cache, key)
     }
 }
 
@@ -37,12 +46,15 @@ def fn_pipe(val, fns) {
     return result
 }
 
+var _compose_fns = []
+
 def fn_compose(fns) {
+    _compose_fns = fns
     return def(val) {
         var result = val
-        var i = arrayLen(fns) - 1
+        var i = arrayLen(_compose_fns) - 1
         while i >= 0 {
-            let f = fns[i]
+            let f = _compose_fns[i]
             result = f(result)
             i -= 1
         }

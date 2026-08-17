@@ -4,20 +4,30 @@
 import "re"
 
 def xml_parse_tag_with_attrs(xmlStr, tag) {
-    # Match <tag ...>content</tag>
-    let pat = "<" + tag + "(?:\\s+[^>]*?)?>(.*?)</" + tag + ">"
-    let groups = re["groups"](pat, xmlStr)
-    if isNull(groups) or arrayLen(groups) < 2 { return null }
-    return groups[1]
+    let openTag = "<" + tag
+    let closeTag = "</" + tag + ">"
+    let openIdx = stringIndexOf(xmlStr, openTag)
+    if openIdx < 0 { return null }
+    let closeIdx = stringIndexOf(xmlStr, closeTag)
+    if closeIdx < 0 { return null }
+    let restOfStr = stringSub(xmlStr, openIdx, stringLen(xmlStr) - openIdx)
+    let afterOpen = stringIndexOf(restOfStr, ">")
+    if afterOpen < 0 { return null }
+    let contentStart = openIdx + afterOpen + 1
+    if contentStart > closeIdx { return null }
+    return stringSub(xmlStr, contentStart, closeIdx - contentStart)
 }
 
 def xml_parse_attrs(xmlStr, tag) {
-    let tagPat = "<" + tag + "(\\s+[^>]*?)?>"
-    let groups = re["groups"](tagPat, xmlStr)
-    if isNull(groups) or arrayLen(groups) < 2 { return {} }
-    let attrStr = groups[1]
+    let openTag = "<" + tag
+    let openIdx = stringIndexOf(xmlStr, openTag)
+    if openIdx < 0 { return {} }
+    let restOfStr = stringSub(xmlStr, openIdx, stringLen(xmlStr) - openIdx)
+    let tagEnd = stringIndexOf(restOfStr, ">")
+    if tagEnd < 0 { return {} }
+    let tagHeader = stringSub(xmlStr, openIdx + stringLen(openTag), tagEnd - stringLen(openTag))
     var attrs = {}
-    let parts = stringSplit(attrStr, " ")
+    let parts = stringSplit(tagHeader, " ")
     for part in parts {
         let trimmed = strip(part)
         if stringContains(trimmed, "=") {
@@ -33,6 +43,6 @@ def xml_parse_attrs(xmlStr, tag) {
 }
 
 let xml = {
-    "findTag":      def(xmlStr, tag) => xml_parse_tag_with_attrs(xmlStr, tag),
+    "findTag":        def(xmlStr, tag) => xml_parse_tag_with_attrs(xmlStr, tag),
     "findAttributes": def(xmlStr, tag) => xml_parse_attrs(xmlStr, tag),
 }

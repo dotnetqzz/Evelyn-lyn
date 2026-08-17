@@ -1,10 +1,10 @@
-﻿# Sylvel Standard Library â€” collections.lyn
+# Sylvel Standard Library â€” collections.lyn
 # Stack, Queue, Set â€” implemented in Sylvel
 
 # Stack
 def Stack() {
     var _data = []
-    def push(x)   { arrayAppend(_data, x) }
+    def push(x)   { _data = arrayAppend(_data, x) }
     def pop()     {
         if arrayLen(_data) == 0 { return null }
         let v = _data[arrayLen(_data) - 1]
@@ -28,7 +28,7 @@ def Stack() {
 # Queue
 def Queue() {
     var _data = []
-    def enqueue(x) { arrayAppend(_data, x) }
+    def enqueue(x) { _data = arrayAppend(_data, x) }
     def dequeue() {
         if arrayLen(_data) == 0 { return null }
         let v = _data[0]
@@ -54,18 +54,18 @@ def Set(initial) {
     var _data = []
     if not isNull(initial) {
         for x in initial {
-            if not arrayContains(_data, x) { arrayAppend(_data, x) }
+            if not arrayContains(_data, x) { _data = arrayAppend(_data, x) }
         }
     }
-    def add(x)    { if not arrayContains(_data, x) { arrayAppend(_data, x) } }
-    def remove(x) {
+    let add = def(x)    { if not arrayContains(_data, x) { _data = arrayAppend(_data, x) } }
+    let remove = def(x) {
         var out = []
-        for d in _data { if d != x { arrayAppend(out, d) } }
+        for d in _data { if d != x { out = arrayAppend(out, d) } }
         _data = out
     }
-    def has(x)    { return arrayContains(_data, x) }
-    def size()    { return arrayLen(_data) }
-    def toArray() { return arrayCopy(_data) }
+    let has = def(x)    { return arrayContains(_data, x) }
+    let size = def()    { return arrayLen(_data) }
+    let toArray = def() { return arrayCopy(_data) }
     return {
         "add":     add,
         "remove":  remove,

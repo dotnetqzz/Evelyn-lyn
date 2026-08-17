@@ -1,4 +1,4 @@
-﻿# Sylvel Standard Library — test.lyn
+# Sylvel Standard Library — test.lyn
 # pytest-like test framework
 
 var _testPassed = 0
@@ -21,7 +21,7 @@ def it(name, callback) {
         _testFailed += 1
         let msg = "  ✗ " + name + " → " + toString(e)
         print(msg)
-        arrayAppend(_testErrors, msg)
+        _testErrors = arrayAppend(_testErrors, msg)
     }
 }
 

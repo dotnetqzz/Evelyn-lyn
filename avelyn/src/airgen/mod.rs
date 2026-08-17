@@ -53,17 +53,18 @@ impl<'a> AirGen<'a> {
 
     fn is_known_runtime_builtin(name: &str) -> bool {
         matches!(name,
-            "print" | "println" | "toNumber" | "toBool" | "isNumber" | "isNull" | "isString" | "isArray" | "isMap" | "isInteger" | "isBool" |
+            "print" | "println" | "toString" | "toNumber" | "stringToNum" | "charFromCode" | "charCodeAt" | "toBool" | "isNumber" | "isNull" | "isString" | "isArray" | "isMap" | "isInteger" | "isBool" |
             "arrayLen" | "stringLen" | "len" | "arrayAppend" | "arrayPush" | "arrayPop" | "arrayIndexOf" | "arrayContains" | "arrayRemove" | "arraySlice" |
             "stringSplit" | "stringConcat" | "stringSub" | "stringReverse" | "stringEndsWith" | "stringStartsWith" | "stringContains" | "stringUpper" | "stringLower" | "stringTrim" | "stringReplace" |
             "mathSqrt" | "mathRound" | "mathPow" | "mathAbs" | "mathFloor" | "mathCeil" | "mapGet" | "mapSet" | "mapHas" | "mapKeys" | "mapValues" |
             "fileWrite" | "fileRead" | "sysRemoveFile" | "numCpus" | "timeSec" | "timeMs" | "timeSleep" | "random" | "randint" | "choice" | "tokenHex" |
-            "sysSecureRandomDouble" | "sysSecureRandomBytes" | "getAtIndex" | "jsonStringify" | "square" | "Queue" | "Stack" | "double" | "cube" | "assert" | "spawnWorkers" | "dateNow" | "numToString" | "sysEnv" |
+            "sysSecureRandomDouble" | "sysSecureRandomBytes" | "getAtIndex" | "jsonStringify" | "square" | "Queue" | "Stack" | "double" | "cube" | "assert" | "spawnWorkers" | "dateNow" | "numToString" | "toRadixString" | "sysEnv" |
             "pathJoin" | "pathBasename" | "pathDirname" | "pathExtension" | "pathAbsolute" | "fileAppend" | "fileExists" | "dirCreate" | "dirExists" | "dirList" | "dirRemove" | "rmTree" | "copyTree" |
             "stringAt" | "stringIndexOf" | "stringJoin" | "stringPadStart" | "stringRepeat" | "stringReplaceAll" | "stringSplitLines" | "stringToLower" | "stringToUpper" | "strip" |
             "randomBytes" | "randomInt" | "dateFormat" | "dateParse" | "dateAdd" | "sysArch" | "sysPlatform" | "sysArgv" | "sysCopyFile" | "sysMoveFile" | "sysExecute" | "sysExit" | "sysReadLine" | "sysRegexFindAll" | "sysRegexGroups" | "sysRegexMatch" | "sysRegexReplace" | "sysUrlParse" | "uuidV4" |
             "aesEncrypt" | "aesDecrypt" | "hmac" | "sha512" | "entropy" | "httpBasicBrute" | "httpDirBrute" | "httpRequest" | "netAccept" | "netClose" | "netConnect" | "netDnsLookup" | "netGrabBanner" | "netListen" | "netPortScan" | "netRead" | "netRecv" | "netRecvFrom" | "netSend" | "netSendTo" | "netSetNonBlocking" | "netSetTimeout" | "netUdpBind" | "netUdpSocket" | "netWrite" | "webCreate" | "webRoute" | "webServe" |
-            "arrayCopy" | "arrayReverse" | "arrayShift" | "arraySort" | "mapCopy" | "deepEqual" | "mathSin" | "mathCos" | "mathTan" | "mathLog" | "mathLog2" | "mathLog10" | "mathExp" | "mathMin" | "mathMax" | "base64Encode" | "base64Decode" | "hexEncode" | "hexDecode" | "jsonParse" | "urlEncode" | "urlDecode"
+            "arrayCopy" | "arrayReverse" | "arrayShift" | "arraySort" | "mapCopy" | "deepEqual" | "mathSin" | "mathCos" | "mathTan" | "mathLog" | "mathLog2" | "mathLog10" | "mathExp" | "mathMin" | "mathMax" | "base64Encode" | "base64Decode" | "hexEncode" | "hexDecode" | "jsonParse" | "urlEncode" | "urlDecode" |
+            "sha256" | "md5" | "sha1" | "b64encode" | "b64decode" | "sysLastErrorTraceback" | "Set"
         )
     }
 
@@ -88,6 +89,9 @@ impl<'a> AirGen<'a> {
 
         // Lower the top-level statements into a synthetic `@main` function.
         self.lower_main(ast)?;
+
+        // Build single shared dispatcher for dynamic CallExpr invocations.
+        self.build_dispatch_function()?;
 
         self.module.rebuild_all_cfgs();
         Ok(self.module)
@@ -164,8 +168,9 @@ impl<'a> AirGen<'a> {
     }
 
     fn collect_fns_rec(&mut self, node: &ASTNode) {
+        let node = Self::unwrap_line(node);
         match node {
-            ASTNode::FuncDecl { name, params, body, variadic, .. } => {
+            ASTNode::FuncDecl { name, params, variadic, .. } => {
                 self.user_fn_names.insert(name.clone());
                 let pnames: Vec<String> = params.iter().map(|p| p.0.clone()).collect();
                 self.fn_param_names.insert(name.clone(), pnames.clone());
@@ -174,19 +179,6 @@ impl<'a> AirGen<'a> {
                     self.variadic_fns.insert(name.clone());
                     self.variadic_fns.insert(format!("lyn_fn_{}", name));
                 }
-                for s in body { self.collect_fns_rec(s); }
-            }
-            ASTNode::Lambda { params, body, .. } => {
-                let lname = format!("__lambda_{}", self.lambda_count);
-                self.lambda_count += 1;
-                self.user_fn_names.insert(lname.clone());
-                let pnames: Vec<String> = params.iter().map(|p| p.0.clone()).collect();
-                self.fn_param_names.insert(lname.clone(), pnames.clone());
-                self.fn_param_names.insert(format!("lyn_fn_{}", lname), pnames);
-                for s in body { self.collect_fns_rec(s); }
-            }
-            ASTNode::Decl { value, .. } | ASTNode::Assign { value, .. } => {
-                self.collect_fns_rec(value);
             }
             ASTNode::If { cond, then, els } => {
                 self.collect_fns_rec(cond);
@@ -197,13 +189,14 @@ impl<'a> AirGen<'a> {
                 self.collect_fns_rec(cond);
                 for s in body { self.collect_fns_rec(s); }
             }
-            ASTNode::For { iter, body, .. } | ASTNode::ForRange { from: iter, body, .. } => {
-                self.collect_fns_rec(iter);
+            ASTNode::For { body, .. } | ASTNode::ForRange { body, .. } => {
                 for s in body { self.collect_fns_rec(s); }
+            }
+            ASTNode::Decl { value, .. } | ASTNode::Assign { value, .. } => {
+                self.collect_fns_rec(value);
             }
             ASTNode::ArrayLit(items) => { for i in items { self.collect_fns_rec(i); } }
             ASTNode::MapLit(pairs)   => { for (k, v) in pairs { self.collect_fns_rec(k); self.collect_fns_rec(v); } }
-            ASTNode::Line(_, inner)  => { self.collect_fns_rec(inner); }
             _ => {}
         }
     }
@@ -244,9 +237,8 @@ impl<'a> AirGen<'a> {
         for node in nodes {
             let unwrap = Self::unwrap_line(node);
             match unwrap {
-                ASTNode::FuncDecl { body, .. } => {
+                ASTNode::FuncDecl { .. } => {
                     self.lower_func_decl(unwrap)?;
-                    self.lower_all_func_decls(body)?;
                 }
                 ASTNode::If { then, els, .. } => {
                     self.lower_all_func_decls(then)?;
@@ -258,6 +250,124 @@ impl<'a> AirGen<'a> {
                 _ => {}
             }
         }
+        Ok(())
+    }
+
+    fn build_dispatch_function(&mut self) -> Result<(), Vec<String>> {
+        let mut b = AirBuilder::new("lyn_dispatch_call", Span::UNKNOWN);
+        b.func.ret_ty = AirType::Void;
+
+        let out_val = b.fresh_value();
+        b.func.params.push(AirParam { name: "out".to_string(), value: out_val, ty: AirType::SylvelValPtr });
+
+        let callee_val = b.fresh_value();
+        b.func.params.push(AirParam { name: "callee".to_string(), value: callee_val, ty: AirType::SylvelValPtr });
+
+        let max_args = 8;
+        let mut arg_vals = Vec::new();
+        for i in 0..max_args {
+            let av = b.fresh_value();
+            b.func.params.push(AirParam { name: format!("a{}", i), value: av, ty: AirType::SylvelValPtr });
+            arg_vals.push(av);
+        }
+
+        let null_val = b.fresh_value();
+        b.entry_allocs.push(Inst::Alloc(null_val, AirType::SylvelVal));
+        b.emit_runtime_call_void(RuntimeFn::MakeNull, vec![null_val]);
+
+        let mut seen_raw = HashSet::new();
+        let mut user_fns = Vec::new();
+        for fn_name in &self.user_fn_names {
+            let raw_name = fn_name.trim_start_matches("lyn_fn_");
+            if seen_raw.insert(raw_name.to_string()) {
+                user_fns.push(raw_name.to_string());
+            }
+        }
+
+        let mut next_bb = b.new_block("disp_check");
+        b.emit_jump(next_bb);
+
+        for raw_name in &user_fns {
+            let cur_bb = next_bb;
+            next_bb = b.new_block("disp_check");
+            let hit_bb = b.new_block("disp_hit");
+
+            b.switch_to(cur_bb);
+            let fn_str = b.emit_const_str(raw_name, &mut self.module);
+            let cmp = b.fresh_value();
+            b.entry_allocs.push(Inst::Alloc(cmp, AirType::SylvelVal));
+            let eq_code = b.fresh_value();
+            b.emit(Inst::ConstInt(eq_code, 6)); // BinOpCode::Eq
+            b.emit_runtime_call_void(RuntimeFn::BinOp, vec![cmp, callee_val, eq_code, fn_str]);
+            let is_hit = b.emit_runtime_call(RuntimeFn::ToBool, vec![cmp], AirType::Bool);
+            b.emit_branch(is_hit, hit_bb, next_bb);
+
+            b.switch_to(hit_bb);
+            let mangled = format!("lyn_fn_{}", raw_name);
+            let is_variadic = self.variadic_fns.contains(raw_name) || self.variadic_fns.contains(&mangled);
+            if is_variadic {
+                let pcount = self.fn_param_names.get(raw_name).map(|p| p.len()).unwrap_or(1);
+                let regular_count = if pcount > 0 { pcount - 1 } else { 0 };
+                let mut call_args = vec![out_val];
+                for i in 0..regular_count {
+                    if i < arg_vals.len() {
+                        call_args.push(arg_vals[i]);
+                    } else {
+                        call_args.push(null_val);
+                    }
+                }
+                let var_list = b.fresh_value();
+                b.entry_allocs.push(Inst::Alloc(var_list, AirType::SylvelVal));
+                let cap = b.fresh_value();
+                let excess_count = if max_args > regular_count { max_args - regular_count } else { 0 };
+                b.emit(Inst::ConstInt(cap, excess_count as i64));
+                b.emit_runtime_call_void(RuntimeFn::AllocList, vec![var_list, cap]);
+
+                for i in regular_count..max_args {
+                    let av = arg_vals[i];
+                    let is_null_val = b.fresh_value();
+                    b.entry_allocs.push(Inst::Alloc(is_null_val, AirType::SylvelVal));
+                    b.emit_runtime_call_void(RuntimeFn::Builtin("isNull".to_string()), vec![is_null_val, av]);
+                    let is_null = b.emit_runtime_call(RuntimeFn::ToBool, vec![is_null_val], AirType::Bool);
+                    let push_bb = b.new_block("disp_vpush");
+                    let skip_bb = b.new_block("disp_vskip");
+                    b.emit_branch(is_null, skip_bb, push_bb);
+
+                    b.switch_to(push_bb);
+                    b.emit_runtime_call_void(RuntimeFn::ListPush, vec![var_list, av]);
+                    b.emit_jump(skip_bb);
+
+                    b.switch_to(skip_bb);
+                }
+                call_args.push(var_list);
+                b.emit(Inst::Call(VOID_VALUE, mangled, call_args));
+                b.emit_return_void();
+            } else {
+                let mut call_args = vec![out_val];
+                if let Some(pnames) = self.fn_param_names.get(raw_name) {
+                    for i in 0..pnames.len() {
+                        if i < arg_vals.len() {
+                            call_args.push(arg_vals[i]);
+                        } else {
+                            call_args.push(null_val);
+                        }
+                    }
+                } else {
+                    for av in &arg_vals {
+                        call_args.push(*av);
+                    }
+                }
+                b.emit(Inst::Call(VOID_VALUE, mangled, call_args));
+                b.emit_return_void();
+            }
+        }
+
+        b.switch_to(next_bb);
+        b.emit_runtime_call_void(RuntimeFn::CallExpr, vec![out_val, callee_val, arg_vals[0], arg_vals[1]]);
+        b.emit_return_void();
+
+        let func = b.finalize();
+        self.module.add_function(func);
         Ok(())
     }
 
@@ -314,7 +424,7 @@ impl<'a> AirGen<'a> {
             let mut body_returned = false;
             for stmt in body {
                 let _ = self.lower_node(stmt, &mut builder)?;
-                if matches!(stmt, ASTNode::Return(_) | ASTNode::Break | ASTNode::Continue) {
+                if matches!(Self::unwrap_line(stmt), ASTNode::Return(_) | ASTNode::Break | ASTNode::Continue) {
                     body_returned = true;
                     break;
                 }
@@ -355,12 +465,24 @@ impl<'a> AirGen<'a> {
                 b.emit_runtime_call_void(RuntimeFn::MakeBool, vec![bv, iv]);
                 Ok(bv)
             }
-            ASTNode::FuncDecl { .. } => {
-                self.lower_func_decl(node)?;
-                let nv = b.fresh_value();
-                b.entry_allocs.push(Inst::Alloc(nv, AirType::SylvelVal));
-                b.emit_runtime_call_void(RuntimeFn::MakeNull, vec![nv]);
-                Ok(nv)
+            ASTNode::FuncDecl { name, params, body, variadic, annotations } => {
+                let lambda = ASTNode::Lambda {
+                    params: params.clone(),
+                    body: body.clone(),
+                    variadic: *variadic,
+                    annotations: annotations.clone(),
+                };
+                let fn_val = self.lower_node(&lambda, b)?;
+                let slot = if let Some(existing) = b.lookup_var_current_scope(name) {
+                    existing
+                } else {
+                    let s = b.fresh_value();
+                    b.entry_allocs.push(Inst::Alloc(s, AirType::SylvelVal));
+                    b.set_var(name, s);
+                    s
+                };
+                b.emit(Inst::Store(fn_val, slot));
+                Ok(slot)
             }
             ASTNode::Null => {
                 let nv = b.fresh_value();
@@ -386,13 +508,16 @@ impl<'a> AirGen<'a> {
                 Ok(list)
             }
 
-            // ── Variable references ───────────────────────────────────────
+            // ── Variable resolution ───────────────────────────────────────
             ASTNode::Var(name) => {
-                if let Some(v) = b.lookup_var(name) {
-                    Ok(v)
+                if let Some(slot) = b.lookup_var(name) {
+                    Ok(slot)
                 } else if self.global_vars.contains(name) {
                     let g_ptr = self.get_global_ptr(name, b);
                     Ok(g_ptr)
+                } else if self.user_fn_names.contains(name) || self.user_fn_names.contains(&format!("lyn_fn_{}", name)) {
+                    let fn_str = b.emit_const_str(name, &mut self.module);
+                    Ok(fn_str)
                 } else {
                     // Unknown variable — produce null and warn.
                     self.diag.warning(Span::UNKNOWN,
@@ -407,17 +532,17 @@ impl<'a> AirGen<'a> {
             // ── Variable declarations ─────────────────────────────────────
             ASTNode::Decl { name, value, mutable, .. } => {
                 let val = self.lower_node(value, b)?;
-                if !mutable { b.mark_immutable(name); }
                 let slot = if b.func.name == "main" && self.global_vars.contains(name) {
                     let g_ptr = self.get_global_ptr(name, b);
-                    b.set_var(name, g_ptr);
+                    b.set_var_with_mutability(name, g_ptr, !mutable);
                     g_ptr
-                } else if let Some(existing) = b.lookup_var(name) {
+                } else if let Some(existing) = b.lookup_var_current_scope(name) {
+                    b.set_var_with_mutability(name, existing, !mutable);
                     existing
                 } else {
                     let s = b.fresh_value();
                     b.entry_allocs.push(Inst::Alloc(s, AirType::SylvelVal));
-                    b.set_var(name, s);
+                    b.set_var_with_mutability(name, s, !mutable);
                     s
                 };
                 // Copy val → slot via a store in AIR.
@@ -427,7 +552,7 @@ impl<'a> AirGen<'a> {
 
             // ── Assignment ────────────────────────────────────────────────
             ASTNode::Assign { name, value } => {
-                if b.is_immutable(name) || self.immutable_vars.contains(name) {
+                if b.is_immutable(name) {
                     let msg = format!("ImmutabilityError: cannot assign to immutable binding '{}' declared with 'let'", name);
                     let msg_idx = self.module.intern_string(&msg);
                     let msg_val = b.fresh_value();
@@ -747,7 +872,7 @@ impl<'a> AirGen<'a> {
                 let mut body_terminated = false;
                 for stmt in body {
                     let _ = self.lower_node(stmt, b)?;
-                    if matches!(stmt, ASTNode::Break | ASTNode::Continue | ASTNode::Return(_)) {
+                    if matches!(Self::unwrap_line(stmt), ASTNode::Break | ASTNode::Continue | ASTNode::Return(_)) {
                         body_terminated = true;
                         break;
                     }
@@ -777,10 +902,8 @@ impl<'a> AirGen<'a> {
                 b.entry_allocs.push(Inst::Alloc(idx_slot, AirType::I64));
                 b.emit(Inst::Store(start_i, idx_slot));
 
-                // SylvelVal slot for the loop variable.
-                let var_slot = if let Some(vs) = b.lookup_var(var) {
-                    vs
-                } else {
+                b.push_scope();
+                let var_slot = {
                     let vs = b.fresh_value();
                     b.entry_allocs.push(Inst::Alloc(vs, AirType::SylvelVal));
                     b.set_var(var, vs);
@@ -820,7 +943,7 @@ impl<'a> AirGen<'a> {
                 let mut body_terminated = false;
                 for stmt in body {
                     let _ = self.lower_node(stmt, b)?;
-                    if matches!(stmt, ASTNode::Break | ASTNode::Continue | ASTNode::Return(_)) {
+                    if matches!(Self::unwrap_line(stmt), ASTNode::Break | ASTNode::Continue | ASTNode::Return(_)) {
                         body_terminated = true;
                         break;
                     }
@@ -839,6 +962,7 @@ impl<'a> AirGen<'a> {
                 b.emit_jump(cond_bb);
 
                 b.pop_loop();
+                b.pop_scope();
                 b.switch_to(exit_bb);
 
                 let null = b.fresh_value();
@@ -858,9 +982,8 @@ impl<'a> AirGen<'a> {
                 b.emit(Inst::ConstInt(zero, 0));
                 b.emit(Inst::Store(zero, idx_slot));
 
-                let var_slot = if let Some(vs) = b.lookup_var(var) {
-                    vs
-                } else {
+                b.push_scope();
+                let var_slot = {
                     let vs = b.fresh_value();
                     b.entry_allocs.push(Inst::Alloc(vs, AirType::SylvelVal));
                     b.set_var(var, vs);
@@ -895,7 +1018,7 @@ impl<'a> AirGen<'a> {
                 let mut body_terminated = false;
                 for stmt in body {
                     let _ = self.lower_node(stmt, b)?;
-                    if matches!(stmt, ASTNode::Break | ASTNode::Continue | ASTNode::Return(_)) {
+                    if matches!(Self::unwrap_line(stmt), ASTNode::Break | ASTNode::Continue | ASTNode::Return(_)) {
                         body_terminated = true;
                         break;
                     }
@@ -914,6 +1037,7 @@ impl<'a> AirGen<'a> {
                 b.emit_jump(cond_bb);
 
                 b.pop_loop();
+                b.pop_scope();
                 b.switch_to(exit_bb);
 
                 let null = b.fresh_value();
@@ -1038,14 +1162,34 @@ impl<'a> AirGen<'a> {
 
             // ── Function call (named) ─────────────────────────────────────
             ASTNode::FuncCall { name, args } => {
-                let is_var = b.lookup_var(name).is_some() || self.global_vars.contains(name);
-                if is_var {
+                let is_local = b.lookup_var(name).is_some();
+                if is_local {
                     let var_node = ASTNode::Var(name.clone());
                     return self.lower_node(&ASTNode::CallExpr { callee: Box::new(var_node), args: args.clone() }, b);
                 }
 
                 let res = b.fresh_value();
                 b.entry_allocs.push(Inst::Alloc(res, AirType::SylvelVal));
+
+                if Self::is_known_runtime_builtin(name) {
+                    let target_name = if name == "toString" && args.len() >= 2 {
+                        "toRadixString".to_string()
+                    } else {
+                        name.clone()
+                    };
+                    let mut air_args = vec![res];
+                    for arg in args {
+                        let av = self.lower_node(arg, b)?;
+                        air_args.push(av);
+                    }
+                    let rt_fn = RuntimeFn::Builtin(target_name);
+                    let arity  = args.len();
+                    self.module.extern_fns
+                        .entry(rt_fn.c_name())
+                        .or_insert(arity);
+                    b.emit_runtime_call_void(rt_fn, air_args);
+                    return Ok(res);
+                }
 
                 let is_variadic = self.variadic_fns.contains(name) || self.variadic_fns.contains(&format!("lyn_fn_{}", name));
                 if is_variadic {
@@ -1158,12 +1302,17 @@ impl<'a> AirGen<'a> {
                     b.emit(Inst::Call(VOID_VALUE, mangled, air_args));
                     return Ok(res);
                 } else if Self::is_known_runtime_builtin(name) {
+                    let target_name = if name == "toString" && args.len() >= 2 {
+                        "toRadixString".to_string()
+                    } else {
+                        name.clone()
+                    };
                     let mut air_args = vec![res];
                     for arg in args {
                         let av = self.lower_node(arg, b)?;
                         air_args.push(av);
                     }
-                    let rt_fn = RuntimeFn::Builtin(name.clone());
+                    let rt_fn = RuntimeFn::Builtin(target_name);
                     let arity  = args.len();
                     self.module.extern_fns
                         .entry(rt_fn.c_name())
@@ -1180,8 +1329,30 @@ impl<'a> AirGen<'a> {
             ASTNode::CallExpr { callee, args } => {
                 let callee_unwrap = Self::unwrap_line(callee);
                 if let ASTNode::Var(name) = callee_unwrap {
-                    let is_var = b.lookup_var(name).is_some() || self.global_vars.contains(name);
-                    if !is_var {
+                    let is_local = b.lookup_var(name).is_some();
+                    if !is_local {
+                        if Self::is_known_runtime_builtin(name) {
+                            let target_name = if name == "toString" && args.len() >= 2 {
+                                "toRadixString".to_string()
+                            } else {
+                                name.clone()
+                            };
+                            let res = b.fresh_value();
+                            b.entry_allocs.push(Inst::Alloc(res, AirType::SylvelVal));
+                            let mut air_args = vec![res];
+                            for arg in args {
+                                let av = self.lower_node(arg, b)?;
+                                air_args.push(av);
+                            }
+                            let rt_fn = RuntimeFn::Builtin(target_name);
+                            let arity  = args.len();
+                            self.module.extern_fns
+                                .entry(rt_fn.c_name())
+                                .or_insert(arity);
+                            b.emit_runtime_call_void(rt_fn, air_args);
+                            return Ok(res);
+                        }
+
                         let is_variadic = self.variadic_fns.contains(name) || self.variadic_fns.contains(&format!("lyn_fn_{}", name));
                         if is_variadic {
                             let mangled = if name.starts_with("lyn_fn_") { name.clone() } else { format!("lyn_fn_{}", name) };
@@ -1295,86 +1466,40 @@ impl<'a> AirGen<'a> {
                 let res = b.fresh_value();
                 b.entry_allocs.push(Inst::Alloc(res, AirType::SylvelVal));
 
-                let mut actual_args = vec![res];
-                for a in args {
-                    let av = self.lower_node(a, b)?;
-                    actual_args.push(av);
-                }
-
                 let null_val = b.fresh_value();
                 b.entry_allocs.push(Inst::Alloc(null_val, AirType::SylvelVal));
                 b.emit_runtime_call_void(RuntimeFn::MakeNull, vec![null_val]);
 
-                // Dispatch: check each known user function by name (deduplicated).
-                let mut seen_raw = HashSet::new();
-                let mut user_fns = Vec::new();
-                for fn_name in &self.user_fn_names {
-                    let raw_name = fn_name.trim_start_matches("lyn_fn_");
-                    if seen_raw.insert(raw_name.to_string()) {
-                        user_fns.push(raw_name.to_string());
-                    }
+                let mut dispatch_args = vec![res, callee_val];
+                for a in args {
+                    let av = self.lower_node(a, b)?;
+                    dispatch_args.push(av);
                 }
-
-                let end_bb = b.new_block("call_expr_end");
-                let mut next_bb = b.new_block("call_user_check");
-                b.emit_jump(next_bb);
-
-                for raw_name in &user_fns {
-                    let cur_bb  = next_bb;
-                    next_bb     = b.new_block("call_user_check");
-                    let hit_bb  = b.new_block("call_user_hit");
-
-                    b.switch_to(cur_bb);
-                    let fn_str = b.emit_const_str(raw_name, &mut self.module);
-                    let cmp = b.fresh_value();
-                    b.entry_allocs.push(Inst::Alloc(cmp, AirType::SylvelVal));
-                    let eq_code = b.fresh_value();
-                    b.emit(Inst::ConstInt(eq_code, 6)); // BinOpCode::Eq
-                    b.emit_runtime_call_void(RuntimeFn::BinOp, vec![cmp, callee_val, eq_code, fn_str]);
-                    let is_hit = b.emit_runtime_call(RuntimeFn::ToBool, vec![cmp], AirType::Bool);
-                    b.emit_branch(is_hit, hit_bb, next_bb);
-
-                    b.switch_to(hit_bb);
-                    let mangled = format!("lyn_fn_{}", raw_name);
-                    let mut call_args = vec![res];
-                    if let Some(pnames) = self.fn_param_names.get(raw_name) {
-                        for i in 0..pnames.len() {
-                            if i + 1 < actual_args.len() {
-                                call_args.push(actual_args[i + 1]);
-                            } else {
-                                call_args.push(null_val);
-                            }
-                        }
-                    } else {
-                        for a in &actual_args[1..] {
-                            call_args.push(*a);
-                        }
-                    }
-                    b.emit(Inst::Call(VOID_VALUE, mangled, call_args));
-                    b.emit_jump(end_bb);
+                while dispatch_args.len() < 10 {
+                    dispatch_args.push(null_val);
                 }
-
-                b.switch_to(next_bb);
-                let a1 = if actual_args.len() > 1 { actual_args[1] } else { null_val };
-                let a2 = if actual_args.len() > 2 { actual_args[2] } else { null_val };
-                b.emit_runtime_call_void(RuntimeFn::CallExpr, vec![res, callee_val, a1, a2]);
-                b.emit_jump(end_bb);
-
-                b.switch_to(end_bb);
+                b.emit(Inst::Call(VOID_VALUE, "lyn_dispatch_call".to_string(), dispatch_args));
                 Ok(res)
             }
 
             // ── Lambda ────────────────────────────────────────────────────
-            ASTNode::Lambda { params, body, .. } => {
+            ASTNode::Lambda { params, body, variadic, annotations } => {
                 let lambda_name = format!("__lambda_{}", self.lambda_count);
                 self.lambda_count += 1;
                 let mangled = format!("lyn_fn_{}", lambda_name);
+                let pnames: Vec<String> = params.iter().map(|(p, _)| p.clone()).collect();
+                self.fn_param_names.insert(lambda_name.clone(), pnames.clone());
+                self.fn_param_names.insert(mangled.clone(), pnames);
+                if *variadic {
+                    self.variadic_fns.insert(lambda_name.clone());
+                    self.variadic_fns.insert(mangled.clone());
+                }
                 let decl = ASTNode::FuncDecl {
                     name: lambda_name.clone(),
                     params: params.clone(),
                     body: body.clone(),
-                    variadic: false,
-                    annotations: vec![],
+                    variadic: *variadic,
+                    annotations: annotations.clone(),
                 };
                 self.user_fn_names.insert(lambda_name.clone());
                 self.user_fn_names.insert(mangled.clone());
@@ -1402,16 +1527,17 @@ impl<'a> AirGen<'a> {
 
                 for stmt in body {
                     last = self.lower_node(stmt, b)?;
+                    let has_err_i = b.emit_runtime_call(RuntimeFn::HasError, vec![], AirType::I64);
+                    let zero = b.fresh_value();
+                    b.emit(Inst::ConstInt(zero, 0));
+                    let no_err = b.fresh_value();
+                    b.emit(Inst::ICmpEq(no_err, has_err_i, zero));
+                    let next_stmt_bb = b.new_block("try_stmt");
+                    b.emit_branch(no_err, next_stmt_bb, catch_bb);
+                    b.switch_to(next_stmt_bb);
                 }
 
-                let has_err_i = b.emit_runtime_call(RuntimeFn::HasError, vec![], AirType::I64);
-                // Convert i32/i64 HasError result to bool: ne 0.
-                let zero = b.fresh_value();
-                b.emit(Inst::ConstInt(zero, 0));
-                let is_err = b.fresh_value();
-                b.emit(Inst::ICmpEq(is_err, has_err_i, zero)); // is_err = (has_err == 0) → no error
-                // branch: if no error → normal_bb, else → catch_bb
-                b.emit_branch(is_err, normal_bb, catch_bb);
+                b.emit_jump(normal_bb);
 
                 b.switch_to(normal_bb);
                 b.emit_runtime_call_void(RuntimeFn::ExitTry, vec![]);
@@ -1419,13 +1545,17 @@ impl<'a> AirGen<'a> {
 
                 b.switch_to(catch_bb);
                 b.emit_runtime_call_void(RuntimeFn::ExitTry, vec![]);
-                b.emit_runtime_call_void(RuntimeFn::ClearError, vec![]);
                 if let Some((_, var_name, catch_stmts)) = catches.first() {
-                    let err_val = b.emit_const_str("caught", &mut self.module);
+                    let err_val = b.fresh_value();
+                    b.entry_allocs.push(Inst::Alloc(err_val, AirType::SylvelVal));
+                    b.emit_runtime_call_void(RuntimeFn::GetErrorVal, vec![err_val]);
+                    b.emit_runtime_call_void(RuntimeFn::ClearError, vec![]);
                     b.set_var(var_name, err_val);
                     for stmt in catch_stmts {
                         last = self.lower_node(stmt, b)?;
                     }
+                } else {
+                    b.emit_runtime_call_void(RuntimeFn::ClearError, vec![]);
                 }
                 b.emit_jump(end_bb);
 
@@ -1473,14 +1603,63 @@ impl<'a> AirGen<'a> {
                             b.emit_jump(hit_bb);
                         }
                         crate::ast::Pattern::Literal(lit) => {
-                            let lit_val = self.lower_node(lit, b)?;
-                            let cmp = b.fresh_value();
-                            b.entry_allocs.push(Inst::Alloc(cmp, AirType::SylvelVal));
-                            let eq_code = b.fresh_value();
-                            b.emit(Inst::ConstInt(eq_code, 6));
-                            b.emit_runtime_call_void(RuntimeFn::BinOp, vec![cmp, subj_val, eq_code, lit_val]);
-                            let is_hit = b.emit_runtime_call(RuntimeFn::ToBool, vec![cmp], AirType::Bool);
-                            b.emit_branch(is_hit, hit_bb, next_bb);
+                            // Check if this is a range pattern: BinOp { op: ".." | "..." }
+                            let inner_lit = Self::unwrap_line(lit);
+                            if let ASTNode::BinOp { left: range_lo, op: range_op, right: range_hi } = inner_lit {
+                                if range_op == ".." || range_op == "..." {
+                                    // Emit: subject >= lo && subject <= hi (inclusive "...") OR subject < hi (exclusive "..")
+                                    let lo_val = self.lower_node(range_lo, b)?;
+                                    let hi_val = self.lower_node(range_hi, b)?;
+
+                                    // ge_code = 9 (GtEq), le_code = 8 (LtEq), lt_code = 7 (Lt)
+                                    let lo_cmp = b.fresh_value();
+                                    b.entry_allocs.push(Inst::Alloc(lo_cmp, AirType::SylvelVal));
+                                    let ge_code = b.fresh_value();
+                                    b.emit(Inst::ConstInt(ge_code, 11)); // BinOpCode::Ge (>=)
+                                    b.emit_runtime_call_void(RuntimeFn::BinOp, vec![lo_cmp, subj_val, ge_code, lo_val]);
+                                    let lo_ok = b.emit_runtime_call(RuntimeFn::ToBool, vec![lo_cmp], AirType::Bool);
+
+                                    let lo_ok_bb = b.new_block("match_range_hi");
+                                    b.emit_branch(lo_ok, lo_ok_bb, next_bb);
+
+                                    b.switch_to(lo_ok_bb);
+                                    let hi_cmp = b.fresh_value();
+                                    b.entry_allocs.push(Inst::Alloc(hi_cmp, AirType::SylvelVal));
+                                    let hi_op_code = if range_op == "..." { 9i64 } else { 8i64 }; // Le (<=) for inclusive, Lt (<) for exclusive
+                                    let hi_code = b.fresh_value();
+                                    b.emit(Inst::ConstInt(hi_code, hi_op_code));
+                                    b.emit_runtime_call_void(RuntimeFn::BinOp, vec![hi_cmp, subj_val, hi_code, hi_val]);
+                                    let hi_ok = b.emit_runtime_call(RuntimeFn::ToBool, vec![hi_cmp], AirType::Bool);
+                                    b.emit_branch(hi_ok, hit_bb, next_bb);
+                                } else {
+                                    // Non-range BinOp literal: fall through to equality check
+                                    let lit_val = self.lower_node(lit, b)?;
+                                    let cmp = b.fresh_value();
+                                    b.entry_allocs.push(Inst::Alloc(cmp, AirType::SylvelVal));
+                                    let eq_code = b.fresh_value();
+                                    b.emit(Inst::ConstInt(eq_code, 6));
+                                    b.emit_runtime_call_void(RuntimeFn::BinOp, vec![cmp, subj_val, eq_code, lit_val]);
+                                    let is_hit = b.emit_runtime_call(RuntimeFn::ToBool, vec![cmp], AirType::Bool);
+                                    b.emit_branch(is_hit, hit_bb, next_bb);
+                                }
+                            } else {
+                                let lit_val = self.lower_node(lit, b)?;
+                                let cmp = b.fresh_value();
+                                b.entry_allocs.push(Inst::Alloc(cmp, AirType::SylvelVal));
+                                let eq_code = b.fresh_value();
+                                b.emit(Inst::ConstInt(eq_code, 6));
+                                b.emit_runtime_call_void(RuntimeFn::BinOp, vec![cmp, subj_val, eq_code, lit_val]);
+                                let is_hit = b.emit_runtime_call(RuntimeFn::ToBool, vec![cmp], AirType::Bool);
+                                b.emit_branch(is_hit, hit_bb, next_bb);
+                            }
+                        }
+                        crate::ast::Pattern::Var(var_name) => {
+                            // Bind the subject to the variable and always match.
+                            let v_slot = b.fresh_value();
+                            b.entry_allocs.push(Inst::Alloc(v_slot, AirType::SylvelVal));
+                            b.set_var(var_name, v_slot);
+                            b.emit(Inst::Store(subj_val, v_slot));
+                            b.emit_jump(hit_bb);
                         }
                         _ => { b.emit_jump(hit_bb); }
                     }

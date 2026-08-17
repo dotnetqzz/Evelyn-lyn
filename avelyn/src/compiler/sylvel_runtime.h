@@ -76,6 +76,7 @@ int64_t sylvel_rt_has_error(void);
 void sylvel_rt_clear_error(void);
 void sylvel_rt_raise_error(const char* msg);
 void sylvel_rt_throw_val(const SylvelVal* val);
+void sylvel_rt_get_error_val(SylvelVal* out);
 
 // Operations & Builtins
 void sylvel_rt_print(const SylvelVal* val);
@@ -103,9 +104,11 @@ void sylvel_rt_builtin_charCodeAt(SylvelVal* out, const SylvelVal* str, const Sy
 void sylvel_rt_builtin_isNumber(SylvelVal* out, const SylvelVal* val);
 void sylvel_rt_builtin_isNull(SylvelVal* out, const SylvelVal* val);
 void sylvel_rt_builtin_sysEnv(SylvelVal* out, const SylvelVal* key);
-void sylvel_rt_builtin_numToString(SylvelVal* out, const SylvelVal* val, const SylvelVal* radix);
+void sylvel_rt_builtin_numToString(SylvelVal* out, const SylvelVal* val);
+void sylvel_rt_builtin_toRadixString(SylvelVal* out, const SylvelVal* val, const SylvelVal* radix);
 void sylvel_rt_builtin_assert(SylvelVal* out, const SylvelVal* cond, const SylvelVal* msg);
 void sylvel_rt_builtin_spawnWorkers(SylvelVal* out, const SylvelVal* script, const SylvelVal* count);
+void sylvel_rt_builtin_sysLastErrorTraceback(SylvelVal* out);
 void sylvel_rt_builtin_dateNow(SylvelVal* out);
 void sylvel_rt_builtin_Set(SylvelVal* out);
 void sylvel_rt_builtin_sha256(SylvelVal* out, const SylvelVal* val);
@@ -213,9 +216,9 @@ void sylvel_rt_builtin_sysRegexMatch(SylvelVal* out, const SylvelVal* pat, const
 void sylvel_rt_builtin_sysRegexReplace(SylvelVal* out, const SylvelVal* pat, const SylvelVal* text, const SylvelVal* rep);
 void sylvel_rt_builtin_sysUrlParse(SylvelVal* out, const SylvelVal* url);
 void sylvel_rt_builtin_uuidV4(SylvelVal* out);
-void sylvel_rt_builtin_aesEncrypt(SylvelVal* out, const SylvelVal* key, const SylvelVal* data);
-void sylvel_rt_builtin_aesDecrypt(SylvelVal* out, const SylvelVal* key, const SylvelVal* data);
-void sylvel_rt_builtin_hmac(SylvelVal* out, const SylvelVal* key, const SylvelVal* data);
+void sylvel_rt_builtin_aesEncrypt(SylvelVal* out, const SylvelVal* a1, const SylvelVal* a2, const SylvelVal* a3, const SylvelVal* a4);
+void sylvel_rt_builtin_aesDecrypt(SylvelVal* out, const SylvelVal* a1, const SylvelVal* a2, const SylvelVal* a3, const SylvelVal* a4);
+void sylvel_rt_builtin_hmac(SylvelVal* out, const SylvelVal* a1, const SylvelVal* a2, const SylvelVal* a3);
 void sylvel_rt_builtin_sha512(SylvelVal* out, const SylvelVal* data);
 void sylvel_rt_builtin_entropy(SylvelVal* out, const SylvelVal* data);
 void sylvel_rt_builtin_httpBasicBrute(SylvelVal* out, const SylvelVal* url, const SylvelVal* ulist, const SylvelVal* plist);
@@ -225,9 +228,9 @@ void sylvel_rt_builtin_netAccept(SylvelVal* out, const SylvelVal* sock);
 void sylvel_rt_builtin_netClose(SylvelVal* out, const SylvelVal* sock);
 void sylvel_rt_builtin_netConnect(SylvelVal* out, const SylvelVal* host, const SylvelVal* port);
 void sylvel_rt_builtin_netDnsLookup(SylvelVal* out, const SylvelVal* host);
-void sylvel_rt_builtin_netGrabBanner(SylvelVal* out, const SylvelVal* host, const SylvelVal* port);
+void sylvel_rt_builtin_netGrabBanner(SylvelVal* out, const SylvelVal* host, const SylvelVal* port, const SylvelVal* timeout);
 void sylvel_rt_builtin_netListen(SylvelVal* out, const SylvelVal* host, const SylvelVal* port);
-void sylvel_rt_builtin_netPortScan(SylvelVal* out, const SylvelVal* host, const SylvelVal* start, const SylvelVal* end);
+void sylvel_rt_builtin_netPortScan(SylvelVal* out, const SylvelVal* host, const SylvelVal* start, const SylvelVal* end, const SylvelVal* timeout);
 void sylvel_rt_builtin_netRead(SylvelVal* out, const SylvelVal* sock, const SylvelVal* count);
 void sylvel_rt_builtin_netRecv(SylvelVal* out, const SylvelVal* sock, const SylvelVal* count);
 void sylvel_rt_builtin_netRecvFrom(SylvelVal* out, const SylvelVal* sock, const SylvelVal* count);
@@ -235,7 +238,7 @@ void sylvel_rt_builtin_netSend(SylvelVal* out, const SylvelVal* sock, const Sylv
 void sylvel_rt_builtin_netSendTo(SylvelVal* out, const SylvelVal* sock, const SylvelVal* data, const SylvelVal* host, const SylvelVal* port);
 void sylvel_rt_builtin_netSetNonBlocking(SylvelVal* out, const SylvelVal* sock, const SylvelVal* flag);
 void sylvel_rt_builtin_netSetTimeout(SylvelVal* out, const SylvelVal* sock, const SylvelVal* ms);
-void sylvel_rt_builtin_netUdpBind(SylvelVal* out, const SylvelVal* host, const SylvelVal* port);
+void sylvel_rt_builtin_netUdpBind(SylvelVal* out, const SylvelVal* sock, const SylvelVal* host, const SylvelVal* port);
 void sylvel_rt_builtin_netUdpSocket(SylvelVal* out);
 void sylvel_rt_builtin_netWrite(SylvelVal* out, const SylvelVal* sock, const SylvelVal* data);
 void sylvel_rt_builtin_webCreate(SylvelVal* out);

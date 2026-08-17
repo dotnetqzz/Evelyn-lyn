@@ -211,6 +211,8 @@ impl LLVMCodeGen {
         header.push_str("declare i32 @sylvel_rt_has_error()\n");
         header.push_str("declare void @sylvel_rt_clear_error()\n");
                 header.push_str("declare void @sylvel_rt_raise_error(i8*)\n");
+                header.push_str("declare void @sylvel_rt_throw_val(%SylvelVal*)\n");
+                header.push_str("declare void @sylvel_rt_get_error_val(%SylvelVal*)\n");
                 header.push_str("declare i64 @sylvel_rt_len(%SylvelVal*)\n");
                 header.push_str("declare i1 @sylvel_rt_to_bool(%SylvelVal*)\n");
                 header.push_str("declare i64 @sylvel_rt_to_int(%SylvelVal*)\n");
@@ -486,7 +488,8 @@ impl LLVMCodeGen {
                     "==" => 6, "!=" => 7, "<" => 8, "<=" => 9, ">" => 10, ">=" => 11,
                     "&" => 12, "|" => 13, "^" => 14, "<<" => 15, ">>" => 16,
                     "and" | "&&" => 17, "or" | "||" => 18,
-                    _ => 1,
+                    "//" => 19, "**" => 20,
+                    _ => 4,
                 };
                 let res_ptr = self.new_temp_ptr(true);
                 out.push_str(&format!("  call void @sylvel_rt_bin_op(%SylvelVal* {}, %SylvelVal* {}, i32 {}, %SylvelVal* {})\n", res_ptr, l_ptr, op_code, r_ptr));
@@ -1130,11 +1133,8 @@ impl LLVMCodeGen {
                 out.push_str("  call void @sylvel_rt_clear_error()\n");
                 if let Some((_, var_name, catch_stmts)) = catches.first() {
                     let err_val_ptr = self.new_temp_ptr(true);
-                    let label = self.add_string_constant("caught");
-                    self.temp_count += 1;
-                    let ptr_temp = format!("%t{}", self.temp_count);
-                    out.push_str(&format!("  {} = getelementptr inbounds [7 x i8], [7 x i8]* {}, i64 0, i64 0\n", ptr_temp, label));
-                    out.push_str(&format!("  call void @sylvel_rt_alloc_string(%SylvelVal* {}, i8* {})\n", err_val_ptr, ptr_temp));
+                    // Get the actual error message from the runtime instead of hardcoding "caught"
+                    out.push_str(&format!("  call void @sylvel_rt_get_error_val(%SylvelVal* {})\n", err_val_ptr));
                     self.set_var(var_name, err_val_ptr);
                     for stmt in catch_stmts {
                         last_ptr = self.gen_node(stmt, out)?;
@@ -1157,6 +1157,31 @@ impl LLVMCodeGen {
                 out.push_str(&format!("  call void @sylvel_rt_throw_val(%SylvelVal* {})\n", val_ptr));
                 let res_ptr = self.new_temp_ptr(true);
                 out.push_str(&format!("  call void @sylvel_rt_make_null(%SylvelVal* {})\n", res_ptr));
+                Ok(res_ptr)
+            }
+            ASTNode::FuncDecl { name, params, body, .. } => {
+                // FuncDecl inside a block — compile it as a nested function and register its name
+                self.user_func_names.insert(name.clone());
+                // Save context
+                let saved_func_out = self.current_func_out_ptr.clone();
+                let saved_allocas = self.entry_allocas.clone();
+                // Generate the function
+                let fn_node = node.clone();
+                self.entry_allocas.clear();
+                let fn_ir = self.gen_func_decl(&fn_node)?;
+                self.extra_user_funcs_ir.push_str(&fn_ir);
+                // Restore context
+                self.entry_allocas = saved_allocas;
+                self.current_func_out_ptr = saved_func_out;
+                // Register the function name in the current scope as a string value
+                let label = self.add_string_constant(name);
+                self.temp_count += 1;
+                let ptr_temp = format!("%t{}", self.temp_count);
+                let len = name.as_bytes().len() + 1;
+                out.push_str(&format!("  {} = getelementptr inbounds [{} x i8], [{} x i8]* {}, i64 0, i64 0\n", ptr_temp, len, len, label));
+                let res_ptr = self.new_temp_ptr(true);
+                out.push_str(&format!("  call void @sylvel_rt_alloc_string(%SylvelVal* {}, i8* {})\n", res_ptr, ptr_temp));
+                self.set_var(name, res_ptr.clone());
                 Ok(res_ptr)
             }
             _ => {

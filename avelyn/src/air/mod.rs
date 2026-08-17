@@ -147,6 +147,7 @@ pub enum RuntimeFn {
     ClearError,
     RaiseError,
     ThrowVal,
+    GetErrorVal,
     // Assertion
     BuiltinAssert,
     // Named builtins (dynamic dispatch via @sylvel_rt_builtin_<name>)
@@ -188,6 +189,7 @@ impl RuntimeFn {
             RuntimeFn::ClearError    => "sylvel_rt_clear_error".to_string(),
             RuntimeFn::RaiseError    => "sylvel_rt_raise_error".to_string(),
             RuntimeFn::ThrowVal      => "sylvel_rt_throw_val".to_string(),
+            RuntimeFn::GetErrorVal   => "sylvel_rt_get_error_val".to_string(),
             RuntimeFn::BuiltinAssert => "sylvel_rt_builtin_assert".to_string(),
             RuntimeFn::Builtin(name) => format!("sylvel_rt_builtin_{}", name),
         }
@@ -216,6 +218,7 @@ pub enum BinOpCode {
     Eq      = 6, Ne     = 7,  Lt  = 8,  Le  = 9,  Gt  = 10, Ge = 11,
     BitAnd  = 12, BitOr = 13, Xor = 14, Shl = 15, Shr = 16,
     And     = 17, Or    = 18,
+    FloorDiv = 19, Pow   = 20,
 }
 
 impl BinOpCode {
@@ -231,6 +234,8 @@ impl BinOpCode {
             "<<"  => BinOpCode::Shl,  ">>" => BinOpCode::Shr,
             "and" | "&&" => BinOpCode::And,
             "or"  | "||" => BinOpCode::Or,
+            "//"  => BinOpCode::FloorDiv,
+            "**"  => BinOpCode::Pow,
             _     => BinOpCode::Add, // fallback
         }
     }

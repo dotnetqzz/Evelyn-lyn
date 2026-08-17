@@ -1,114 +1,159 @@
-﻿# Sylvel Standard Library — async.lyn
+# Sylvel Standard Library — async.lyn
 # Cooperative multitasking event loop and Promises
 
-# Global event queue
 var _eventQueue = []
+var _nextPromiseId = 1
+var _promiseStates = {}
+var _promiseValues = {}
+var _promiseThenCbs = {}
+var _promiseCatchCbs = {}
+var _lastPromiseId = 0
 
-def asyncDelay(ms, callback) {
+def asyncDelay(ms, callback, arg=null) {
     let executeAt = timeMs() + ms
-    arrayAppend(_eventQueue, {"executeAt": executeAt, "fn": callback})
+    _eventQueue = arrayAppend(_eventQueue, {"executeAt": executeAt, "fn": callback, "arg": arg})
 }
 
 def asyncRunQueue() {
-    # Run all pending delayed tasks cooperatively
     while arrayLen(_eventQueue) > 0 {
         let currTime = timeMs()
         var nextQueue = []
         for task in _eventQueue {
             if currTime >= task["executeAt"] {
                 let callback = task["fn"]
-                callback()
+                let arg = task["arg"]
+                if arg != null {
+                    callback(arg)
+                } else {
+                    callback()
+                }
             } else {
-                arrayAppend(nextQueue, task)
+                nextQueue = arrayAppend(nextQueue, task)
             }
         }
         _eventQueue = nextQueue
         if arrayLen(_eventQueue) > 0 {
-            timeSleep(5) # Cooperative yield (5ms sleep)
+            timeSleep(5)
         }
     }
 }
 
-# JavaScript-style Promises
-def asyncPromise(executor) {
-    var _state = "pending" # "pending", "fulfilled", "rejected"
-    var _value = null
-    var _thenCallbacks = []
-    var _catchCallbacks = []
-
-    let resolve = def(val) {
-        if _state != "pending" { return }
-        _state = "fulfilled"
-        _value = val
-        for cb in _thenCallbacks {
-            asyncDelay(0, def() { cb(_value) })
+def _promiseResolve(pId, val) {
+    let sKey = toString(pId)
+    if _promiseStates[sKey] != "pending" { return }
+    _promiseStates[sKey] = "fulfilled"
+    _promiseValues[sKey] = val
+    let cbs = _promiseThenCbs[sKey]
+    if cbs != null {
+        for cb in cbs {
+            asyncDelay(0, cb, val)
         }
     }
+}
 
-    let reject = def(err) {
-        if _state != "pending" { return }
-        _state = "rejected"
-        _value = err
-        for cb in _catchCallbacks {
-            asyncDelay(0, def() { cb(_value) })
+def _promiseReject(pId, err) {
+    let sKey = toString(pId)
+    if _promiseStates[sKey] != "pending" { return }
+    _promiseStates[sKey] = "rejected"
+    _promiseValues[sKey] = err
+    let cbs = _promiseCatchCbs[sKey]
+    if cbs != null {
+        for cb in cbs {
+            asyncDelay(0, cb, err)
         }
     }
+}
 
-    # Execute the executor immediately
-    try {
-        executor(resolve, reject)
-    } catch e {
-        reject(e)
-    }
+def _resolveDelayed(val) {
+    _promiseResolve(1, val)
+}
 
-    let then = def(onFulfilled) {
-        let pNext = asyncPromise(def(resNext, rejNext) {
-            let cb = def(val) {
-                try {
-                    let result = onFulfilled(val)
-                    resNext(result)
-                } catch e {
-                    rejNext(e)
-                }
-            }
-            if _state == "fulfilled" {
-                asyncDelay(0, def() { cb(_value) })
-            } else if _state == "pending" {
-                arrayAppend(_thenCallbacks, cb)
-            }
-        })
-        return pNext
-    }
+def _rejectImmediate(err) {
+    _promiseReject(4, err)
+}
 
-    let catchFn = def(onRejected) {
-        let pNext = asyncPromise(def(resNext, rejNext) {
-            let cb = def(err) {
-                try {
-                    let result = onRejected(err)
-                    resNext(result)
-                } catch e {
-                    rejNext(e)
-                }
-            }
-            if _state == "rejected" {
-                asyncDelay(0, def() { cb(_value) })
-            } else if _state == "pending" {
-                arrayAppend(_catchCallbacks, cb)
-            }
-        })
-        return pNext
+def _promiseThen(onFulfilled) {
+    let sKey = toString(_lastPromiseId)
+    let curState = _promiseStates[sKey]
+    let curVal = _promiseValues[sKey]
+
+    let pNextId = _nextPromiseId
+    _nextPromiseId += 1
+    let nextKey = toString(pNextId)
+    _promiseStates[nextKey] = "pending"
+    _promiseValues[nextKey] = null
+    _promiseThenCbs[nextKey] = []
+    _promiseCatchCbs[nextKey] = []
+    _lastPromiseId = pNextId
+
+    if curState == "fulfilled" {
+        asyncDelay(0, onFulfilled, curVal)
+    } else if curState == "pending" {
+        _promiseThenCbs[sKey] = arrayAppend(_promiseThenCbs[sKey], onFulfilled)
     }
 
     return {
-        "then":  then,
-        "catch": catchFn,
-        "state": def() => _state,
-        "value": def() => _value,
+        "then":  _promiseThen,
+        "catch": _promiseCatch,
+        "state": def() => _promiseStates[toString(_lastPromiseId)],
+        "value": def() => _promiseValues[toString(_lastPromiseId)],
+    }
+}
+
+def _promiseCatch(onRejected) {
+    let sKey = toString(_lastPromiseId)
+    let curState = _promiseStates[sKey]
+    let curVal = _promiseValues[sKey]
+
+    let pNextId = _nextPromiseId
+    _nextPromiseId += 1
+    let nextKey = toString(pNextId)
+    _promiseStates[nextKey] = "pending"
+    _promiseValues[nextKey] = null
+    _promiseThenCbs[nextKey] = []
+    _promiseCatchCbs[nextKey] = []
+    _lastPromiseId = pNextId
+
+    if curState == "rejected" {
+        asyncDelay(0, onRejected, curVal)
+    } else if curState == "pending" {
+        _promiseCatchCbs[sKey] = arrayAppend(_promiseCatchCbs[sKey], onRejected)
+    }
+
+    return {
+        "then":  _promiseThen,
+        "catch": _promiseCatch,
+        "state": def() => _promiseStates[toString(_lastPromiseId)],
+        "value": def() => _promiseValues[toString(_lastPromiseId)],
+    }
+}
+
+def asyncPromise(executor) {
+    let pId = _nextPromiseId
+    _nextPromiseId += 1
+    _lastPromiseId = pId
+    let sKey = toString(pId)
+    _promiseStates[sKey] = "pending"
+    _promiseValues[sKey] = null
+    _promiseThenCbs[sKey] = []
+    _promiseCatchCbs[sKey] = []
+
+    try {
+        executor(_resolveDelayed, _rejectImmediate)
+    } catch e {
+        _rejectImmediate(e)
+    }
+
+    return {
+        "then":  _promiseThen,
+        "catch": _promiseCatch,
+        "state": def() => _promiseStates[toString(pId)],
+        "value": def() => _promiseValues[toString(pId)],
     }
 }
 
 let async = {
     "promise": asyncPromise,
-    "delay":   def(ms, callback) => asyncDelay(ms, callback),
+    "delay":   def(ms, callback, arg=null) => asyncDelay(ms, callback, arg),
     "loop":    asyncRunQueue,
 }

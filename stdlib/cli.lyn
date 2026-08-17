@@ -1,4 +1,4 @@
-﻿# Sylvel Standard Library — cli.lyn
+# Sylvel Standard Library — cli.lyn
 # Robust Command Line Interface argument and flag parser
 
 import "sys"
@@ -129,7 +129,7 @@ def cli_parse(parser, argv) {
                 i = i + 1
             } else {
                 # Standalone positional argument
-                arrayAppend(resultArgs, arg)
+                resultArgs = arrayAppend(resultArgs, arg)
                 i = i + 1
             }
         }

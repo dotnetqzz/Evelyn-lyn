@@ -1,4 +1,4 @@
-﻿# Sylvel Standard Library — random.lyn
+# Sylvel Standard Library — random.lyn
 # Replicates CPython's random module using secure entropy (CSPRNG)
 
 def rand_choice(arr) {
@@ -21,7 +21,7 @@ def rand_uniform(a, b) {
 }
 
 def rand_shuffle(arr) {
-    let out = arraySlice(arr, 0, arrayLen(arr))
+    var out = arraySlice(arr, 0, arrayLen(arr))
     var i = arrayLen(out) - 1
     while i > 0 {
         let randVal = sysSecureRandomDouble()

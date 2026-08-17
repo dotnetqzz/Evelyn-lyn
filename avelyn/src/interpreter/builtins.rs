@@ -865,9 +865,9 @@ pub fn native_net_send_to(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Res
     let target = format!("{}:{}", host, port);
     let socket = interp.udp_sockets.get(&id)
         .ok_or_else(|| AvelynError::fmt(format!("NetError: invalid UDP socket handle {}", id)))?;
-    let n = socket.send_to(&bytes, &target)
+    let _ = socket.send_to(&bytes, &target)
         .map_err(|e| AvelynError::fmt(format!("NetError: send_to failed: {}", e)))?;
-    Ok(AvelynVal::Int(n as i64))
+    Ok(AvelynVal::Bool(true))
 }
 
 pub fn native_net_recv_from(interp: &mut Interpreter, args: Vec<AvelynVal>) -> Result<AvelynVal, AvelynError> {

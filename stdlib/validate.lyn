@@ -1,4 +1,4 @@
-﻿# Sylvel Standard Library — validate.lyn
+# Sylvel Standard Library — validate.lyn
 # Input validation library
 
 def validateRequired(value, fieldName) {
@@ -77,7 +77,7 @@ def validateInteger(value, fieldName) {
 # Schema validation: validate a map against a schema
 # Schema format: {"field": {"required": true, "type": "string", "minLen": 3, "email": true}}
 def validateSchema(data, schema) {
-    let errors = []
+    var errors = []
     let fields = mapKeys(schema)
     for field in fields {
         let rules = schema[field]
@@ -85,41 +85,41 @@ def validateSchema(data, schema) {
 
         if mapHas(rules, "required") and rules["required"] {
             let err = validateRequired(value, field)
-            if not isNull(err) { arrayAppend(errors, err) }
+            if not isNull(err) { errors = arrayAppend(errors, err) }
         }
         if isNull(value) { continue }
 
         if mapHas(rules, "email") and rules["email"] {
             let err = validateEmail(value, field)
-            if not isNull(err) { arrayAppend(errors, err) }
+            if not isNull(err) { errors = arrayAppend(errors, err) }
         }
         if mapHas(rules, "minLen") {
             let err = validateMinLen(value, rules["minLen"], field)
-            if not isNull(err) { arrayAppend(errors, err) }
+            if not isNull(err) { errors = arrayAppend(errors, err) }
         }
         if mapHas(rules, "maxLen") {
             let err = validateMaxLen(value, rules["maxLen"], field)
-            if not isNull(err) { arrayAppend(errors, err) }
+            if not isNull(err) { errors = arrayAppend(errors, err) }
         }
         if mapHas(rules, "min") {
             let err = validateMin(value, rules["min"], field)
-            if not isNull(err) { arrayAppend(errors, err) }
+            if not isNull(err) { errors = arrayAppend(errors, err) }
         }
         if mapHas(rules, "max") {
             let err = validateMax(value, rules["max"], field)
-            if not isNull(err) { arrayAppend(errors, err) }
+            if not isNull(err) { errors = arrayAppend(errors, err) }
         }
         if mapHas(rules, "enum") {
             let err = validateEnum(value, rules["enum"], field)
-            if not isNull(err) { arrayAppend(errors, err) }
+            if not isNull(err) { errors = arrayAppend(errors, err) }
         }
         if mapHas(rules, "pattern") {
             let err = validatePattern(value, rules["pattern"], field)
-            if not isNull(err) { arrayAppend(errors, err) }
+            if not isNull(err) { errors = arrayAppend(errors, err) }
         }
         if mapHas(rules, "url") and rules["url"] {
             let err = validateUrl(value, field)
-            if not isNull(err) { arrayAppend(errors, err) }
+            if not isNull(err) { errors = arrayAppend(errors, err) }
         }
     }
     return errors

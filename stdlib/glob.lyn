@@ -1,4 +1,4 @@
-﻿# Sylvel Standard Library — glob.lyn
+# Sylvel Standard Library — glob.lyn
 # Replicates CPython's glob module for directory file search
 
 def glob_match(dirPath, suffix) {
@@ -11,7 +11,7 @@ def glob_match(dirPath, suffix) {
         if fLen >= sLen {
             let slice = stringSub(f, fLen - sLen, sLen)
             if slice == suffix {
-                arrayAppend(out, dirPath + "/" + f)
+                out = arrayAppend(out, dirPath + "/" + f)
             }
         }
     }

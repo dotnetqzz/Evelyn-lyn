@@ -1,4 +1,4 @@
-﻿# Sylvel Standard Library — re.lyn
+# Sylvel Standard Library — re.lyn
 # Full-featured regular expression module
 
 def reSearch(pat, text)            { return sysRegexMatch(pat, text) }
@@ -7,13 +7,22 @@ def reGroups(pat, text)            { return sysRegexGroups(pat, text) }
 def reFindAll(pat, text)           { return sysRegexFindAll(pat, text) }
 
 def reMatch(pat, text) {
-    let anchored = "^(?:" + pat + ")"
-    return sysRegexMatch(anchored, text)
+    var p = pat
+    if not stringStartsWith(p, "^") {
+        p = "^" + p
+    }
+    return sysRegexMatch(p, text)
 }
 
 def reFullMatch(pat, text) {
-    let anchored = "^(?:" + pat + ")$"
-    return sysRegexMatch(anchored, text)
+    var p = pat
+    if not stringStartsWith(p, "^") {
+        p = "^" + p
+    }
+    if not stringEndsWith(p, "$") {
+        p = p + "$"
+    }
+    return sysRegexMatch(p, text)
 }
 
 def reSplit(pat, text) {
@@ -25,10 +34,10 @@ def reSplit(pat, text) {
     for m in matches {
         let idx = stringIndexOf(remaining, m)
         if idx < 0 { break }
-        arrayAppend(parts, stringSub(remaining, 0, idx))
+        parts = arrayAppend(parts, stringSub(remaining, 0, idx))
         remaining = stringSub(remaining, idx + stringLen(m), stringLen(remaining) - idx - stringLen(m))
     }
-    arrayAppend(parts, remaining)
+    parts = arrayAppend(parts, remaining)
     return parts
 }
 

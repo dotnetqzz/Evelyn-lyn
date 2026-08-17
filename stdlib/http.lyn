@@ -1,73 +1,78 @@
-﻿# Avelyn Standard Library: http
+# Avelyn Standard Library: http
 # Advanced HTTP requests, pentest fuzzing, and web utilities.
 
 import "string"
 
-let http = {
-    "urlEncode": fn(s) => urlEncode(s),
-    "urlDecode": fn(s) => urlDecode(s),
-    
-    "request": fn(opts) => httpRequest(opts),
-    
-    "get": fn(url, hdrs=null) => httpRequest({"method": "GET", "url": url, "headers": hdrs ?? {}}),
-    "post": fn(url, body, hdrs=null) => httpRequest({"method": "POST", "url": url, "body": body, "headers": hdrs ?? {}}),
-    
-    "dirBrute": fn(url, words, opts) => httpDirBrute(url, words, opts),
-    "basicBrute": fn(url, user, words, opts) => httpBasicBrute(url, user, words, opts),
+var _cookie_jar_store = {}
 
-    "cookieJar": fn() {
-        var store = {}
-        
-        let jar = {
-            "set": fn(key, val) {
-                store[key] = val
-            },
-            "get": fn(key) {
-                return store[key]
-            },
-            "all": fn() {
-                return store
-            },
-            # Extract Set-Cookie from response headers
-            "extract": fn(resp) {
-                if arrayLen(mapKeys(resp)) > 0 {
-                    let hdrs = resp["headers"]
-                    if hdrs != null {
-                        let sc = hdrs["Set-Cookie"] ?? hdrs["set-cookie"]
-                        if sc != null {
-                            let parts = string["split"](sc, ";")
-                            if arrayLen(parts) > 0 {
-                                let kv = string["split"](parts[0], "=")
-                                if arrayLen(kv) == 2 {
-                                    store[string["trim"](kv[0])] = string["trim"](kv[1])
-                                }
-                            }
-                        }
+def cookie_set(key, val) {
+    mapSet(_cookie_jar_store, key, val)
+}
+def cookie_get(key) {
+    return mapGet(_cookie_jar_store, key)
+}
+def cookie_all() {
+    return _cookie_jar_store
+}
+def cookie_extract(resp) {
+    if arrayLen(mapKeys(resp)) > 0 {
+        let hdrs = mapGet(resp, "headers")
+        if not isNull(hdrs) {
+            var sc = mapGet(hdrs, "Set-Cookie")
+            if isNull(sc) { sc = mapGet(hdrs, "set-cookie") }
+            if not isNull(sc) {
+                let parts = stringSplit(sc, ";")
+                if arrayLen(parts) > 0 {
+                    let kv = stringSplit(parts[0], "=")
+                    if arrayLen(kv) == 2 {
+                        mapSet(_cookie_jar_store, stringTrim(kv[0]), stringTrim(kv[1]))
                     }
                 }
-            },
-            # Inject cookies into request options
-            "inject": fn(opts) {
-                var cookieStr = ""
-                let keys = mapKeys(store)
-                for k in keys {
-                    if string["len"](cookieStr) > 0 {
-                        cookieStr = cookieStr + "; "
-                    }
-                    cookieStr = cookieStr + k + "=" + store[k]
-                }
-                
-                if string["len"](cookieStr) > 0 {
-                    var hdrs = opts["headers"]
-                    if hdrs == null {
-                        hdrs = {}
-                    }
-                    hdrs["Cookie"] = cookieStr
-                    opts["headers"] = hdrs
-                }
-                return opts
             }
         }
-        return jar
     }
+}
+def cookie_inject(opts) {
+    var cookieStr = ""
+    let keys = mapKeys(_cookie_jar_store)
+    for k in keys {
+        if stringLen(cookieStr) > 0 {
+            cookieStr = cookieStr + "; "
+        }
+        cookieStr = cookieStr + k + "=" + mapGet(_cookie_jar_store, k)
+    }
+    
+    if stringLen(cookieStr) > 0 {
+        var hdrs = mapGet(opts, "headers")
+        if isNull(hdrs) {
+            hdrs = {}
+        }
+        mapSet(hdrs, "Cookie", cookieStr)
+        mapSet(opts, "headers", hdrs)
+    }
+    return opts
+}
+
+let http = {
+    "urlEncode": def(s) => urlEncode(s),
+    "urlDecode": def(s) => urlDecode(s),
+    
+    "request": def(opts) => httpRequest(opts),
+    
+    "get": def(url, hdrs=null) => httpRequest({"method": "GET", "url": url, "headers": hdrs ?? {}}),
+    "post": def(url, body, hdrs=null) => httpRequest({"method": "POST", "url": url, "body": body, "headers": hdrs ?? {}}),
+    
+    "dirBrute": def(url, words, opts) => httpDirBrute(url, words, opts),
+    "basicBrute": def(url, user, words, opts) => httpBasicBrute(url, user, words, opts),
+
+    "cookieJar": def() {
+        _cookie_jar_store = {}
+        return {
+            "set":     def(key, val) => cookie_set(key, val),
+            "get":     def(key)      => cookie_get(key),
+            "all":     def()         => cookie_all(),
+            "extract": def(resp)     => cookie_extract(resp),
+            "inject":  def(opts)     => cookie_inject(opts),
+        }
+    },
 }

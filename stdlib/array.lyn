@@ -1,4 +1,4 @@
-﻿# Sylvel Standard Library array.lyn
+# Sylvel Standard Library array.lyn
 # Array utilities implemented in Sylvel
 
 def arr_range(start, stop, step) {
@@ -7,7 +7,7 @@ def arr_range(start, stop, step) {
     var out = []
     var n = start
     while n < stop {
-        arrayAppend(out, n)
+        out = arrayAppend(out, n)
         n = n + st
     }
     return out
@@ -42,7 +42,7 @@ def arr_avg(arr) {
 def arr_unique(arr) {
     var out = []
     for x in arr {
-        if not arrayContains(out, x) { arrayAppend(out, x) }
+        if not arrayContains(out, x) { out = arrayAppend(out, x) }
     }
     return out
 }
@@ -52,9 +52,9 @@ def arr_flatten(arr) {
     for x in arr {
         if isArray(x) {
             let sub = arr_flatten(x)
-            for s in sub { arrayAppend(out, s) }
+            for s in sub { out = arrayAppend(out, s) }
         } else {
-            arrayAppend(out, x)
+            out = arrayAppend(out, x)
         }
     }
     return out
@@ -66,7 +66,7 @@ def arr_zip(a, b) {
     if arrayLen(b) < n { n = arrayLen(b) }
     var idx = 0
     while idx < n {
-        arrayAppend(out, [a[idx], b[idx]])
+        out = arrayAppend(out, [a[idx], b[idx]])
         idx = idx + 1
     }
     return out
@@ -79,7 +79,7 @@ def arr_chunk(arr, size) {
     while idx < n {
         var end = idx + size
         if end > n { end = n }
-        arrayAppend(out, arraySlice(arr, idx, end))
+        out = arrayAppend(out, arraySlice(arr, idx, end))
         idx = idx + size
     }
     return out
@@ -91,8 +91,8 @@ def arr_groupBy(arr, callback) {
         let key = numToString(callback(x))
         if not mapHas(m, key) { mapSet(m, key, []) }
         let group = mapGet(m, key)
-        arrayAppend(group, x)
-        mapSet(m, key, group)
+        let updatedGroup = arrayAppend(group, x)
+        mapSet(m, key, updatedGroup)
     }
     return m
 }

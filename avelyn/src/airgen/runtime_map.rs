@@ -77,6 +77,7 @@ pub fn llvm_signature(rt_fn: &RuntimeFn) -> (String, Vec<String>) {
         RuntimeFn::ClearError    => (void.clone(),    vec![]),
         RuntimeFn::RaiseError    => (void.clone(),    vec![i8_ptr.clone()]),
         RuntimeFn::ThrowVal      => (void.clone(),    vec![sylvel_ptr.clone()]),
+        RuntimeFn::GetErrorVal   => (void.clone(),    vec![sylvel_ptr.clone()]),
         RuntimeFn::BuiltinAssert => (void.clone(),    vec![sylvel_ptr.clone(), sylvel_ptr.clone(), sylvel_ptr.clone()]),
         RuntimeFn::Builtin(_)    => {
             // Generic builtin: up to 4 SylvelVal* args + 1 out ptr = 5; we

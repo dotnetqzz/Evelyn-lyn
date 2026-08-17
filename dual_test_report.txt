@@ -1,0 +1,1118 @@
+AVELYN DUAL TEST REPORT
+Total: 131, Exact Matches: 116, Interp Passed: 127, Native Passed: 131
+
+[abundant]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.047s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 5.743s)
+
+[achilles]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.048s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 4.756s)
+
+[all_cores_stress_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 27.032s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.679s)
+
+[all_cores_worker]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 25.625s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 3.686s)
+  Notes: EMPTY_INTERP_OUTPUT, EMPTY_NATIVE_OUTPUT
+
+[app_bank_system]
+  Match: False (OUTPUT_MISMATCH)
+  Interp OK: True (Exit: 0, Time: 0.067s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 4.819s)
+  Interp Out (first 300):
+=== AVELYN BANKING & LEDGER APPLICATION ===
+Transferred $2000 from Alice Vance to Bob Smith
+Alice's balance after 3 years @ 5% interest: $4630.5
+Ledger Integrity SHA-256 Audit Hash: 107daf5e3f5331a5a674c4d53478fc24a1f0a280bdd33011d146ee0c6aa2bc9b
+=== BANKING SYSTEM APP PASSED ===
+
+  Native Out (first 300):
+=== AVELYN BANKING & LEDGER APPLICATION ===
+Transferred $2000 from Alice Vance to Bob Smith
+Alice's balance after 3 years @ 5% interest: $4630.5
+Ledger Integrity SHA-256 Audit Hash: 3fc30784428c29b811f4085b02134d8ec30d9ed581ccb75d81238a0ca4980435
+=== BANKING SYSTEM APP PASSED ===
+
+  Compile Err:
+warning: overriding the module target triple with x86_64-pc-windows-msvc19.44.35228 [-Woverride-module]
+1 warning generated.
+C:\Users\KAT\AppData\Local\Temp\avelyn_llvm_build\sylvel_runtime.c:975:36: warning: result of comparison of constant 256 with expression of type 'unsigned char' is always true
+
+[app_markdown_converter]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.033s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 4.614s)
+
+[app_task_manager]
+  Match: False (OUTPUT_MISMATCH)
+  Interp OK: True (Exit: 0, Time: 0.213s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.918s)
+  Interp Out (first 300):
+=== AVELYN TASK MANAGER APPLICATION ===
+Added 4 tasks successfully.
+ - [DONE] Task #1 (HIGH): Fix LLVM Native Compiler Backend
+ - [PENDING] Task #2 (MEDIUM): Add Standard Library Modules
+ - [DONE] Task #3 (HIGH): Benchmark 1 Billion Loop Performance
+ - [PENDING] Task #4 (LOW): Write Real-world Appli
+  Native Out (first 300):
+=== AVELYN TASK MANAGER APPLICATION ===
+Added 4 tasks successfully.
+ - [DONE] Task #1 (HIGH): Fix LLVM Native Compiler Backend
+ - [PENDING] Task #2 (MEDIUM): Add Standard Library Modules
+ - [DONE] Task #3 (HIGH): Benchmark 1 Billion Loop Performance
+ - [PENDING] Task #4 (LOW): Write Real-world Appli
+  Compile Err:
+warning: overriding the module target triple with x86_64-pc-windows-msvc19.44.35228 [-Woverride-module]
+1 warning generated.
+C:\Users\KAT\AppData\Local\Temp\avelyn_llvm_build\sylvel_runtime.c:975:36: warning: result of comparison of constant 256 with expression of type 'unsigned char' is always true
+
+[armstrong]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.155s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 3.057s)
+
+[array_contains]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.167s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.803s)
+
+[array_remove]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.225s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.946s)
+
+[automorphic]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.183s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 3.445s)
+
+[billion_worker_temp]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 19.756s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 15.002s)
+  Notes: EMPTY_INTERP_OUTPUT, EMPTY_NATIVE_OUTPUT
+
+[booleans]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.258s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.398s)
+
+[bouncy]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.219s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.696s)
+
+[break]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.033s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.602s)
+
+[carol]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.027s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.371s)
+
+[catalan]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.024s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.830s)
+
+[circular_prime]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.014s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.400s)
+
+[comparisons]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.024s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.260s)
+
+[composite]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.019s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.154s)
+
+[continue]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.021s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.554s)
+
+[coprime]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.025s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.058s)
+
+[cryptography_test]
+  Match: False (OUTPUT_MISMATCH)
+  Interp OK: True (Exit: 0, Time: 0.023s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.616s)
+  Interp Out (first 300):
+SHA-256: 3ee95640ab10b226dfc9458c5133121991b5383fc72232e9662a6a26d4cbdb6f
+MD5: f539f992522de0130df81e9eae728c49
+SHA-1: 9407b00fb633d8e97c79843f405b125c8cd8cd2b
+Secure Token Hex: 203f5e7d9cbbdaf91837567594b3d2f1
+PASS: cryptography integration
+
+  Native Out (first 300):
+SHA-256: 3ee95640ab10b226dfc9458c5133121991b5383fc72232e9662a6a26d4cbdb6f
+MD5: f539f992522de0130df81e9eae728c49
+SHA-1: 9407b00fb633d8e97c79843f405b125c8cd8cd2b
+Secure Token Hex: 84e16cd6ae529049f1f1bbe9ebb3a6db
+PASS: cryptography integration
+
+  Compile Err:
+warning: overriding the module target triple with x86_64-pc-windows-msvc19.44.35228 [-Woverride-module]
+1 warning generated.
+C:\Users\KAT\AppData\Local\Temp\avelyn_llvm_build\sylvel_runtime.c:975:36: warning: result of comparison of constant 256 with expression of type 'unsigned char' is always true
+
+[cube]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.024s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.736s)
+
+[cullen]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.026s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.146s)
+
+[deficient]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.019s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.654s)
+
+[disarium]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.023s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.197s)
+
+[duck]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.022s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.152s)
+
+[else_if]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.049s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.321s)
+
+[emirp]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.025s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.231s)
+
+[even]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.021s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.353s)
+
+[evil]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.022s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 12.675s)
+
+[fermat]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.025s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 13.099s)
+
+[fibonacci]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.028s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 13.088s)
+
+[for_each]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.028s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 12.391s)
+
+[for_range]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.020s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 11.078s)
+
+[function_scoping]
+  Match: False (OUTPUT_MISMATCH)
+  Interp OK: True (Exit: 0, Time: 0.020s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.416s)
+  Interp Out (first 300):
+Hello from inner Alice
+Hello from inner Bob
+PASS: function scoping
+
+  Native Out (first 300):
+Hello from inner Alice
+Hello from outer Bob
+PASS: function scoping
+
+  Compile Err:
+warning: overriding the module target triple with x86_64-pc-windows-msvc19.44.35228 [-Woverride-module]
+1 warning generated.
+C:\Users\KAT\AppData\Local\Temp\avelyn_llvm_build\sylvel_runtime.c:975:36: warning: result of comparison of constant 256 with expression of type 'unsigned char' is always true
+
+[happy]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.021s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.413s)
+
+[harshad]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.018s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.425s)
+
+[indent_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.025s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.028s)
+
+[kaprekar]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.023s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.592s)
+
+[keith]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.028s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.377s)
+
+[let_immutability]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.020s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.152s)
+  Notes: INTERP_ERROR_WITH_EXIT_0, NATIVE_ERROR_WITH_EXIT_0
+
+[let_scoping_functions]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.019s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.414s)
+  Notes: INTERP_ERROR_WITH_EXIT_0, NATIVE_ERROR_WITH_EXIT_0
+
+[let_scoping_loops]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.018s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.295s)
+
+[logical]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.022s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.412s)
+
+[lychrel]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.028s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.697s)
+
+[magic]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.030s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.234s)
+
+[maps]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.024s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.279s)
+
+[mersenne_prime]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.018s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.240s)
+
+[narcissistic]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.024s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.351s)
+
+[neon]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.025s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.068s)
+
+[nested_for]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.019s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.602s)
+
+[null]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.022s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.690s)
+
+[odd]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.025s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.766s)
+
+[odious]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.022s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.745s)
+
+[one_billion_loop_test]
+  Match: False (INTERP_FAILED_BUT_NATIVE_PASSED)
+  Interp OK: False (Exit: None, Time: 45.000s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.601s)
+  Interp Out (first 300):
+
+  Native Out (first 300):
+â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
+ AVELYN 1 BILLION LOOP BENCHMARK
+â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•
+  Compile Err:
+warning: overriding the module target triple with x86_64-pc-windows-msvc19.44.35228 [-Woverride-module]
+1 warning generated.
+C:\Users\KAT\AppData\Local\Temp\avelyn_llvm_build\sylvel_runtime.c:975:36: warning: result of comparison of constant 256 with expression of type 'unsigned char' is always true
+
+[palindrome]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.176s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.270s)
+
+[parsing_test]
+  Match: False (OUTPUT_MISMATCH)
+  Interp OK: True (Exit: 0, Time: 0.248s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.987s)
+  Interp Out (first 300):
+User ip is [ANONYMIZED]
+Dumped: {"id":42,"name":"Alice","active":true}
+PASS: data parsing integration
+
+  Native Out (first 300):
+User ip is [ANONYMIZED]
+Dumped: {"id": 42, "name": "Alice", "active": true}
+PASS: data parsing integration
+
+  Compile Err:
+warning: overriding the module target triple with x86_64-pc-windows-msvc19.44.35228 [-Woverride-module]
+1 warning generated.
+C:\Users\KAT\AppData\Local\Temp\avelyn_llvm_build\sylvel_runtime.c:975:36: warning: result of comparison of constant 256 with expression of type 'unsigned char' is always true
+
+[perfect]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.197s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.784s)
+
+[perfect_cube]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.285s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 3.216s)
+
+[perfect_square]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.189s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.194s)
+
+[petersen]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.192s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.990s)
+
+[powerful]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.241s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.877s)
+
+[prime]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.221s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.926s)
+
+[pronic]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.214s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.159s)
+
+[recursion]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.279s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.932s)
+
+[sad]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.129s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.710s)
+
+[simple_1m_to_1b]
+  Match: False (INTERP_FAILED_BUT_NATIVE_PASSED)
+  Interp OK: False (Exit: None, Time: 45.000s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 25.113s)
+  Interp Out (first 300):
+
+  Native Out (first 300):
+[1 Million] (1000000 iterations) -> Time: 0.009 seconds
+[10 Million] (10000000 iterations) -> Time: 0.102 seconds
+[50 Million] (50000000 iterations) -> Time: 0.576 seconds
+[100 Million] (100000000 iterations) -> Time: 1.285 seconds
+[500 Million] (500000000 iterations) -> Time: 7.078 seconds
+[1 Billi
+  Compile Err:
+warning: overriding the module target triple with x86_64-pc-windows-msvc19.44.35228 [-Woverride-module]
+1 warning generated.
+C:\Users\KAT\AppData\Local\Temp\avelyn_llvm_build\sylvel_runtime.c:975:36: warning: result of comparison of constant 256 with expression of type 'unsigned char' is always true
+
+[simple_billion]
+  Match: False (INTERP_FAILED_BUT_NATIVE_PASSED)
+  Interp OK: False (Exit: None, Time: 45.000s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 16.856s)
+  Interp Out (first 300):
+
+  Native Out (first 300):
+Time taken: 14.438 seconds
+
+  Compile Err:
+warning: overriding the module target triple with x86_64-pc-windows-msvc19.44.35228 [-Woverride-module]
+1 warning generated.
+C:\Users\KAT\AppData\Local\Temp\avelyn_llvm_build\sylvel_runtime.c:975:36: warning: result of comparison of constant 256 with expression of type 'unsigned char' is always true
+
+[smith]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.273s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.303s)
+
+[sphenic]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.252s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.990s)
+
+[spy]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.241s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.809s)
+
+[square]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.206s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.605s)
+
+[stdlib_async_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.308s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.828s)
+
+[stdlib_cli_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.245s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.394s)
+
+[stdlib_config_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.266s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.723s)
+
+[stdlib_dotenv_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.254s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.080s)
+
+[stdlib_enhancements_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.197s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.195s)
+
+[stdlib_functional_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.242s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.409s)
+
+[stdlib_glob_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.313s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 3.065s)
+
+[stdlib_integration]
+  Match: False (OUTPUT_MISMATCH)
+  Interp OK: True (Exit: 0, Time: 0.020s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.409s)
+  Interp Out (first 300):
+Testing math...
+42
+4
+120
+true
+3.141592653589793
+Testing string...
+HELLO SYLVEL
+ababab
+000042
+baz bar baz
+true
+Testing array...
+31
+1
+9
+[3, 1, 4, 5, 9, 2, 6]
+[[3, 1, 4], [1, 5, 9], [2, 6]]
+Testing collections...
+3
+2
+a
+1
+3
+true
+Testing I/O and path...
+true
+hello from stdlib
+baz.lyn
+.lyn
+PASS: stdlib in
+  Native Out (first 300):
+Testing math...
+42
+4
+120
+true
+3.14159265358979
+Testing string...
+HELLO SYLVEL
+ababab
+000042
+baz bar baz
+true
+Testing array...
+31
+1
+9
+[3, 1, 4, 5, 9, 2, 6]
+[<val>, <val>, <val>]
+Testing collections...
+null
+null
+null
+null
+null
+null
+Testing I/O and path...
+true
+hello from stdlib
+baz.lyn
+.lyn
+PASS: stdl
+  Compile Err:
+warning: overriding the module target triple with x86_64-pc-windows-msvc19.44.35228 [-Woverride-module]
+1 warning generated.
+C:\Users\KAT\AppData\Local\Temp\avelyn_llvm_build\sylvel_runtime.c:975:36: warning: result of comparison of constant 256 with expression of type 'unsigned char' is always true
+
+[stdlib_io_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.028s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.437s)
+
+[stdlib_logger_test]
+  Match: False (OUTPUT_MISMATCH)
+  Interp OK: True (Exit: 0, Time: 0.023s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.390s)
+  Interp Out (first 300):
+[2026-07-21 HH:mm:ss] [INFO] [[TEST_PREFIX] ] Testing standard logger level print
+PASS: stdlib logger support
+
+  Native Out (first 300):
+[yyyy-MM-dd HH:mm:ss] [INFO] [[TEST_PREFIX] ] Testing standard logger level print
+PASS: stdlib logger support
+
+  Compile Err:
+warning: overriding the module target triple with x86_64-pc-windows-msvc19.44.35228 [-Woverride-module]
+1 warning generated.
+C:\Users\KAT\AppData\Local\Temp\avelyn_llvm_build\sylvel_runtime.c:975:36: warning: result of comparison of constant 256 with expression of type 'unsigned char' is always true
+
+[stdlib_lzw_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.027s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.691s)
+
+[stdlib_pathlib_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.021s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.531s)
+
+[stdlib_platform_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.025s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.561s)
+
+[stdlib_random_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.023s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 3.426s)
+
+[stdlib_search]
+  Match: False (OUTPUT_MISMATCH)
+  Interp OK: True (Exit: 0, Time: 0.026s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.186s)
+  Interp Out (first 300):
+Testing math...
+100
+720
+Testing string...
+xyzxyz
+Testing collections...
+banana
+1
+ALL SHORT-NAME STDLIB TESTS PASSED
+PASS: stdlib search
+
+  Native Out (first 300):
+Testing math...
+100
+720
+Testing string...
+xyzxyz
+Testing collections...
+null
+null
+ALL SHORT-NAME STDLIB TESTS PASSED
+PASS: stdlib search
+
+  Compile Err:
+warning: overriding the module target triple with x86_64-pc-windows-msvc19.44.35228 [-Woverride-module]
+1 warning generated.
+C:\Users\KAT\AppData\Local\Temp\avelyn_llvm_build\sylvel_runtime.c:975:36: warning: result of comparison of constant 256 with expression of type 'unsigned char' is always true
+
+[stdlib_secrets_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.022s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.312s)
+
+[stdlib_shutil_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.029s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.456s)
+
+[stdlib_socket_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.022s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.390s)
+
+[stdlib_string_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.024s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.017s)
+
+[stdlib_sys_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.026s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.290s)
+
+[stdlib_template_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.025s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.908s)
+
+[stdlib_term_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.026s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.705s)
+
+[stdlib_time_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.065s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 3.068s)
+
+[stdlib_urllib_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.024s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.667s)
+
+[stdlib_uuid_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.020s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.550s)
+
+[stdlib_validate_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.021s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.500s)
+
+[stdlib_xml_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.025s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 3.013s)
+
+[stress_test]
+  Match: False (OUTPUT_MISMATCH)
+  Interp OK: True (Exit: 0, Time: 10.631s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 6.185s)
+  Interp Out (first 300):
+Math Analysis Result:
+609.5
+Shadow Variable Value:
+99
+Global Anchor Integrity Value:
+99
+Total Execution Time for 1000000 Iterations (Seconds):
+0.000000437
+Generated Transaction Cryptographic Signature:
+3c7a962b3ad220d528e8da6ab992a3be6a8a305e5d9b7d6e6e6876b12b526614
+Created Data Memory Storage Block
+  Native Out (first 300):
+Math Analysis Result:
+610
+Shadow Variable Value:
+99
+Global Anchor Integrity Value:
+99
+Total Execution Time for 1000000 Iterations (Seconds):
+0
+Generated Transaction Cryptographic Signature:
+3c7a962b3ad220d528e8da6ab992a3be6a8a305e5d9b7d6e6e6876b12b526614
+Created Data Memory Storage Blocks Matrix:
+[1
+  Compile Err:
+warning: overriding the module target triple with x86_64-pc-windows-msvc19.44.35228 [-Woverride-module]
+1 warning generated.
+C:\Users\KAT\AppData\Local\Temp\avelyn_llvm_build\sylvel_runtime.c:975:36: warning: result of comparison of constant 256 with expression of type 'unsigned char' is always true
+
+[string_concat]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.020s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.449s)
+
+[string_equality]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.024s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.325s)
+
+[strong]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.030s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.284s)
+
+[subscript_read]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.024s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.374s)
+
+[sunny]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.021s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.262s)
+
+[sys_os_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.022s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.674s)
+
+[test_all_new_syntax]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.024s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.268s)
+
+[test_bitwise]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.020s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.147s)
+
+[test_byte_string]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.025s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.530s)
+
+[test_crypto]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.023s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.488s)
+
+[test_defaults]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.028s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.764s)
+
+[test_destructure]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.019s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.971s)
+
+[test_fn_multiline_assert_range]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.024s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 10.101s)
+
+[test_http]
+  Match: False (OUTPUT_MISMATCH)
+  Interp OK: True (Exit: 0, Time: 4.081s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 4.877s)
+  Interp Out (first 300):
+Testing HTTP Pentest Module (Phase 5)...
+PASS: urlEncode basic
+PASS: urlDecode basic
+PASS: httpRequest status 200
+PASS: httpRequest body present
+PASS: httpRequest POST status 200
+PASS: CookieJar get
+CookieJar inject: {"url": https://httpbin.org/cookies, "headers": {"Cookie": session=abc123xyz}}
+PASS
+  Native Out (first 300):
+Testing HTTP Pentest Module (Phase 5)...
+PASS: urlEncode basic
+PASS: urlDecode basic
+PASS: httpRequest status 200
+PASS: httpRequest body present
+PASS: httpRequest POST status 200
+PASS: CookieJar get
+CookieJar inject: {"url": "https://httpbin.org/cookies", "headers": {"Cookie": "session=abc123xyz"}}
+
+  Compile Err:
+warning: overriding the module target triple with x86_64-pc-windows-msvc19.44.35228 [-Woverride-module]
+1 warning generated.
+C:\Users\KAT\AppData\Local\Temp\avelyn_llvm_build\sylvel_runtime.c:975:36: warning: result of comparison of constant 256 with expression of type 'unsigned char' is always true
+
+[test_network]
+  Match: False (INTERP_FAILED_BUT_NATIVE_PASSED)
+  Interp OK: False (Exit: 1, Time: 0.024s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 9.418s)
+  Interp Out (first 300):
+Testing Network Module (Phase 2)...
+PASS: dnsLookup localhost
+PASS: udpBind success
+PASS: udp sendTo success
+PASS: recvFrom got data
+PASS: recvFrom payload
+PASS: recvFrom ip
+PASS: tcpListen returns valid ID
+PASS: tcpConnect success
+PASS: tcpAccept returns info
+PASS: tcp recv binary
+FAIL: portScan fi
+  Native Out (first 300):
+Testing Network Module (Phase 2)...
+PASS: dnsLookup localhost
+PASS: udpBind success
+PASS: udp sendTo success
+PASS: recvFrom got data
+PASS: recvFrom payload
+PASS: recvFrom ip
+PASS: tcpListen returns valid ID
+PASS: tcpConnect success
+PASS: tcpAccept returns info
+PASS: tcp recv binary
+PASS: portScan fi
+  Compile Err:
+warning: overriding the module target triple with x86_64-pc-windows-msvc19.44.35228 [-Woverride-module]
+1 warning generated.
+C:\Users\KAT\AppData\Local\Temp\avelyn_llvm_build\sylvel_runtime.c:975:36: warning: result of comparison of constant 256 with expression of type 'unsigned char' is always true
+
+[test_nullcoalesce]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.021s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 6.945s)
+
+[test_pipe]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.027s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 4.899s)
+
+[test_ternary]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.027s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 5.329s)
+
+[test_websec]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 28.441s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.266s)
+
+[traceback_test]
+  Match: False (OUTPUT_MISMATCH)
+  Interp OK: True (Exit: 0, Time: 0.018s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.502s)
+  Interp Out (first 300):
+Result of traceback execution:
+Traceback (most recent call last):
+  File "K:\Evelyn-lyn\Tests\traceback_test.lyn", line 12, in <top-level>
+  File "K:\Evelyn-lyn\Tests\traceback_test.lyn", line 13, in nested_one
+  File "K:\Evelyn-lyn\Tests\traceback_test.lyn", line 9, in nested_two
+Error: nested_erro
+  Native Out (first 300):
+Result of traceback execution:
+Traceback (most recent call last):
+  File "traceback_test.lyn", line 12, in <top-level>
+  File "traceback_test.lyn", line 9, in nested_one
+  File "traceback_test.lyn", line 5, in nested_two
+Error: nested_error
+PASS: traceback support
+
+  Compile Err:
+warning: overriding the module target triple with x86_64-pc-windows-msvc19.44.35228 [-Woverride-module]
+1 warning generated.
+C:\Users\KAT\AppData\Local\Temp\avelyn_llvm_build\sylvel_runtime.c:975:36: warning: result of comparison of constant 256 with expression of type 'unsigned char' is always true
+
+[triangular]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.020s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.779s)
+
+[trimorphic]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.020s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.921s)
+
+[twin_prime]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.024s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.898s)
+
+[unary_not]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.025s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.648s)
+
+[untouchable]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.140s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 2.253s)
+
+[var]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.019s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.552s)
+
+[var_identifier_test]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.026s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.707s)
+
+[var_mutability]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.020s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.645s)
+
+[while_break]
+  Match: True ()
+  Interp OK: True (Exit: 0, Time: 0.023s)
+  Compile OK: True (Exit: 0)
+  Native OK: True (Exit: 0, Time: 1.580s)
+

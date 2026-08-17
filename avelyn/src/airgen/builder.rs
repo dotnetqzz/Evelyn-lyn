@@ -19,10 +19,8 @@ pub struct AirBuilder {
     pub func: AirFunction,
     /// Current insertion block.
     pub current_block: BlockId,
-    /// Scope stack: maps variable names to their SylvelVal* alloc Values.
-    scopes: Vec<HashMap<String, Value>>,
-    /// Names declared with `let` (immutable).
-    pub immutable_vars: HashSet<String>,
+    /// Scope stack: maps variable names to their (SylvelVal* alloc Value, is_immutable).
+    scopes: Vec<HashMap<String, (Value, bool)>>,
     /// Stack of (break_target, continue_target) for loops.
     pub loop_targets: Vec<(BlockId, BlockId)>,
     /// Saved alloca values accumulated for the entry block pre-alloca pass.
@@ -40,7 +38,6 @@ impl AirBuilder {
             func,
             current_block: entry,
             scopes: vec![HashMap::new()],
-            immutable_vars: HashSet::new(),
             loop_targets: Vec::new(),
             entry_allocs: Vec::new(),
         }
@@ -143,7 +140,10 @@ impl AirBuilder {
     pub fn emit_call(&mut self, name: &str, args: Vec<Value>) -> Value {
         let res = self.fresh_value();
         // The output slot (first arg) is pre-allocated by caller.
-        self.emit(Inst::Call(VOID_VALUE, name.to_string(), args));
+        self.entry_allocs.push(Inst::Alloc(res, AirType::SylvelVal));
+        let mut full_args = vec![res];
+        full_args.extend(args);
+        self.emit(Inst::Call(VOID_VALUE, name.to_string(), full_args));
         res
     }
 
@@ -187,23 +187,42 @@ impl AirBuilder {
 
     pub fn set_var(&mut self, name: &str, value: Value) {
         if let Some(scope) = self.scopes.last_mut() {
-            scope.insert(name.to_string(), value);
+            scope.insert(name.to_string(), (value, false));
+        }
+    }
+
+    pub fn set_var_with_mutability(&mut self, name: &str, value: Value, immutable: bool) {
+        if let Some(scope) = self.scopes.last_mut() {
+            scope.insert(name.to_string(), (value, immutable));
         }
     }
 
     pub fn lookup_var(&self, name: &str) -> Option<Value> {
         for scope in self.scopes.iter().rev() {
-            if let Some(&v) = scope.get(name) { return Some(v); }
+            if let Some(&(v, _)) = scope.get(name) { return Some(v); }
         }
         None
     }
 
+    pub fn lookup_var_current_scope(&self, name: &str) -> Option<Value> {
+        self.scopes.last().and_then(|s| s.get(name).map(|&(v, _)| v))
+    }
+
     pub fn is_immutable(&self, name: &str) -> bool {
-        self.immutable_vars.contains(name)
+        for scope in self.scopes.iter().rev() {
+            if let Some(&(_, is_immut)) = scope.get(name) {
+                return is_immut;
+            }
+        }
+        false
     }
 
     pub fn mark_immutable(&mut self, name: &str) {
-        self.immutable_vars.insert(name.to_string());
+        if let Some(scope) = self.scopes.last_mut() {
+            if let Some(entry) = scope.get_mut(name) {
+                entry.1 = true;
+            }
+        }
     }
 
     // ── Loop stack ──────────────────────────────────────────────────────────

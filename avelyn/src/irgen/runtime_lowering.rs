@@ -53,6 +53,7 @@ pub fn emit_declarations(module: &AirModule) -> String {
         RuntimeFn::EnterTry, RuntimeFn::ExitTry,
         RuntimeFn::HasError, RuntimeFn::ClearError,
         RuntimeFn::RaiseError, RuntimeFn::ThrowVal,
+        RuntimeFn::GetErrorVal,
         RuntimeFn::BuiltinAssert,
     ];
 
@@ -89,7 +90,7 @@ fn is_always_declared(name: &str) -> bool {
         | "sylvel_rt_print" | "sylvel_rt_bin_op" | "sylvel_rt_unary_op"
         | "sylvel_rt_to_bool" | "sylvel_rt_to_int" | "sylvel_rt_to_float"
         | "sylvel_rt_retain" | "sylvel_rt_release"
-        | "sylvel_rt_raise_error" | "sylvel_rt_throw_val"
+        | "sylvel_rt_raise_error" | "sylvel_rt_throw_val" | "sylvel_rt_get_error_val"
         | "sylvel_rt_has_error" | "sylvel_rt_clear_error"
         | "sylvel_rt_enter_try" | "sylvel_rt_exit_try"
         | "sylvel_rt_len" | "sylvel_rt_alloc_list" | "sylvel_rt_alloc_map"
