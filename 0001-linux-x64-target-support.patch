@@ -1,0 +1,343 @@
+diff --git a/avelyn/src/compiler/mod.rs b/avelyn/src/compiler/mod.rs
+index 3ff7154..d6b57ea 100644
+--- a/avelyn/src/compiler/mod.rs
++++ b/avelyn/src/compiler/mod.rs
+@@ -26,7 +26,7 @@ use crate::airgen::lower_to_air;
+ use crate::air::{verify::verify_module, printer::AirPrinter};
+ use crate::optimizer::{optimize, OptLevel};
+ use crate::irgen::lower_to_llvm;
+-use crate::target::{Target, windows_x64, diagnostics as target_diagnostics};
++use crate::target::{Target, windows_x64, linux_x64, diagnostics as target_diagnostics};
+ 
+ // ─── Emit stage ───────────────────────────────────────────────────────────────
+ 
+@@ -255,37 +255,65 @@ impl Compiler {
+         let _ = fs::write(&rt_h_path, rt_h);
+         let _ = fs::write(&rt_c_path, rt_c);
+ 
+-        // Find clang.
+-        let clang = windows_x64::probe_clang(opts.llvm_path.as_deref())
+-            .map_err(|searched| {
+-                target_diagnostics::toolchain_not_found_message(&searched)
+-            })?;
++        // Find clang. Dispatch to the toolchain module matching the
++        // selected target (defaults to the host platform — see
++        // Target::host_default / --target).
++        let is_linux = opts.target.is_linux();
++
++        let clang = if is_linux {
++            linux_x64::probe_clang(opts.llvm_path.as_deref())
++        } else {
++            windows_x64::probe_clang(opts.llvm_path.as_deref())
++        }.map_err(|searched| {
++            target_diagnostics::toolchain_not_found_message(&searched)
++        })?;
+ 
+         let opt_u8 = opts.opt_level as u8;
+ 
+         match opts.emit {
+             EmitStage::Object => {
++                let obj_ext = if is_linux { "o" } else { "obj" };
+                 let obj_path = PathBuf::from(opts.out_path.trim_end_matches(".exe"))
+-                    .with_extension("obj");
+-                windows_x64::compile_to_object(
+-                    &clang, &ir_path, &obj_path, opt_u8, opts.verbose
+-                ).map_err(|e| e)?;
++                    .with_extension(obj_ext);
++                if is_linux {
++                    linux_x64::compile_to_object(
++                        &clang, &ir_path, &obj_path, opt_u8, opts.verbose
++                    )?;
++                } else {
++                    windows_x64::compile_to_object(
++                        &clang, &ir_path, &obj_path, opt_u8, opts.verbose
++                    )?;
++                }
+                 println!("Object file: {}", obj_path.display());
+             }
+             EmitStage::Asm => {
+                 let asm_path = PathBuf::from(opts.out_path.trim_end_matches(".exe"))
+                     .with_extension("s");
+-                windows_x64::compile_to_asm(
+-                    &clang, &ir_path, &asm_path, opt_u8, opts.verbose
+-                )?;
++                if is_linux {
++                    linux_x64::compile_to_asm(
++                        &clang, &ir_path, &asm_path, opt_u8, opts.verbose
++                    )?;
++                } else {
++                    windows_x64::compile_to_asm(
++                        &clang, &ir_path, &asm_path, opt_u8, opts.verbose
++                    )?;
++                }
+                 println!("Assembly file: {}", asm_path.display());
+             }
+             EmitStage::Executable | _ => {
+-                windows_x64::compile_and_link(
+-                    &clang, &ir_path, &rt_c_path,
+-                    &PathBuf::from(&opts.out_path),
+-                    opt_u8, opts.verbose
+-                )?;
++                if is_linux {
++                    linux_x64::compile_and_link(
++                        &clang, &ir_path, &rt_c_path,
++                        &PathBuf::from(&opts.out_path),
++                        opt_u8, opts.verbose
++                    )?;
++                } else {
++                    windows_x64::compile_and_link(
++                        &clang, &ir_path, &rt_c_path,
++                        &PathBuf::from(&opts.out_path),
++                        opt_u8, opts.verbose
++                    )?;
++                }
+             }
+         }
+ 
+diff --git a/avelyn/src/target/linux_x64.rs b/avelyn/src/target/linux_x64.rs
+new file mode 100644
+index 0000000..080eb0e
+--- /dev/null
++++ b/avelyn/src/target/linux_x64.rs
+@@ -0,0 +1,199 @@
++// target/linux_x64.rs — Linux x86_64 GNU target configuration
++//
++// Implements toolchain probing for Linux, searching for clang in:
++//   1. The `--llvm-path` / `AVELYN_LLVM_PATH` environment variable.
++//   2. Well-known LLVM install directories on Linux (distro package paths).
++//   3. The system PATH.
++
++use std::path::{Path, PathBuf};
++use super::Target;
++
++/// The Linux x86_64 GNU target triple.
++pub const TRIPLE: &str = "x86_64-unknown-linux-gnu";
++
++/// The LLVM data layout for Linux x86_64.
++pub const DATA_LAYOUT: &str =
++    "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128";
++
++/// Construct the Linux x86_64 GNU target descriptor.
++pub fn linux_x86_64_gnu() -> Target {
++    Target {
++        triple:      TRIPLE.to_string(),
++        data_layout: DATA_LAYOUT.to_string(),
++        os:          super::Os::Linux,
++        arch:        super::Arch::X86_64,
++        env:         super::Env::Gnu,
++    }
++}
++
++/// Probe the system for a usable clang executable.
++///
++/// Search order:
++///   1. `--llvm-path` flag override (passed in as `override_path`)
++///   2. `AVELYN_LLVM_PATH` env var (directory containing clang)
++///   3. Well-known Linux install/package locations
++///   4. System PATH
++///
++/// Returns `Ok(PathBuf)` with the clang executable path, or
++/// `Err(Vec<String>)` with all locations that were searched.
++pub fn probe_clang(override_path: Option<&str>) -> Result<PathBuf, Vec<String>> {
++    let mut searched: Vec<String> = Vec::new();
++
++    let check_dir = |dir: &Path, searched: &mut Vec<String>| -> Option<PathBuf> {
++        let exe = dir.join("clang");
++        searched.push(exe.display().to_string());
++        if exe.exists() { Some(exe) } else { None }
++    };
++
++    // Priority 1: explicit override (from --llvm-path CLI flag).
++    if let Some(p) = override_path {
++        let dir = PathBuf::from(p);
++        if let Some(exe) = check_dir(&dir, &mut searched) {
++            return Ok(exe);
++        }
++    }
++
++    // Priority 2: AVELYN_LLVM_PATH environment variable.
++    if let Ok(env_path) = std::env::var("AVELYN_LLVM_PATH") {
++        let dir = PathBuf::from(&env_path);
++        if let Some(exe) = check_dir(&dir, &mut searched) {
++            return Ok(exe);
++        }
++    }
++
++    // Priority 3: well-known Linux LLVM install locations (covers common
++    // distro package layouts: Debian/Ubuntu versioned clang, generic /usr
++    // prefixes, and Homebrew-on-Linux / manual installs).
++    let well_known: &[&str] = &[
++        "/usr/bin",
++        "/usr/local/bin",
++        "/usr/lib/llvm-19/bin",
++        "/usr/lib/llvm-18/bin",
++        "/usr/lib/llvm-17/bin",
++        "/usr/lib/llvm-16/bin",
++        "/usr/lib/llvm-15/bin",
++        "/usr/lib/llvm-14/bin",
++        "/opt/homebrew/opt/llvm/bin",
++        "/home/linuxbrew/.linuxbrew/opt/llvm/bin",
++    ];
++
++    for wk in well_known {
++        let dir = PathBuf::from(wk);
++        if let Some(exe) = check_dir(&dir, &mut searched) {
++            return Ok(exe);
++        }
++    }
++
++    // Priority 4: search PATH.
++    if let Ok(path_var) = std::env::var("PATH") {
++        for entry in std::env::split_paths(&path_var) {
++            let candidate = entry.join("clang");
++            searched.push(candidate.display().to_string());
++            if candidate.exists() {
++                return Ok(candidate);
++            }
++        }
++    }
++
++    Err(searched)
++}
++
++/// Compile an LLVM IR file and C runtime source into an executable.
++///
++/// Uses clang as both the compiler and linker. Explicitly links `-lm`
++/// (libm), since some Linux toolchains do not pull it in automatically
++/// for freestanding IR + C runtime builds, and `-lpthread` for forward
++/// compatibility with any future threaded runtime paths.
++pub fn compile_and_link(
++    clang:       &Path,
++    ir_file:     &Path,
++    rt_c_file:   &Path,
++    out_file:    &Path,
++    opt_level:   u8,
++    verbose:     bool,
++) -> Result<(), String> {
++    let opt_flag = format!("-O{}", opt_level.min(3));
++
++    let mut cmd = std::process::Command::new(clang);
++    cmd.arg(&opt_flag)
++       .arg("-target").arg(TRIPLE)
++       .arg(ir_file)
++       .arg(rt_c_file)
++       .arg("-o").arg(out_file)
++       .arg("-lm")
++       .arg("-lpthread");
++
++    if verbose {
++        eprintln!("[avelyn driver] Invoking: {:?}", cmd);
++    }
++
++    let status = cmd.status().map_err(|e| {
++        format!("Failed to execute clang '{}': {}. {}",
++            clang.display(), e,
++            super::diagnostics::toolchain_not_found_message(&[clang.display().to_string()]))
++    })?;
++
++    if status.success() {
++        Ok(())
++    } else {
++        Err(super::diagnostics::clang_failed_message(
++            &clang.display().to_string(),
++            status.code(),
++        ))
++    }
++}
++
++/// Compile an LLVM IR file to an object file.
++pub fn compile_to_object(
++    clang:     &Path,
++    ir_file:   &Path,
++    obj_file:  &Path,
++    opt_level: u8,
++    verbose:   bool,
++) -> Result<(), String> {
++    let opt_flag = format!("-O{}", opt_level.min(3));
++    let mut cmd = std::process::Command::new(clang);
++    cmd.arg(&opt_flag)
++       .arg("-target").arg(TRIPLE)
++       .arg("-c")
++       .arg(ir_file)
++       .arg("-o").arg(obj_file);
++
++    if verbose {
++        eprintln!("[avelyn driver] Invoking: {:?}", cmd);
++    }
++
++    let status = cmd.status().map_err(|e| {
++        format!("Failed to execute clang: {}", e)
++    })?;
++
++    if status.success() { Ok(()) } else {
++        Err(format!("clang -c failed with exit code {:?}", status.code()))
++    }
++}
++
++/// Compile an LLVM IR file to assembly.
++pub fn compile_to_asm(
++    clang:     &Path,
++    ir_file:   &Path,
++    asm_file:  &Path,
++    opt_level: u8,
++    verbose:   bool,
++) -> Result<(), String> {
++    let opt_flag = format!("-O{}", opt_level.min(3));
++    let mut cmd = std::process::Command::new(clang);
++    cmd.arg(&opt_flag)
++       .arg("-target").arg(TRIPLE)
++       .arg("-S")
++       .arg(ir_file)
++       .arg("-o").arg(asm_file);
++
++    if verbose {
++        eprintln!("[avelyn driver] Invoking: {:?}", cmd);
++    }
++
++    let status = cmd.status().map_err(|e| format!("Failed to execute clang: {}", e))?;
++    if status.success() { Ok(()) } else {
++        Err(format!("clang -S failed with exit code {:?}", status.code()))
++    }
++}
+diff --git a/avelyn/src/target/mod.rs b/avelyn/src/target/mod.rs
+index e6ce7ef..c21da15 100644
+--- a/avelyn/src/target/mod.rs
++++ b/avelyn/src/target/mod.rs
+@@ -7,6 +7,7 @@
+ // without hard-coded triples in the compiler stages.
+ 
+ pub mod windows_x64;
++pub mod linux_x64;
+ pub mod diagnostics;
+ 
+ /// Operating system families.
+@@ -52,13 +53,7 @@ impl Target {
+         return windows_x64::windows_x86_64_msvc();
+ 
+         #[cfg(target_os = "linux")]
+-        return Self {
+-            triple:      "x86_64-unknown-linux-gnu".to_string(),
+-            data_layout: "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128".to_string(),
+-            os:   Os::Linux,
+-            arch: Arch::X86_64,
+-            env:  Env::Gnu,
+-        };
++        return linux_x64::linux_x86_64_gnu();
+ 
+         #[cfg(target_os = "macos")]
+         return Self {
+@@ -78,13 +73,7 @@ impl Target {
+     pub fn from_triple(triple: &str) -> Result<Self, String> {
+         match triple {
+             "x86_64-pc-windows-msvc" => Ok(windows_x64::windows_x86_64_msvc()),
+-            "x86_64-unknown-linux-gnu" => Ok(Self {
+-                triple:      triple.to_string(),
+-                data_layout: "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128".to_string(),
+-                os:   Os::Linux,
+-                arch: Arch::X86_64,
+-                env:  Env::Gnu,
+-            }),
++            "x86_64-unknown-linux-gnu" => Ok(linux_x64::linux_x86_64_gnu()),
+             "aarch64-apple-macosx12.0" | "arm64-apple-macosx12.0" => Ok(Self {
+                 triple:      triple.to_string(),
+                 data_layout: "e-m:o-i64:64-i128:128-n32:64-S128".to_string(),

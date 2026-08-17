@@ -7,6 +7,7 @@
 // without hard-coded triples in the compiler stages.
 
 pub mod windows_x64;
+pub mod linux_x64;
 pub mod diagnostics;
 
 /// Operating system families.
@@ -52,13 +53,7 @@ impl Target {
         return windows_x64::windows_x86_64_msvc();
 
         #[cfg(target_os = "linux")]
-        return Self {
-            triple:      "x86_64-unknown-linux-gnu".to_string(),
-            data_layout: "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128".to_string(),
-            os:   Os::Linux,
-            arch: Arch::X86_64,
-            env:  Env::Gnu,
-        };
+        return linux_x64::linux_x86_64_gnu();
 
         #[cfg(target_os = "macos")]
         return Self {
@@ -78,13 +73,7 @@ impl Target {
     pub fn from_triple(triple: &str) -> Result<Self, String> {
         match triple {
             "x86_64-pc-windows-msvc" => Ok(windows_x64::windows_x86_64_msvc()),
-            "x86_64-unknown-linux-gnu" => Ok(Self {
-                triple:      triple.to_string(),
-                data_layout: "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128".to_string(),
-                os:   Os::Linux,
-                arch: Arch::X86_64,
-                env:  Env::Gnu,
-            }),
+            "x86_64-unknown-linux-gnu" => Ok(linux_x64::linux_x86_64_gnu()),
             "aarch64-apple-macosx12.0" | "arm64-apple-macosx12.0" => Ok(Self {
                 triple:      triple.to_string(),
                 data_layout: "e-m:o-i64:64-i128:128-n32:64-S128".to_string(),

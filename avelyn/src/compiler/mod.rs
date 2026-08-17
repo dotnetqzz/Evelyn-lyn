@@ -26,7 +26,7 @@ use crate::airgen::lower_to_air;
 use crate::air::{verify::verify_module, printer::AirPrinter};
 use crate::optimizer::{optimize, OptLevel};
 use crate::irgen::lower_to_llvm;
-use crate::target::{Target, windows_x64, diagnostics as target_diagnostics};
+use crate::target::{Target, windows_x64, linux_x64, diagnostics as target_diagnostics};
 
 // ─── Emit stage ───────────────────────────────────────────────────────────────
 
@@ -255,37 +255,65 @@ impl Compiler {
         let _ = fs::write(&rt_h_path, rt_h);
         let _ = fs::write(&rt_c_path, rt_c);
 
-        // Find clang.
-        let clang = windows_x64::probe_clang(opts.llvm_path.as_deref())
-            .map_err(|searched| {
-                target_diagnostics::toolchain_not_found_message(&searched)
-            })?;
+        // Find clang. Dispatch to the toolchain module matching the
+        // selected target (defaults to the host platform — see
+        // Target::host_default / --target).
+        let is_linux = opts.target.is_linux();
+
+        let clang = if is_linux {
+            linux_x64::probe_clang(opts.llvm_path.as_deref())
+        } else {
+            windows_x64::probe_clang(opts.llvm_path.as_deref())
+        }.map_err(|searched| {
+            target_diagnostics::toolchain_not_found_message(&searched)
+        })?;
 
         let opt_u8 = opts.opt_level as u8;
 
         match opts.emit {
             EmitStage::Object => {
+                let obj_ext = if is_linux { "o" } else { "obj" };
                 let obj_path = PathBuf::from(opts.out_path.trim_end_matches(".exe"))
-                    .with_extension("obj");
-                windows_x64::compile_to_object(
-                    &clang, &ir_path, &obj_path, opt_u8, opts.verbose
-                ).map_err(|e| e)?;
+                    .with_extension(obj_ext);
+                if is_linux {
+                    linux_x64::compile_to_object(
+                        &clang, &ir_path, &obj_path, opt_u8, opts.verbose
+                    )?;
+                } else {
+                    windows_x64::compile_to_object(
+                        &clang, &ir_path, &obj_path, opt_u8, opts.verbose
+                    )?;
+                }
                 println!("Object file: {}", obj_path.display());
             }
             EmitStage::Asm => {
                 let asm_path = PathBuf::from(opts.out_path.trim_end_matches(".exe"))
                     .with_extension("s");
-                windows_x64::compile_to_asm(
-                    &clang, &ir_path, &asm_path, opt_u8, opts.verbose
-                )?;
+                if is_linux {
+                    linux_x64::compile_to_asm(
+                        &clang, &ir_path, &asm_path, opt_u8, opts.verbose
+                    )?;
+                } else {
+                    windows_x64::compile_to_asm(
+                        &clang, &ir_path, &asm_path, opt_u8, opts.verbose
+                    )?;
+                }
                 println!("Assembly file: {}", asm_path.display());
             }
             EmitStage::Executable | _ => {
-                windows_x64::compile_and_link(
-                    &clang, &ir_path, &rt_c_path,
-                    &PathBuf::from(&opts.out_path),
-                    opt_u8, opts.verbose
-                )?;
+                if is_linux {
+                    linux_x64::compile_and_link(
+                        &clang, &ir_path, &rt_c_path,
+                        &PathBuf::from(&opts.out_path),
+                        opt_u8, opts.verbose
+                    )?;
+                } else {
+                    windows_x64::compile_and_link(
+                        &clang, &ir_path, &rt_c_path,
+                        &PathBuf::from(&opts.out_path),
+                        opt_u8, opts.verbose
+                    )?;
+                }
             }
         }
 
