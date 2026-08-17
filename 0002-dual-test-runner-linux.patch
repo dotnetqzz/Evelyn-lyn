@@ -1,0 +1,23 @@
+diff --git a/dual_test_runner.py b/dual_test_runner.py
+index 1789c61..e42b77f 100644
+--- a/dual_test_runner.py
++++ b/dual_test_runner.py
+@@ -8,7 +8,8 @@ import time
+ from pathlib import Path
+ from concurrent.futures import ThreadPoolExecutor, as_completed
+ 
+-AVELYN_EXE = str(Path(__file__).parent / "avelyn" / "target" / "release" / "avelyn.exe")
++EXE_SUFFIX = ".exe" if os.name == "nt" else ""
++AVELYN_EXE = str(Path(__file__).parent / "avelyn" / "target" / "release" / f"avelyn{EXE_SUFFIX}")
+ TESTS_DIR = str(Path(__file__).parent / "Tests")
+ TEMP_DIR = str(Path(__file__).parent / "scratch" / "dual_test_bins")
+ 
+@@ -32,7 +33,7 @@ def normalize_output(text: str) -> str:
+ 
+ def run_single_test(test_file: str):
+     name = Path(test_file).stem
+-    out_bin = os.path.join(TEMP_DIR, f"{name}.exe")
++    out_bin = os.path.join(TEMP_DIR, f"{name}{EXE_SUFFIX}")
+     
+     result = {
+         "file": test_file,
