@@ -9,9 +9,13 @@
 
 #if defined(_WIN32)
 #include <windows.h>
+#define SYLVEL_STRDUP _strdup
 #else
 #include <unistd.h>
 #include <sys/time.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#define SYLVEL_STRDUP strdup
 #endif
 
 static inline double bits_to_double(int64_t bits) {
@@ -1695,7 +1699,7 @@ void sylvel_rt_builtin_stringUpper(SylvelVal* out, const SylvelVal* str) {
         return;
     }
     SylvelString* s = (SylvelString*)(uintptr_t)str->data;
-    char* copy = _strdup(s->chars);
+    char* copy = SYLVEL_STRDUP(s->chars);
     for (int64_t i = 0; i < s->len; i++) copy[i] = toupper((unsigned char)copy[i]);
     sylvel_rt_alloc_string_len(out, copy, s->len);
     free(copy);
@@ -1708,7 +1712,7 @@ void sylvel_rt_builtin_stringLower(SylvelVal* out, const SylvelVal* str) {
         return;
     }
     SylvelString* s = (SylvelString*)(uintptr_t)str->data;
-    char* copy = _strdup(s->chars);
+    char* copy = SYLVEL_STRDUP(s->chars);
     for (int64_t i = 0; i < s->len; i++) copy[i] = tolower((unsigned char)copy[i]);
     sylvel_rt_alloc_string_len(out, copy, s->len);
     free(copy);
