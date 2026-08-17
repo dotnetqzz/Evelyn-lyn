@@ -397,13 +397,16 @@ impl<'a> AirGen<'a> {
                     value: pval,
                     ty: AirType::SylvelValPtr,
                 });
-                builder.set_var(pname, pval);
+                let local_slot = builder.fresh_value();
+                builder.entry_allocs.push(Inst::Alloc(local_slot, AirType::SylvelVal));
+                builder.emit(Inst::Store(pval, local_slot));
+                builder.set_var(pname, local_slot);
 
                 // Default parameter handling: if isNull(param), set default.
                 if let Some(default_expr) = default_opt {
                     let is_null_val = builder.fresh_value();
                     builder.entry_allocs.push(Inst::Alloc(is_null_val, AirType::SylvelVal));
-                    builder.emit_runtime_call_void(RuntimeFn::Builtin("isNull".to_string()), vec![is_null_val, pval]);
+                    builder.emit_runtime_call_void(RuntimeFn::Builtin("isNull".to_string()), vec![is_null_val, local_slot]);
                     let is_null_bool = builder.emit_runtime_call(RuntimeFn::ToBool, vec![is_null_val], AirType::Bool);
 
                     let set_def_bb = builder.new_block("def_set");
@@ -413,7 +416,7 @@ impl<'a> AirGen<'a> {
 
                     builder.switch_to(set_def_bb);
                     let def_val = self.lower_node(default_expr, &mut builder)?;
-                    builder.emit(Inst::Store(def_val, pval));
+                    builder.emit(Inst::Store(def_val, local_slot));
                     builder.emit_jump(skip_def_bb);
 
                     builder.switch_to(skip_def_bb);
@@ -532,7 +535,7 @@ impl<'a> AirGen<'a> {
             // ── Variable declarations ─────────────────────────────────────
             ASTNode::Decl { name, value, mutable, .. } => {
                 let val = self.lower_node(value, b)?;
-                let slot = if b.func.name == "main" && self.global_vars.contains(name) {
+                let slot = if b.func.name == "main" && b.scope_depth() <= 1 && self.global_vars.contains(name) {
                     let g_ptr = self.get_global_ptr(name, b);
                     b.set_var_with_mutability(name, g_ptr, !mutable);
                     g_ptr

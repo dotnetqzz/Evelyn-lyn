@@ -1,0 +1,429 @@
+# Quebec Compiler (Evelyn) — lib/Parse/Parser.lyn
+# Recursive Descent Parser with Precedence Climbing
+
+import "Token.lyn"
+import "../AST/ASTNodes.lyn"
+
+def parser_new(tokens) {
+    return {
+        "tokens":    tokens,
+        "tokCount":  arrayLen(tokens),
+        "pos":       0
+    }
+}
+
+def parser_is_eof(p) {
+    return p["pos"] >= p["tokCount"] or p["tokens"][p["pos"]]["kind"] == TOK_EOF
+}
+
+def parser_peek(p) {
+    let pos = p["pos"]
+    if pos < p["tokCount"] {
+        return p["tokens"][pos]
+    }
+    return makeToken(TOK_EOF, "", 0, 0, 0, 0)
+}
+
+def parser_peek_next(p) {
+    let pos = p["pos"] + 1
+    if pos < p["tokCount"] {
+        return p["tokens"][pos]
+    }
+    return makeToken(TOK_EOF, "", 0, 0, 0, 0)
+}
+
+def parser_advance(p) {
+    if not parser_is_eof(p) {
+        let tok = p["tokens"][p["pos"]]
+        mapSet(p, "pos", p["pos"] + 1)
+        return tok
+    }
+    return parser_peek(p)
+}
+
+def parser_match(p, kind) {
+    if parser_peek(p)["kind"] == kind {
+        return parser_advance(p)
+    }
+    return null
+}
+
+def parser_expect(p, kind, errMsg) {
+    let tok = parser_match(p, kind)
+    if tok == null {
+        let cur = parser_peek(p)
+        print("ParseError at line " + toString(cur["line"]) + ":" + toString(cur["col"]) + ": expected " + tokenKindName(kind) + ", got " + tokenKindName(cur["kind"]) + " (" + errMsg + ")")
+        return null
+    }
+    return tok
+}
+
+# ── Top-level parse entry points ──────────────────────────────────────────
+
+def parser_parse_primary(p) {
+    let tok = parser_peek(p)
+    let kind = tok["kind"]
+
+    if kind == TOK_INT_LIT {
+        parser_advance(p)
+        return ast_int(stringToNum(tok["text"]), tok["line"], tok["col"])
+    }
+    if kind == TOK_FLOAT_LIT {
+        parser_advance(p)
+        return ast_float(stringToNum(tok["text"]), tok["line"], tok["col"])
+    }
+    if kind == TOK_STRING_LIT {
+        parser_advance(p)
+        return ast_str(tok["text"], tok["line"], tok["col"])
+    }
+    if kind == TOK_KW_TRUE {
+        parser_advance(p)
+        return ast_bool(true, tok["line"], tok["col"])
+    }
+    if kind == TOK_KW_FALSE {
+        parser_advance(p)
+        return ast_bool(false, tok["line"], tok["col"])
+    }
+    if kind == TOK_KW_NULL {
+        parser_advance(p)
+        return ast_null(tok["line"], tok["col"])
+    }
+    if kind == TOK_IDENTIFIER {
+        parser_advance(p)
+        return ast_var(tok["text"], tok["line"], tok["col"])
+    }
+    if kind == TOK_KW_PRINT {
+        parser_advance(p)
+        return ast_var("print", tok["line"], tok["col"])
+    }
+    if kind == TOK_KW_ASSERT {
+        parser_advance(p)
+        return ast_var("assert", tok["line"], tok["col"])
+    }
+
+    # Grouped expression or tuple: (expr)
+    if kind == TOK_DELIM_LPAREN {
+        parser_advance(p)
+        let expr = parser_parse_expr(p)
+        parser_expect(p, TOK_DELIM_RPAREN, "closing ')'")
+        return expr
+    }
+
+    # List literal: [elem1, elem2, ...]
+    if kind == TOK_DELIM_LBRACK {
+        parser_advance(p)
+        var elements = []
+        while not parser_is_eof(p) and parser_peek(p)["kind"] != TOK_DELIM_RBRACK {
+            let elem = parser_parse_expr(p)
+            elements = arrayAppend(elements, elem)
+            if parser_match(p, TOK_DELIM_COMMA) == null { break }
+        }
+        parser_expect(p, TOK_DELIM_RBRACK, "closing ']'")
+        return ast_array(elements, tok["line"], tok["col"])
+    }
+
+    # Map literal: { "key": val, ... }
+    if kind == TOK_DELIM_LBRACE {
+        parser_advance(p)
+        var entries = []
+        while not parser_is_eof(p) and parser_peek(p)["kind"] != TOK_DELIM_RBRACE {
+            let keyNode = parser_parse_expr(p)
+            parser_expect(p, TOK_OP_COLON, "':' between map key and value")
+            let valNode = parser_parse_expr(p)
+            entries = arrayAppend(entries, [keyNode, valNode])
+            if parser_match(p, TOK_DELIM_COMMA) == null { break }
+        }
+        parser_expect(p, TOK_DELIM_RBRACE, "closing '}'")
+        return ast_map(entries, tok["line"], tok["col"])
+    }
+
+    # Lambda: def (args) => body
+    if kind == TOK_KW_DEF {
+        return parser_parse_func_decl(p)
+    }
+
+    parser_advance(p)
+    return ast_null(tok["line"], tok["col"])
+}
+
+# ── Postfix Expressions (Calls, Subscripts, Member access) ─────────────────
+
+def parser_parse_postfix(p) {
+    var expr = parser_parse_primary(p)
+
+    while not parser_is_eof(p) {
+        let tok = parser_peek(p)
+        let kind = tok["kind"]
+
+        # Call: expr(arg1, arg2, ...)
+        if kind == TOK_DELIM_LPAREN {
+            parser_advance(p)
+            var args = []
+            while not parser_is_eof(p) and parser_peek(p)["kind"] != TOK_DELIM_RPAREN {
+                let argExpr = parser_parse_expr(p)
+                args = arrayAppend(args, argExpr)
+                if parser_match(p, TOK_DELIM_COMMA) == null { break }
+            }
+            parser_expect(p, TOK_DELIM_RPAREN, "closing ')' for argument list")
+            expr = ast_call(expr, args, tok["line"], tok["col"])
+        }
+        # Subscript: expr[index]
+        else if kind == TOK_DELIM_LBRACK {
+            parser_advance(p)
+            let indexExpr = parser_parse_expr(p)
+            parser_expect(p, TOK_DELIM_RBRACK, "closing ']' for subscript")
+            expr = ast_subscript(expr, indexExpr, tok["line"], tok["col"])
+        }
+        # Member access: expr.member
+        else if kind == TOK_OP_DOT {
+            parser_advance(p)
+            let memberTok = parser_expect(p, TOK_IDENTIFIER, "member name after '.'")
+            if memberTok != null {
+                let memberStr = ast_str(memberTok["text"], memberTok["line"], memberTok["col"])
+                expr = ast_subscript(expr, memberStr, tok["line"], tok["col"])
+            }
+        } else {
+            break
+        }
+    }
+
+    return expr
+}
+
+# ── Unary Expressions ──────────────────────────────────────────────────────
+
+def parser_parse_unary(p) {
+    let tok = parser_peek(p)
+    let kind = tok["kind"]
+    if kind == TOK_OP_MINUS or kind == TOK_KW_NOT or kind == TOK_OP_TILDE {
+        parser_advance(p)
+        let operand = parser_parse_unary(p)
+        return ast_unary(tok["text"], operand, tok["line"], tok["col"])
+    }
+    return parser_parse_postfix(p)
+}
+
+# ── Binary Precedence Table ────────────────────────────────────────────────
+
+def get_binop_precedence(kind) {
+    if kind == TOK_OP_STAR or kind == TOK_OP_SLASH or kind == TOK_OP_SLASHSLASH or kind == TOK_OP_PERCENT {
+        return 10
+    }
+    if kind == TOK_OP_PLUS or kind == TOK_OP_MINUS {
+        return 9
+    }
+    if kind == TOK_OP_SHL or kind == TOK_OP_SHR {
+        return 8
+    }
+    if kind == TOK_OP_LT or kind == TOK_OP_LTE or kind == TOK_OP_GT or kind == TOK_OP_GTE {
+        return 7
+    }
+    if kind == TOK_OP_EQEQ or kind == TOK_OP_NEQ {
+        return 6
+    }
+    if kind == TOK_OP_AMP {
+        return 5
+    }
+    if kind == TOK_OP_CARET {
+        return 4
+    }
+    if kind == TOK_OP_PIPE {
+        return 3
+    }
+    if kind == TOK_KW_AND {
+        return 2
+    }
+    if kind == TOK_KW_OR {
+        return 1
+    }
+    return 0
+}
+
+def parser_parse_binop_rhs(p, minPrec, left) {
+    var curLeft = left
+    while true {
+        let tok = parser_peek(p)
+        let prec = get_binop_precedence(tok["kind"])
+        if prec < minPrec { break }
+
+        let opTok = parser_advance(p)
+        var right = parser_parse_unary(p)
+
+        let nextPrec = get_binop_precedence(parser_peek(p)["kind"])
+        if prec < nextPrec {
+            right = parser_parse_binop_rhs(p, prec + 1, right)
+        }
+
+        curLeft = ast_binop(curLeft, opTok["text"], right, opTok["line"], opTok["col"])
+    }
+    return curLeft
+}
+
+def parser_parse_expr(p) {
+    let left = parser_parse_unary(p)
+    let binExpr = parser_parse_binop_rhs(p, 1, left)
+
+    # Ternary: cond ? then : else
+    if parser_match(p, TOK_OP_QUESTION) != null {
+        let thenBranch = parser_parse_expr(p)
+        parser_expect(p, TOK_OP_COLON, "':' in ternary conditional")
+        let elseBranch = parser_parse_expr(p)
+        return ast_ternary(binExpr, thenBranch, elseBranch, binExpr["line"], binExpr["col"])
+    }
+
+    return binExpr
+}
+
+# ── Statement & Declaration Parsing ────────────────────────────────────────
+
+def parser_parse_func_decl(p) {
+    let defTok = parser_expect(p, TOK_KW_DEF, "'def' keyword")
+    var funcName = ""
+    if parser_peek(p)["kind"] == TOK_IDENTIFIER {
+        funcName = parser_advance(p)["text"]
+    }
+
+    parser_expect(p, TOK_DELIM_LPAREN, "'(' for parameter list")
+    var params = []
+    while not parser_is_eof(p) and parser_peek(p)["kind"] != TOK_DELIM_RPAREN {
+        let pTok = parser_expect(p, TOK_IDENTIFIER, "parameter name")
+        if pTok != null {
+            params = arrayAppend(params, pTok["text"])
+        }
+        if parser_match(p, TOK_DELIM_COMMA) == null { break }
+    }
+    parser_expect(p, TOK_DELIM_RPAREN, "')' closing parameter list")
+
+    # Body: either fat arrow => expr or block { stmts }
+    if parser_match(p, TOK_OP_FATARROW) != null {
+        let retExpr = parser_parse_expr(p)
+        let body = [ast_return(retExpr, retExpr["line"], retExpr["col"])]
+        return ast_func_decl(funcName, params, body, defTok["line"], defTok["col"])
+    }
+
+    let body = parser_parse_block(p)
+    return ast_func_decl(funcName, params, body, defTok["line"], defTok["col"])
+}
+
+def parser_parse_block(p) {
+    parser_expect(p, TOK_DELIM_LBRACE, "'{' to start block")
+    var stmts = []
+    while not parser_is_eof(p) and parser_peek(p)["kind"] != TOK_DELIM_RBRACE {
+        let stmt = parser_parse_stmt(p)
+        if stmt != null {
+            stmts = arrayAppend(stmts, stmt)
+        }
+    }
+    parser_expect(p, TOK_DELIM_RBRACE, "'}' to close block")
+    return stmts
+}
+
+def parser_parse_stmt(p) {
+    let tok = parser_peek(p)
+    let kind = tok["kind"]
+
+    # Variable declaration: let / var name = expr
+    if kind == TOK_KW_LET or kind == TOK_KW_VAR {
+        parser_advance(p)
+        let isMutable = (kind == TOK_KW_VAR)
+        let nameTok = parser_expect(p, TOK_IDENTIFIER, "variable name")
+        parser_expect(p, TOK_OP_ASSIGN, "'=' in declaration")
+        let initExpr = parser_parse_expr(p)
+        return ast_decl(nameTok["text"], initExpr, isMutable, tok["line"], tok["col"])
+    }
+
+    # Function declaration: def name(...) { ... }
+    if kind == TOK_KW_DEF {
+        return parser_parse_func_decl(p)
+    }
+
+    # Return statement: return [expr]
+    if kind == TOK_KW_RETURN {
+        parser_advance(p)
+        var retVal = ast_null(tok["line"], tok["col"])
+        if parser_peek(p)["kind"] != TOK_DELIM_RBRACE and not parser_is_eof(p) {
+            retVal = parser_parse_expr(p)
+        }
+        return ast_return(retVal, tok["line"], tok["col"])
+    }
+
+    # While loop: while cond { ... }
+    if kind == TOK_KW_WHILE {
+        parser_advance(p)
+        let cond = parser_parse_expr(p)
+        let body = parser_parse_block(p)
+        return ast_while(cond, body, tok["line"], tok["col"])
+    }
+
+    # For loop: for x in iter { ... }
+    if kind == TOK_KW_FOR {
+        parser_advance(p)
+        let varTok = parser_expect(p, TOK_IDENTIFIER, "loop variable name")
+        parser_expect(p, TOK_KW_IN, "'in' keyword")
+        let iterExpr = parser_parse_expr(p)
+        let body = parser_parse_block(p)
+        return ast_for(varTok["text"], iterExpr, body, tok["line"], tok["col"])
+    }
+
+    # If statement: if cond { ... } else { ... }
+    if kind == TOK_KW_IF {
+        parser_advance(p)
+        let cond = parser_parse_expr(p)
+        let thenBody = parser_parse_block(p)
+        var elseBody = null
+        if parser_match(p, TOK_KW_ELSE) != null {
+            if parser_peek(p)["kind"] == TOK_KW_IF {
+                elseBody = [parser_parse_stmt(p)]
+            } else {
+                elseBody = parser_parse_block(p)
+            }
+        }
+        return ast_if(cond, thenBody, elseBody, tok["line"], tok["col"])
+    }
+
+    # Break / Continue / Pass
+    if kind == TOK_KW_BREAK {
+        parser_advance(p)
+        return ast_break(tok["line"], tok["col"])
+    }
+    if kind == TOK_KW_CONTINUE {
+        parser_advance(p)
+        return ast_continue(tok["line"], tok["col"])
+    }
+    if kind == TOK_KW_PASS {
+        parser_advance(p)
+        return ast_pass(tok["line"], tok["col"])
+    }
+
+    # Import statement: import "..."
+    if kind == TOK_KW_IMPORT {
+        parser_advance(p)
+        let pathTok = parser_advance(p)
+        return ast_import(pathTok["text"], tok["line"], tok["col"])
+    }
+
+    # Assignment or Expression statement
+    let expr = parser_parse_expr(p)
+    if parser_match(p, TOK_OP_ASSIGN) != null {
+        let valExpr = parser_parse_expr(p)
+        if expr["kind"] == AST_VAR {
+            return ast_assign(expr["name"], valExpr, tok["line"], tok["col"])
+        }
+        if expr["kind"] == AST_SUBSCRIPT {
+            return ast_index_assign(expr["target"], expr["index"], valExpr, tok["line"], tok["col"])
+        }
+    }
+
+    return expr
+}
+
+def parser_parse_program(p) {
+    var stmts = []
+    while not parser_is_eof(p) {
+        let stmt = parser_parse_stmt(p)
+        if stmt != null {
+            stmts = arrayAppend(stmts, stmt)
+        }
+    }
+    return stmts
+}

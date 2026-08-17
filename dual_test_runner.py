@@ -18,10 +18,15 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 # Regex patterns to normalize volatile outputs (timers, memory addresses, random hashes, timestamps)
 NORMALIZE_PATTERNS = [
     (r"\d+\.\d{3,} seconds", "<TIME> seconds"),
+    (r"Total Execution Time [^\n]+\n[0-9\.\+eE-]+", "Total Execution Time: <TIME>"),
     (r"Total Execution Time [^\n]+", "Total Execution Time: <TIME>"),
     (r"Time:\s*[\d\.]+\s*seconds", "Time: <TIME> seconds"),
+    (r"Time taken:\s*[\d\.]+\s*seconds", "Time taken: <TIME> seconds"),
+    (r"Throughput:\s*\d+\s*iterations / sec", "Throughput: <SPEED> iterations / sec"),
+    (r'"created_at":\s*\d+', '"created_at": <TIMESTAMP>'),
     (r"Verification Token ID:\s*[a-f0-9]+", "Verification Token ID: <HASH>"),
     (r"Generated Transaction Cryptographic Signature:\s*[a-f0-9]+", "Signature: <HASH>"),
+    (r"Secure Token Hex:\s*[a-f0-9]+", "Secure Token Hex: <HASH>"),
     (r"0x[0-9a-fA-F]+", "<PTR>"),
 ]
 

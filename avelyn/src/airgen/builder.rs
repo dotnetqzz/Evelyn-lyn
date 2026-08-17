@@ -185,6 +185,10 @@ impl AirBuilder {
         self.scopes.pop();
     }
 
+    pub fn scope_depth(&self) -> usize {
+        self.scopes.len()
+    }
+
     pub fn set_var(&mut self, name: &str, value: Value) {
         if let Some(scope) = self.scopes.last_mut() {
             scope.insert(name.to_string(), (value, false));

@@ -1,0 +1,165 @@
+# Quebec Compiler (Evelyn) — lib/AST/ASTNodes.lyn
+# Abstract Syntax Tree node kinds and constructors
+
+# Node Kinds
+let AST_INT_LIT         = 1
+let AST_FLOAT_LIT       = 2
+let AST_STR_LIT         = 3
+let AST_BOOL_LIT        = 4
+let AST_NULL_LIT        = 5
+let AST_BYTEARRAY_LIT   = 6
+let AST_VAR             = 7
+let AST_ARRAY_LIT       = 8
+let AST_MAP_LIT         = 9
+
+let AST_DECL            = 20
+let AST_STRUCT_DECL     = 21
+let AST_ENUM_DECL       = 22
+let AST_ASSIGN          = 23
+let AST_COMPOUND_ASSIGN = 24
+let AST_INDEX_ASSIGN    = 25
+
+let AST_BIN_OP          = 30
+let AST_UNARY_OP        = 31
+let AST_SUBSCRIPT       = 32
+let AST_TERNARY         = 33
+let AST_NULL_COALESCE   = 34
+let AST_SPREAD          = 35
+let AST_NAMED_ARG       = 36
+
+let AST_FUNC_DECL       = 40
+let AST_FUNC_CALL       = 41
+let AST_CALL_EXPR       = 42
+let AST_LAMBDA          = 43
+
+let AST_WHILE           = 50
+let AST_FOR             = 51
+let AST_FOR_RANGE       = 52
+let AST_IF              = 53
+let AST_SWITCH          = 54
+let AST_MATCH           = 55
+let AST_RETURN          = 56
+let AST_BREAK           = 57
+let AST_CONTINUE        = 58
+let AST_PASS            = 59
+let AST_THROW           = 60
+let AST_TRY_CATCH       = 61
+let AST_ASSERT          = 62
+let AST_IMPORT          = 63
+let AST_EXPORT          = 64
+
+def ast_int(val, line, col) {
+    return { "kind": AST_INT_LIT, "val": val, "line": line, "col": col }
+}
+
+def ast_float(val, line, col) {
+    return { "kind": AST_FLOAT_LIT, "val": val, "line": line, "col": col }
+}
+
+def ast_str(val, line, col) {
+    return { "kind": AST_STR_LIT, "val": val, "line": line, "col": col }
+}
+
+def ast_bool(val, line, col) {
+    return { "kind": AST_BOOL_LIT, "val": val, "line": line, "col": col }
+}
+
+def ast_null(line, col) {
+    return { "kind": AST_NULL_LIT, "line": line, "col": col }
+}
+
+def ast_var(name, line, col) {
+    return { "kind": AST_VAR, "name": name, "line": line, "col": col }
+}
+
+def ast_array(elements, line, col) {
+    return { "kind": AST_ARRAY_LIT, "elements": elements, "line": line, "col": col }
+}
+
+def ast_map(entries, line, col) {
+    return { "kind": AST_MAP_LIT, "entries": entries, "line": line, "col": col }
+}
+
+def ast_decl(name, value, mutable, line, col) {
+    return { "kind": AST_DECL, "name": name, "value": value, "mutable": mutable, "line": line, "col": col }
+}
+
+def ast_struct_decl(name, fields, line, col) {
+    return { "kind": AST_STRUCT_DECL, "name": name, "fields": fields, "line": line, "col": col }
+}
+
+def ast_enum_decl(name, variants, line, col) {
+    return { "kind": AST_ENUM_DECL, "name": name, "variants": variants, "line": line, "col": col }
+}
+
+def ast_assign(name, value, line, col) {
+    return { "kind": AST_ASSIGN, "name": name, "value": value, "line": line, "col": col }
+}
+
+def ast_compound_assign(name, op, value, line, col) {
+    return { "kind": AST_COMPOUND_ASSIGN, "name": name, "op": op, "value": value, "line": line, "col": col }
+}
+
+def ast_index_assign(target, index, value, line, col) {
+    return { "kind": AST_INDEX_ASSIGN, "target": target, "index": index, "value": value, "line": line, "col": col }
+}
+
+def ast_binop(left, op, right, line, col) {
+    return { "kind": AST_BIN_OP, "left": left, "op": op, "right": right, "line": line, "col": col }
+}
+
+def ast_unary(op, operand, line, col) {
+    return { "kind": AST_UNARY_OP, "op": op, "operand": operand, "line": line, "col": col }
+}
+
+def ast_subscript(target, index, line, col) {
+    return { "kind": AST_SUBSCRIPT, "target": target, "index": index, "line": line, "col": col }
+}
+
+def ast_ternary(cond, thenBranch, elseBranch, line, col) {
+    return { "kind": AST_TERNARY, "cond": cond, "then": thenBranch, "else": elseBranch, "line": line, "col": col }
+}
+
+def ast_func_decl(name, params, body, line, col) {
+    return { "kind": AST_FUNC_DECL, "name": name, "params": params, "body": body, "line": line, "col": col }
+}
+
+def ast_call(callee, args, line, col) {
+    return { "kind": AST_CALL_EXPR, "callee": callee, "args": args, "line": line, "col": col }
+}
+
+def ast_while(cond, body, line, col) {
+    return { "kind": AST_WHILE, "cond": cond, "body": body, "line": line, "col": col }
+}
+
+def ast_for(varName, iter, body, line, col) {
+    return { "kind": AST_FOR, "var": varName, "iter": iter, "body": body, "line": line, "col": col }
+}
+
+def ast_for_range(varName, fromExpr, toExpr, inclusive, body, line, col) {
+    return { "kind": AST_FOR_RANGE, "var": varName, "from": fromExpr, "to": toExpr, "inclusive": inclusive, "body": body, "line": line, "col": col }
+}
+
+def ast_if(cond, thenBody, elseBody, line, col) {
+    return { "kind": AST_IF, "cond": cond, "then": thenBody, "else": elseBody, "line": line, "col": col }
+}
+
+def ast_return(value, line, col) {
+    return { "kind": AST_RETURN, "value": value, "line": line, "col": col }
+}
+
+def ast_break(line, col) {
+    return { "kind": AST_BREAK, "line": line, "col": col }
+}
+
+def ast_continue(line, col) {
+    return { "kind": AST_CONTINUE, "line": line, "col": col }
+}
+
+def ast_pass(line, col) {
+    return { "kind": AST_PASS, "line": line, "col": col }
+}
+
+def ast_import(path, line, col) {
+    return { "kind": AST_IMPORT, "path": path, "line": line, "col": col }
+}

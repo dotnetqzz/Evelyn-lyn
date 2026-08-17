@@ -1,0 +1,68 @@
+# Quebec Compiler (Evelyn) — lib/QIL/QILPrinter.lyn
+# Pretty-printer for QIL Intermediate Language (.qil)
+
+import "QILModule.lyn"
+
+def qil_dump_inst(inst) {
+    let kind = inst["kind"]
+    if kind == QIL_INST_ALLOC {
+        return "    %" + inst["dest"] + " = alloc"
+    }
+    if kind == QIL_INST_STORE {
+        return "    store %" + inst["dest"] + ", " + toString(inst["src"])
+    }
+    if kind == QIL_INST_LOAD {
+        return "    %" + inst["dest"] + " = load %" + inst["src"]
+    }
+    if kind == QIL_INST_BINOP {
+        return "    %" + inst["dest"] + " = binop " + inst["op"] + ", " + toString(inst["left"]) + ", " + toString(inst["right"])
+    }
+    if kind == QIL_INST_UNARYOP {
+        return "    %" + inst["dest"] + " = unaryop " + inst["op"] + ", " + toString(inst["operand"])
+    }
+    if kind == QIL_INST_CALL {
+        return "    %" + inst["dest"] + " = call @" + inst["funcName"] + "(" + toString(inst["args"]) + ")"
+    }
+    if kind == QIL_INST_RUNTIME_CALL {
+        return "    %" + inst["dest"] + " = runtime_call @" + inst["rtName"] + "(" + toString(inst["args"]) + ")"
+    }
+    if kind == QIL_INST_BRANCH {
+        return "    br bb_" + inst["target"]
+    }
+    if kind == QIL_INST_COND_BRANCH {
+        return "    br_cond " + toString(inst["cond"]) + ", bb_" + inst["then"] + ", bb_" + inst["else"]
+    }
+    if kind == QIL_INST_RETURN {
+        return "    ret " + toString(inst["val"])
+    }
+    return "    unknown_inst"
+}
+
+def qil_dump_func(func) {
+    var out = "qil_func @" + func["name"] + "("
+    let params = func["params"]
+    var i = 0
+    while i < arrayLen(params) {
+        if i > 0 { out = out + ", " }
+        out = out + "%" + params[i]
+        i = i + 1
+    }
+    out = out + ") {\n"
+
+    for bb in func["blocks"] {
+        out = out + "bb_" + bb["label"] + ":\n"
+        for inst in bb["insts"] {
+            out = out + qil_dump_inst(inst) + "\n"
+        }
+    }
+    out = out + "}\n"
+    return out
+}
+
+def qil_dump_module(mod) {
+    var out = "; QIL Module: " + mod["name"] + "\n\n"
+    for f in mod["functions"] {
+        out = out + qil_dump_func(f) + "\n"
+    }
+    return out
+}

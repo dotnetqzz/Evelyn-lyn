@@ -1,0 +1,39 @@
+# Quebec Compiler (Evelyn) — lib/Sema/Scope.lyn
+# Lexical scope and symbol table management
+
+def scope_new(parent) {
+    return {
+        "symbols": {},
+        "parent":  parent,
+        "depth":   parent == null ? 0 : parent["depth"] + 1
+    }
+}
+
+def scope_define(scope, name, isMutable, line, col) {
+    let sym = {
+        "name":      name,
+        "mutable":   isMutable,
+        "line":      line,
+        "col":       col
+    }
+    mapSet(scope["symbols"], name, sym)
+    return sym
+}
+
+def scope_lookup(scope, name) {
+    var cur = scope
+    while cur != null {
+        if mapHas(cur["symbols"], name) {
+            return mapGet(cur["symbols"], name)
+        }
+        cur = cur["parent"]
+    }
+    return null
+}
+
+def scope_lookup_local(scope, name) {
+    if mapHas(scope["symbols"], name) {
+        return mapGet(scope["symbols"], name)
+    }
+    return null
+}

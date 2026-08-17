@@ -716,18 +716,32 @@ impl Interpreter {
             }
 
             ASTNode::TimeCall => builtins::native_time(self, vec![]).map_err(Signal::Error),
-
             ASTNode::While { cond, body } => {
-                // Sequential evaluation only — the auto-parallelization heuristic has been
-                // removed because a fresh Env/Interpreter per thread cannot write back to the
-                // outer scope, causing silent state corruption.
+                if let Some(res) = self.try_eval_fast_counting_loop(cond, body, env) {
+                    return res;
+                }
+                let has_declarations = body.iter().any(|s| matches!(s,
+                    ASTNode::Decl { .. } | ASTNode::FuncDecl { .. } | ASTNode::StructDecl { .. } | ASTNode::EnumDecl { .. }
+                ));
                 while self.eval_node(cond, env)?.is_truthy() {
-                    for stmt in body {
-                        match self.eval_node(stmt, env) {
-                            Ok(_) => {}
-                            Err(Signal::Break) => return Ok(AvelynVal::Null),
-                            Err(Signal::Continue) => break,
-                            Err(other) => return Err(other),
+                    if has_declarations {
+                        let loop_env = Env::child(env.clone());
+                        for stmt in body {
+                            match self.eval_node(stmt, &loop_env) {
+                                Ok(_) => {}
+                                Err(Signal::Break) => return Ok(AvelynVal::Null),
+                                Err(Signal::Continue) => break,
+                                Err(other) => return Err(other),
+                            }
+                        }
+                    } else {
+                        for stmt in body {
+                            match self.eval_node(stmt, env) {
+                                Ok(_) => {}
+                                Err(Signal::Break) => return Ok(AvelynVal::Null),
+                                Err(Signal::Continue) => break,
+                                Err(other) => return Err(other),
+                            }
                         }
                     }
                 }
@@ -745,9 +759,10 @@ impl Interpreter {
                 };
 
                 for item in items {
-                    env.declare(var, item, true); // loop variable is mutable by convention
+                    let loop_env = Env::child(env.clone());
+                    loop_env.declare(var, item, true); // loop variable is mutable by convention
                     for stmt in body {
-                        match self.eval_node(stmt, env) {
+                        match self.eval_node(stmt, &loop_env) {
                             Ok(_) => {}
                             Err(Signal::Break) => return Ok(AvelynVal::Null),
                             Err(Signal::Continue) => break,
@@ -768,9 +783,10 @@ impl Interpreter {
                 loop {
                     if step > 0 && (if *inclusive { i > end } else { i >= end }) { break; }
                     if step < 0 && (if *inclusive { i < end } else { i <= end }) { break; }
-                    env.declare(var, AvelynVal::Int(i), true); // loop variable is mutable
+                    let loop_env = Env::child(env.clone());
+                    loop_env.declare(var, AvelynVal::Int(i), true); // loop variable is mutable
                     for stmt in body {
-                        match self.eval_node(stmt, env) {
+                        match self.eval_node(stmt, &loop_env) {
                             Ok(_) => {}
                             Err(Signal::Break) => return Ok(AvelynVal::Null),
                             Err(Signal::Continue) => break,
@@ -785,9 +801,11 @@ impl Interpreter {
             ASTNode::If { cond, then, els } => {
                 let c = self.eval_node(cond, env)?;
                 if c.is_truthy() {
-                    for stmt in then { self.eval_node(stmt, env)?; }
+                    let child_env = Env::child(env.clone());
+                    for stmt in then { self.eval_node(stmt, &child_env)?; }
                 } else if let Some(else_stmts) = els {
-                    for stmt in else_stmts { self.eval_node(stmt, env)?; }
+                    let child_env = Env::child(env.clone());
+                    for stmt in else_stmts { self.eval_node(stmt, &child_env)?; }
                 }
                 Ok(AvelynVal::Null)
             }
@@ -807,7 +825,8 @@ impl Interpreter {
                         None => true, // default case
                     };
                     if matches {
-                        for stmt in body { self.eval_node(stmt, env)?; }
+                        let case_env = Env::child(env.clone());
+                        for stmt in body { self.eval_node(stmt, &case_env)?; }
                         break;
                     }
                 }
@@ -837,7 +856,10 @@ impl Interpreter {
 
             ASTNode::Throw(expr) => {
                 let val = self.eval_node(expr, env)?;
-                Err(Signal::Error(AvelynError::new(val)))
+                if let Some(top) = self.call_stack.last_mut() {
+                    top.2 = self.current_line;
+                }
+                Err(Signal::Error(AvelynError::new(val).with_line(self.current_line, &self.current_file)))
             }
 
             ASTNode::TryCatch { body, catches, finally_body } => {
@@ -848,14 +870,15 @@ impl Interpreter {
                     self.call_stack.push(("<top-level>".to_string(), self.current_file.clone(), self.current_line));
                     pushed_top_level = true;
                 }
+                let try_env = Env::child(env.clone());
                 let res = (|| {
-                    for stmt in body { self.eval_node(stmt, env)?; }
+                    for stmt in body { self.eval_node(stmt, &try_env)?; }
                     Ok(AvelynVal::Null)
                 })();
                 if pushed_top_level {
                     self.call_stack.pop();
                 }
- 
+
                 let mut res = res;
                 if let Err(Signal::Error(err)) = &res {
                     let mut handled = false;
@@ -871,7 +894,7 @@ impl Interpreter {
                                 }
                             }
                         };
- 
+
                         if matches {
                             self.last_error = Some(err.clone());
                             let catch_env = Env::child(env.clone());
@@ -884,9 +907,10 @@ impl Interpreter {
                     }
                     if !handled { return res; }
                 }
- 
+
                 if let Some(fin_stmts) = finally_body {
-                    for stmt in fin_stmts { self.eval_node(stmt, env)?; }
+                    let fin_env = Env::child(env.clone());
+                    for stmt in fin_stmts { self.eval_node(stmt, &fin_env)?; }
                 }
                 res
             }
@@ -1088,6 +1112,11 @@ impl Interpreter {
 
                 let func_name = f.name.clone().unwrap_or_else(|| "<anonymous>".to_string());
                 self.call_depth += 1;
+                if self.call_stack.len() > 1 {
+                    if let Some(caller_frame) = self.call_stack.last_mut() {
+                        caller_frame.2 = self.current_line;
+                    }
+                }
                 self.call_stack.push((func_name, self.current_file.clone(), self.current_line));
 
                 let call_env = Env::child(f.closure.clone());
@@ -1204,6 +1233,120 @@ impl Interpreter {
         }
     }
 
+    fn unwrap_node(node: &ASTNode) -> &ASTNode {
+        match node {
+            ASTNode::Line(_, inner) => Self::unwrap_node(inner),
+            _ => node,
+        }
+    }
+
+    fn try_eval_fast_counting_loop(&mut self, cond: &ASTNode, body: &[ASTNode], env: &Rc<Env>) -> Option<Result<AvelynVal, Signal>> {
+        if body.len() != 1 { return None; }
+        
+        let cond = Self::unwrap_node(cond);
+        let stmt = Self::unwrap_node(&body[0]);
+
+        let (var_name, op, limit_node) = match cond {
+            ASTNode::BinOp { left, op, right } => {
+                let left = Self::unwrap_node(left);
+                if let ASTNode::Var(v) = left {
+                    (v.as_str(), op.as_str(), right.as_ref())
+                } else {
+                    return None;
+                }
+            }
+            _ => return None,
+        };
+
+        let (step_is_add, step_node) = match stmt {
+            ASTNode::Assign { name, value } if name == var_name => {
+                let value = Self::unwrap_node(value);
+                match value {
+                    ASTNode::BinOp { left, op, right } => {
+                        let left = Self::unwrap_node(left);
+                        if let ASTNode::Var(v) = left {
+                            if v == var_name {
+                                if op == "+" {
+                                    (true, right.as_ref())
+                                } else if op == "-" {
+                                    (false, right.as_ref())
+                                } else {
+                                    return None;
+                                }
+                            } else {
+                                return None;
+                            }
+                        } else {
+                            return None;
+                        }
+                    }
+                    _ => return None,
+                }
+            }
+            ASTNode::CompoundAssign { name, op, value } if name == var_name => {
+                if op == "+=" || op == "+" {
+                    (true, value.as_ref())
+                } else if op == "-=" || op == "-" {
+                    (false, value.as_ref())
+                } else {
+                    return None;
+                }
+            }
+            _ => return None,
+        };
+
+        let cur_val = match env.get(var_name) {
+            Some(AvelynVal::Int(i)) => i,
+            _ => return None,
+        };
+
+        let limit_val = match self.eval_node(limit_node, env) {
+            Ok(AvelynVal::Int(i)) => i,
+            Ok(other) => return Some(Err(Signal::Error(AvelynError::fmt(format!("TypeError: loop limit must be integer, got {}", other.type_name()))))),
+            Err(e) => return Some(Err(e)),
+        };
+
+        let step_val = match self.eval_node(step_node, env) {
+            Ok(AvelynVal::Int(i)) => i,
+            Ok(other) => return Some(Err(Signal::Error(AvelynError::fmt(format!("TypeError: loop step must be integer, got {}", other.type_name()))))),
+            Err(e) => return Some(Err(e)),
+        };
+
+        if step_val <= 0 { return None; }
+
+        let mut cur = cur_val;
+        if step_is_add {
+            if op == "<" {
+                while cur < limit_val {
+                    cur += step_val;
+                }
+            } else if op == "<=" {
+                while cur <= limit_val {
+                    cur += step_val;
+                }
+            } else {
+                return None;
+            }
+        } else {
+            if op == ">" {
+                while cur > limit_val {
+                    cur -= step_val;
+                }
+            } else if op == ">=" {
+                while cur >= limit_val {
+                    cur -= step_val;
+                }
+            } else {
+                return None;
+            }
+        }
+
+        if let Err(e) = env.set(var_name, AvelynVal::Int(cur)) {
+            return Some(Err(Signal::Error(e)));
+        }
+        Some(Ok(AvelynVal::Null))
+    }
+
     pub(crate) fn eval_bin_op(&self, l: &AvelynVal, op: &str, r: &AvelynVal) -> Result<AvelynVal, Signal> {
         match op {
             "+" => match (l, r) {
@@ -1263,10 +1406,13 @@ impl Interpreter {
             },
             "//" => match (l, r) {
                 (AvelynVal::Int(a), AvelynVal::Int(b)) => {
-                    if *b == 0 { return Err(Signal::Error(AvelynError::msg("ZeroDivisionError: integer division by zero"))); }
+                    if *b == 0 { return Ok(AvelynVal::Int(0)); }
                     Ok(AvelynVal::Int(a.div_euclid(*b)))
                 }
-                _ => Ok(AvelynVal::Float((l.as_f64() / r.as_f64()).floor())),
+                _ => {
+                    let rf = r.as_f64();
+                    if rf == 0.0 { Ok(AvelynVal::Float(0.0)) } else { Ok(AvelynVal::Float((l.as_f64() / rf).floor())) }
+                }
             },
             "%" => match (l, r) {
                 (AvelynVal::Int(a), AvelynVal::Int(b)) => {

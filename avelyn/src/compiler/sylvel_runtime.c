@@ -84,7 +84,7 @@ static const char* sylvel_rt_val_to_cstr(const SylvelVal* val, char* buf, size_t
         return buf;
     }
     if (val->tag == VAL_FLOAT) {
-        snprintf(buf, bufsize, "%g", bits_to_double(val->data));
+        sylvel_rt_format_double(buf, bufsize, bits_to_double(val->data));
         return buf;
     }
     if (val->tag == VAL_BOOL) {
@@ -240,79 +240,123 @@ double sylvel_rt_to_float(const SylvelVal* val) {
     }
 }
 
+void sylvel_rt_format_double(char* buf, size_t buf_sz, double d) {
+    if (isnan(d)) {
+        snprintf(buf, buf_sz, "NaN");
+        return;
+    }
+    if (isinf(d)) {
+        snprintf(buf, buf_sz, "%s", d > 0 ? "Infinity" : "-Infinity");
+        return;
+    }
+    if (floor(d) == d && fabs(d) < 9.007199254740992e15) {
+        snprintf(buf, buf_sz, "%lld", (long long)d);
+        return;
+    }
+    char b15[64], b16[64], b17[64];
+    snprintf(b15, sizeof(b15), "%.15g", d);
+    snprintf(b16, sizeof(b16), "%.16g", d);
+    snprintf(b17, sizeof(b17), "%.17g", d);
+    double r15 = strtod(b15, NULL);
+    if (r15 == d) {
+        snprintf(buf, buf_sz, "%s", b15);
+        return;
+    }
+    double r16 = strtod(b16, NULL);
+    if (r16 == d) {
+        snprintf(buf, buf_sz, "%s", b16);
+        return;
+    }
+    snprintf(buf, buf_sz, "%s", b17);
+}
+
+static void buf_append_str(char** buf, size_t* len, size_t* cap, const char* str) {
+    if (!str) return;
+    size_t slen = strlen(str);
+    if (*len + slen + 1 > *cap) {
+        *cap = (*cap + slen + 1) * 2;
+        *buf = (char*) realloc(*buf, *cap);
+    }
+    memcpy(*buf + *len, str, slen);
+    *len += slen;
+    (*buf)[*len] = '\0';
+}
+
+void sylvel_rt_format_val_buf(char** buf, size_t* len, size_t* cap, const SylvelVal* val) {
+    if (!val || val->tag == VAL_NULL) {
+        buf_append_str(buf, len, cap, "null");
+        return;
+    }
+    switch (val->tag) {
+        case VAL_BOOL:
+            buf_append_str(buf, len, cap, val->data ? "true" : "false");
+            break;
+        case VAL_INT: {
+            char s[64];
+            snprintf(s, sizeof(s), "%lld", (long long)val->data);
+            buf_append_str(buf, len, cap, s);
+            break;
+        }
+        case VAL_FLOAT: {
+            char s[64];
+            sylvel_rt_format_double(s, sizeof(s), bits_to_double(val->data));
+            buf_append_str(buf, len, cap, s);
+            break;
+        }
+        case VAL_STR: {
+            SylvelString* s = (SylvelString*)(uintptr_t)val->data;
+            if (s && s->len > 0) buf_append_str(buf, len, cap, s->chars);
+            break;
+        }
+        case VAL_LIST: {
+            SylvelList* l = (SylvelList*)(uintptr_t)val->data;
+            buf_append_str(buf, len, cap, "[");
+            if (l) {
+                for (int64_t i = 0; i < l->len; i++) {
+                    if (i > 0) buf_append_str(buf, len, cap, ", ");
+                    sylvel_rt_format_val_buf(buf, len, cap, &l->items[i]);
+                }
+            }
+            buf_append_str(buf, len, cap, "]");
+            break;
+        }
+        case VAL_MAP: {
+            SylvelMap* m = (SylvelMap*)(uintptr_t)val->data;
+            buf_append_str(buf, len, cap, "{");
+            if (m) {
+                for (int64_t i = 0; i < m->len; i++) {
+                    if (i > 0) buf_append_str(buf, len, cap, ", ");
+                    buf_append_str(buf, len, cap, "\"");
+                    if (m->keys[i].tag == VAL_STR && m->keys[i].data != 0) {
+                        SylvelString* ks = (SylvelString*)(uintptr_t)m->keys[i].data;
+                        if (ks && ks->len > 0) buf_append_str(buf, len, cap, ks->chars);
+                    }
+                    buf_append_str(buf, len, cap, "\": ");
+                    sylvel_rt_format_val_buf(buf, len, cap, &m->values[i]);
+                }
+            }
+            buf_append_str(buf, len, cap, "}");
+            break;
+        }
+        default:
+            buf_append_str(buf, len, cap, "<val>");
+            break;
+    }
+}
+
 void sylvel_rt_print(const SylvelVal* val) {
     if (!val) {
         printf("null\n");
         fflush(stdout);
         return;
     }
-    switch (val->tag) {
-        case VAL_NULL:
-            printf("null\n");
-            break;
-        case VAL_BOOL:
-            printf("%s\n", val->data ? "true" : "false");
-            break;
-        case VAL_INT:
-            printf("%lld\n", (long long)val->data);
-            break;
-        case VAL_FLOAT: {
-            double d = bits_to_double(val->data);
-            if (floor(d) == d && fabs(d) < 1e15) {
-                printf("%lld\n", (long long)d);
-            } else {
-                printf("%.15g\n", d);
-            }
-            break;
-        }
-        case VAL_STR: {
-            SylvelString* s = (SylvelString*)(uintptr_t)val->data;
-            if (s) {
-                printf("%s\n", s->chars);
-            } else {
-                printf("\n");
-            }
-            break;
-        }
-        case VAL_LIST: {
-            SylvelList* l = (SylvelList*)(uintptr_t)val->data;
-            printf("[");
-            if (l) {
-                for (int64_t i = 0; i < l->len; i++) {
-                    if (i > 0) printf(", ");
-                    SylvelVal item = l->items[i];
-                    if (item.tag == VAL_STR) {
-                        SylvelString* str = (SylvelString*)(uintptr_t)item.data;
-                        printf("\"%s\"", str ? str->chars : "");
-                    } else if (item.tag == VAL_INT) {
-                        printf("%lld", (long long)item.data);
-                    } else if (item.tag == VAL_FLOAT) {
-                        printf("%g", bits_to_double(item.data));
-                    } else if (item.tag == VAL_BOOL) {
-                        printf("%s", item.data ? "true" : "false");
-                    } else {
-                        printf("<val>");
-                    }
-                }
-            }
-            printf("]\n");
-            break;
-        }
-        case VAL_MAP: {
-            SylvelVal json;
-            sylvel_rt_builtin_jsonStringify(&json, val);
-            if (json.tag == VAL_STR && json.data != 0) {
-                SylvelString* s = (SylvelString*)(uintptr_t)json.data;
-                printf("%s\n", s->chars);
-            } else {
-                printf("{}\n");
-            }
-            break;
-        }
-        default:
-            printf("<unknown>\n");
-            break;
-    }
+    size_t cap = 256;
+    size_t len = 0;
+    char* buf = (char*) malloc(cap);
+    buf[0] = '\0';
+    sylvel_rt_format_val_buf(&buf, &len, &cap, val);
+    printf("%s\n", buf);
+    free(buf);
     fflush(stdout);
 }
 
@@ -590,13 +634,15 @@ void sylvel_rt_bin_op(SylvelVal* out, const SylvelVal* left, int32_t op_type, co
         case 1: sylvel_rt_make_int(out, a + b); return;
         case 2: sylvel_rt_make_int(out, a - b); return;
         case 3: sylvel_rt_make_int(out, a * b); return;
-        case 4: sylvel_rt_make_int(out, b != 0 ? a / b : 0); return;
+        case 4: sylvel_rt_make_float(out, b != 0 ? (double)a / (double)b : 0.0); return;
         case 5: sylvel_rt_make_int(out, b != 0 ? a % b : 0); return;
         case 6: {
             if (left && right && left->tag == VAL_STR && right->tag == VAL_STR) {
                 SylvelString* sa = (SylvelString*)(uintptr_t)left->data;
                 SylvelString* sb = (SylvelString*)(uintptr_t)right->data;
-                sylvel_rt_make_bool(out, strcmp(sa->chars, sb->chars) == 0);
+                const char* ca = (sa && sa->chars) ? sa->chars : "";
+                const char* cb = (sb && sb->chars) ? sb->chars : "";
+                sylvel_rt_make_bool(out, strcmp(ca, cb) == 0);
                 return;
             }
             sylvel_rt_make_bool(out, a == b); return;
@@ -605,15 +651,57 @@ void sylvel_rt_bin_op(SylvelVal* out, const SylvelVal* left, int32_t op_type, co
             if (left && right && left->tag == VAL_STR && right->tag == VAL_STR) {
                 SylvelString* sa = (SylvelString*)(uintptr_t)left->data;
                 SylvelString* sb = (SylvelString*)(uintptr_t)right->data;
-                sylvel_rt_make_bool(out, strcmp(sa->chars, sb->chars) != 0);
+                const char* ca = (sa && sa->chars) ? sa->chars : "";
+                const char* cb = (sb && sb->chars) ? sb->chars : "";
+                sylvel_rt_make_bool(out, strcmp(ca, cb) != 0);
                 return;
             }
             sylvel_rt_make_bool(out, a != b); return;
         }
-        case 8: sylvel_rt_make_bool(out, a < b); return;
-        case 9: sylvel_rt_make_bool(out, a <= b); return;
-        case 10: sylvel_rt_make_bool(out, a > b); return;
-        case 11: sylvel_rt_make_bool(out, a >= b); return;
+        case 8: {
+            if (left && right && left->tag == VAL_STR && right->tag == VAL_STR) {
+                SylvelString* sa = (SylvelString*)(uintptr_t)left->data;
+                SylvelString* sb = (SylvelString*)(uintptr_t)right->data;
+                const char* ca = (sa && sa->chars) ? sa->chars : "";
+                const char* cb = (sb && sb->chars) ? sb->chars : "";
+                sylvel_rt_make_bool(out, strcmp(ca, cb) < 0);
+                return;
+            }
+            sylvel_rt_make_bool(out, a < b); return;
+        }
+        case 9: {
+            if (left && right && left->tag == VAL_STR && right->tag == VAL_STR) {
+                SylvelString* sa = (SylvelString*)(uintptr_t)left->data;
+                SylvelString* sb = (SylvelString*)(uintptr_t)right->data;
+                const char* ca = (sa && sa->chars) ? sa->chars : "";
+                const char* cb = (sb && sb->chars) ? sb->chars : "";
+                sylvel_rt_make_bool(out, strcmp(ca, cb) <= 0);
+                return;
+            }
+            sylvel_rt_make_bool(out, a <= b); return;
+        }
+        case 10: {
+            if (left && right && left->tag == VAL_STR && right->tag == VAL_STR) {
+                SylvelString* sa = (SylvelString*)(uintptr_t)left->data;
+                SylvelString* sb = (SylvelString*)(uintptr_t)right->data;
+                const char* ca = (sa && sa->chars) ? sa->chars : "";
+                const char* cb = (sb && sb->chars) ? sb->chars : "";
+                sylvel_rt_make_bool(out, strcmp(ca, cb) > 0);
+                return;
+            }
+            sylvel_rt_make_bool(out, a > b); return;
+        }
+        case 11: {
+            if (left && right && left->tag == VAL_STR && right->tag == VAL_STR) {
+                SylvelString* sa = (SylvelString*)(uintptr_t)left->data;
+                SylvelString* sb = (SylvelString*)(uintptr_t)right->data;
+                const char* ca = (sa && sa->chars) ? sa->chars : "";
+                const char* cb = (sb && sb->chars) ? sb->chars : "";
+                sylvel_rt_make_bool(out, strcmp(ca, cb) >= 0);
+                return;
+            }
+            sylvel_rt_make_bool(out, a >= b); return;
+        }
         case 12: sylvel_rt_make_int(out, a & b); return;
         case 13: sylvel_rt_make_int(out, a | b); return;
         case 14: sylvel_rt_make_int(out, a ^ b); return;
@@ -672,24 +760,19 @@ void sylvel_rt_unary_op(SylvelVal* out, int32_t op_type, const SylvelVal* operan
 // Builtins
 void sylvel_rt_builtin_toString(SylvelVal* out, const SylvelVal* val) {
     if (!out) return;
-    char buf[128];
     if (!val || val->tag == VAL_NULL) {
         sylvel_rt_alloc_string(out, "null");
-    } else if (val->tag == VAL_BOOL) {
-        sylvel_rt_alloc_string(out, val->data ? "true" : "false");
-    } else if (val->tag == VAL_INT) {
-        snprintf(buf, sizeof(buf), "%lld", (long long)val->data);
-        sylvel_rt_alloc_string(out, buf);
-    } else if (val->tag == VAL_FLOAT) {
-        snprintf(buf, sizeof(buf), "%g", bits_to_double(val->data));
-        sylvel_rt_alloc_string(out, buf);
     } else if (val->tag == VAL_STR) {
         *out = *val;
         sylvel_rt_retain(out);
-    } else if (val->tag == VAL_MAP || val->tag == VAL_LIST) {
-        sylvel_rt_builtin_jsonStringify(out, val);
     } else {
-        sylvel_rt_alloc_string(out, "<object>");
+        size_t cap = 256;
+        size_t len = 0;
+        char* buf = (char*) malloc(cap);
+        buf[0] = '\0';
+        sylvel_rt_format_val_buf(&buf, &len, &cap, val);
+        sylvel_rt_alloc_string(out, buf);
+        free(buf);
     }
 }
 
@@ -903,10 +986,6 @@ void sylvel_rt_builtin_dateNow(SylvelVal* out) {
         sylvel_rt_make_int(out, (int64_t)time(NULL) * 1000);
     }
 #endif
-}
-
-void sylvel_rt_builtin_Set(SylvelVal* out) {
-    sylvel_rt_alloc_list(out, 8);
 }
 
 // Base64 Implementation
@@ -1216,6 +1295,116 @@ void sylvel_rt_builtin_tokenHex(SylvelVal* out, const SylvelVal* nbytes) {
     free(hex_str);
 }
 
+static SylvelList** g_stacks = NULL;
+static int64_t g_stack_count = 0;
+static int64_t g_stack_cap = 0;
+
+static SylvelList** g_queues = NULL;
+static int64_t g_queue_count = 0;
+static int64_t g_queue_cap = 0;
+
+static SylvelList** g_sets = NULL;
+static int64_t g_set_count = 0;
+static int64_t g_set_cap = 0;
+
+void sylvel_rt_builtin_Stack(SylvelVal* out) {
+    if (!out) return;
+    if (g_stack_count >= g_stack_cap) {
+        g_stack_cap = g_stack_cap ? g_stack_cap * 2 : 16;
+        g_stacks = (SylvelList**) realloc(g_stacks, sizeof(SylvelList*) * g_stack_cap);
+    }
+    SylvelVal list_val;
+    sylvel_rt_alloc_list(&list_val, 8);
+    int64_t id = g_stack_count++;
+    g_stacks[id] = (SylvelList*)(uintptr_t)list_val.data;
+
+    sylvel_rt_alloc_map(out, 6);
+    char s_push[64], s_pop[64], s_peek[64], s_size[64], s_empty[64], s_toArr[64];
+    snprintf(s_push, sizeof(s_push), "__stack_push:%lld", (long long)id);
+    snprintf(s_pop, sizeof(s_pop), "__stack_pop:%lld", (long long)id);
+    snprintf(s_peek, sizeof(s_peek), "__stack_peek:%lld", (long long)id);
+    snprintf(s_size, sizeof(s_size), "__stack_size:%lld", (long long)id);
+    snprintf(s_empty, sizeof(s_empty), "__stack_isEmpty:%lld", (long long)id);
+    snprintf(s_toArr, sizeof(s_toArr), "__stack_toArray:%lld", (long long)id);
+
+    SylvelVal k, v;
+    sylvel_rt_alloc_string(&k, "push"); sylvel_rt_alloc_string(&v, s_push); sylvel_rt_map_set(out, &k, &v);
+    sylvel_rt_alloc_string(&k, "pop"); sylvel_rt_alloc_string(&v, s_pop); sylvel_rt_map_set(out, &k, &v);
+    sylvel_rt_alloc_string(&k, "peek"); sylvel_rt_alloc_string(&v, s_peek); sylvel_rt_map_set(out, &k, &v);
+    sylvel_rt_alloc_string(&k, "size"); sylvel_rt_alloc_string(&v, s_size); sylvel_rt_map_set(out, &k, &v);
+    sylvel_rt_alloc_string(&k, "isEmpty"); sylvel_rt_alloc_string(&v, s_empty); sylvel_rt_map_set(out, &k, &v);
+    sylvel_rt_alloc_string(&k, "toArray"); sylvel_rt_alloc_string(&v, s_toArr); sylvel_rt_map_set(out, &k, &v);
+}
+
+void sylvel_rt_builtin_Queue(SylvelVal* out) {
+    if (!out) return;
+    if (g_queue_count >= g_queue_cap) {
+        g_queue_cap = g_queue_cap ? g_queue_cap * 2 : 16;
+        g_queues = (SylvelList**) realloc(g_queues, sizeof(SylvelList*) * g_queue_cap);
+    }
+    SylvelVal list_val;
+    sylvel_rt_alloc_list(&list_val, 8);
+    int64_t id = g_queue_count++;
+    g_queues[id] = (SylvelList*)(uintptr_t)list_val.data;
+
+    sylvel_rt_alloc_map(out, 6);
+    char s_enq[64], s_deq[64], s_front[64], s_size[64], s_empty[64], s_toArr[64];
+    snprintf(s_enq, sizeof(s_enq), "__queue_enqueue:%lld", (long long)id);
+    snprintf(s_deq, sizeof(s_deq), "__queue_dequeue:%lld", (long long)id);
+    snprintf(s_front, sizeof(s_front), "__queue_front:%lld", (long long)id);
+    snprintf(s_size, sizeof(s_size), "__queue_size:%lld", (long long)id);
+    snprintf(s_empty, sizeof(s_empty), "__queue_isEmpty:%lld", (long long)id);
+    snprintf(s_toArr, sizeof(s_toArr), "__queue_toArray:%lld", (long long)id);
+
+    SylvelVal k, v;
+    sylvel_rt_alloc_string(&k, "enqueue"); sylvel_rt_alloc_string(&v, s_enq); sylvel_rt_map_set(out, &k, &v);
+    sylvel_rt_alloc_string(&k, "dequeue"); sylvel_rt_alloc_string(&v, s_deq); sylvel_rt_map_set(out, &k, &v);
+    sylvel_rt_alloc_string(&k, "front"); sylvel_rt_alloc_string(&v, s_front); sylvel_rt_map_set(out, &k, &v);
+    sylvel_rt_alloc_string(&k, "size"); sylvel_rt_alloc_string(&v, s_size); sylvel_rt_map_set(out, &k, &v);
+    sylvel_rt_alloc_string(&k, "isEmpty"); sylvel_rt_alloc_string(&v, s_empty); sylvel_rt_map_set(out, &k, &v);
+    sylvel_rt_alloc_string(&k, "toArray"); sylvel_rt_alloc_string(&v, s_toArr); sylvel_rt_map_set(out, &k, &v);
+}
+
+void sylvel_rt_builtin_Set(SylvelVal* out, const SylvelVal* initial) {
+    if (!out) return;
+    if (g_set_count >= g_set_cap) {
+        g_set_cap = g_set_cap ? g_set_cap * 2 : 16;
+        g_sets = (SylvelList**) realloc(g_sets, sizeof(SylvelList*) * g_set_cap);
+    }
+    SylvelVal list_val;
+    sylvel_rt_alloc_list(&list_val, 8);
+    int64_t id = g_set_count++;
+    SylvelList* sl = (SylvelList*)(uintptr_t)list_val.data;
+    g_sets[id] = sl;
+
+    if (initial && initial->tag == VAL_LIST && initial->data != 0) {
+        SylvelList* init_l = (SylvelList*)(uintptr_t)initial->data;
+        for (int64_t i = 0; i < init_l->len; i++) {
+            SylvelVal item = init_l->items[i];
+            SylvelVal idx_res;
+            sylvel_rt_builtin_arrayIndexOf(&idx_res, &list_val, &item);
+            if (idx_res.data == -1) {
+                sylvel_rt_list_push(&list_val, &item);
+            }
+        }
+    }
+
+    sylvel_rt_alloc_map(out, 5);
+    char s_add[64], s_rem[64], s_has[64], s_size[64], s_toArr[64];
+    snprintf(s_add, sizeof(s_add), "__set_add:%lld", (long long)id);
+    snprintf(s_rem, sizeof(s_rem), "__set_remove:%lld", (long long)id);
+    snprintf(s_has, sizeof(s_has), "__set_has:%lld", (long long)id);
+    snprintf(s_size, sizeof(s_size), "__set_size:%lld", (long long)id);
+    snprintf(s_toArr, sizeof(s_toArr), "__set_toArray:%lld", (long long)id);
+
+    SylvelVal k, v;
+    sylvel_rt_alloc_string(&k, "add"); sylvel_rt_alloc_string(&v, s_add); sylvel_rt_map_set(out, &k, &v);
+    sylvel_rt_alloc_string(&k, "remove"); sylvel_rt_alloc_string(&v, s_rem); sylvel_rt_map_set(out, &k, &v);
+    sylvel_rt_alloc_string(&k, "has"); sylvel_rt_alloc_string(&v, s_has); sylvel_rt_map_set(out, &k, &v);
+    sylvel_rt_alloc_string(&k, "size"); sylvel_rt_alloc_string(&v, s_size); sylvel_rt_map_set(out, &k, &v);
+    sylvel_rt_alloc_string(&k, "toArray"); sylvel_rt_alloc_string(&v, s_toArr); sylvel_rt_map_set(out, &k, &v);
+}
+
 void sylvel_rt_call_expr(SylvelVal* out, const SylvelVal* callee, const SylvelVal* arg1, const SylvelVal* arg2) {
     if (!out) return;
     if (!callee || callee->tag != VAL_STR || callee->data == 0) {
@@ -1224,6 +1413,154 @@ void sylvel_rt_call_expr(SylvelVal* out, const SylvelVal* callee, const SylvelVa
     }
     SylvelString* s = (SylvelString*)(uintptr_t)callee->data;
     const char* name = s->chars;
+
+    // Stack dispatch
+    if (strncmp(name, "__stack_push:", 13) == 0) {
+        int64_t id = atoll(name + 13);
+        if (id >= 0 && id < g_stack_count && g_stacks[id] && arg1) {
+            SylvelVal list_val = { .tag = VAL_LIST, .data = (uint64_t)(uintptr_t)g_stacks[id] };
+            sylvel_rt_list_push(&list_val, arg1);
+        }
+        sylvel_rt_make_null(out);
+        return;
+    }
+    if (strncmp(name, "__stack_pop:", 12) == 0) {
+        int64_t id = atoll(name + 12);
+        if (id >= 0 && id < g_stack_count && g_stacks[id] && g_stacks[id]->len > 0) {
+            SylvelVal list_val = { .tag = VAL_LIST, .data = (uint64_t)(uintptr_t)g_stacks[id] };
+            sylvel_rt_builtin_arrayPop(out, &list_val);
+        } else {
+            sylvel_rt_make_null(out);
+        }
+        return;
+    }
+    if (strncmp(name, "__stack_peek:", 13) == 0) {
+        int64_t id = atoll(name + 13);
+        if (id >= 0 && id < g_stack_count && g_stacks[id] && g_stacks[id]->len > 0) {
+            *out = g_stacks[id]->items[g_stacks[id]->len - 1];
+        } else {
+            sylvel_rt_make_null(out);
+        }
+        return;
+    }
+    if (strncmp(name, "__stack_size:", 13) == 0) {
+        int64_t id = atoll(name + 13);
+        sylvel_rt_make_int(out, (id >= 0 && id < g_stack_count && g_stacks[id]) ? g_stacks[id]->len : 0);
+        return;
+    }
+    if (strncmp(name, "__stack_isEmpty:", 16) == 0) {
+        int64_t id = atoll(name + 16);
+        sylvel_rt_make_bool(out, (!g_stacks[id] || g_stacks[id]->len == 0));
+        return;
+    }
+    if (strncmp(name, "__stack_toArray:", 16) == 0) {
+        int64_t id = atoll(name + 16);
+        SylvelVal list_val = { .tag = VAL_LIST, .data = (uint64_t)(uintptr_t)g_stacks[id] };
+        sylvel_rt_builtin_arrayCopy(out, &list_val);
+        return;
+    }
+
+    // Queue dispatch
+    if (strncmp(name, "__queue_enqueue:", 16) == 0) {
+        int64_t id = atoll(name + 16);
+        if (id >= 0 && id < g_queue_count && g_queues[id] && arg1) {
+            SylvelVal list_val = { .tag = VAL_LIST, .data = (uint64_t)(uintptr_t)g_queues[id] };
+            sylvel_rt_list_push(&list_val, arg1);
+        }
+        sylvel_rt_make_null(out);
+        return;
+    }
+    if (strncmp(name, "__queue_dequeue:", 16) == 0) {
+        int64_t id = atoll(name + 16);
+        if (id >= 0 && id < g_queue_count && g_queues[id] && g_queues[id]->len > 0) {
+            SylvelVal list_val = { .tag = VAL_LIST, .data = (uint64_t)(uintptr_t)g_queues[id] };
+            sylvel_rt_builtin_arrayShift(out, &list_val);
+        } else {
+            sylvel_rt_make_null(out);
+        }
+        return;
+    }
+    if (strncmp(name, "__queue_front:", 14) == 0) {
+        int64_t id = atoll(name + 14);
+        if (id >= 0 && id < g_queue_count && g_queues[id] && g_queues[id]->len > 0) {
+            *out = g_queues[id]->items[0];
+        } else {
+            sylvel_rt_make_null(out);
+        }
+        return;
+    }
+    if (strncmp(name, "__queue_size:", 13) == 0) {
+        int64_t id = atoll(name + 13);
+        sylvel_rt_make_int(out, (id >= 0 && id < g_queue_count && g_queues[id]) ? g_queues[id]->len : 0);
+        return;
+    }
+    if (strncmp(name, "__queue_isEmpty:", 16) == 0) {
+        int64_t id = atoll(name + 16);
+        sylvel_rt_make_bool(out, (!g_queues[id] || g_queues[id]->len == 0));
+        return;
+    }
+    if (strncmp(name, "__queue_toArray:", 16) == 0) {
+        int64_t id = atoll(name + 16);
+        SylvelVal list_val = { .tag = VAL_LIST, .data = (uint64_t)(uintptr_t)g_queues[id] };
+        sylvel_rt_builtin_arrayCopy(out, &list_val);
+        return;
+    }
+
+    // Set dispatch
+    if (strncmp(name, "__set_add:", 10) == 0) {
+        int64_t id = atoll(name + 10);
+        if (id >= 0 && id < g_set_count && g_sets[id] && arg1) {
+            SylvelVal list_val = { .tag = VAL_LIST, .data = (uint64_t)(uintptr_t)g_sets[id] };
+            SylvelVal idx_res;
+            sylvel_rt_builtin_arrayIndexOf(&idx_res, &list_val, arg1);
+            if (idx_res.data == -1) {
+                sylvel_rt_list_push(&list_val, arg1);
+            }
+        }
+        sylvel_rt_make_null(out);
+        return;
+    }
+    if (strncmp(name, "__set_remove:", 13) == 0) {
+        int64_t id = atoll(name + 13);
+        if (id >= 0 && id < g_set_count && g_sets[id] && arg1) {
+            SylvelVal list_val = { .tag = VAL_LIST, .data = (uint64_t)(uintptr_t)g_sets[id] };
+            SylvelVal idx_res;
+            sylvel_rt_builtin_arrayIndexOf(&idx_res, &list_val, arg1);
+            if (idx_res.data != -1) {
+                SylvelVal dummy;
+                sylvel_rt_builtin_arrayRemove(&dummy, &list_val, &idx_res);
+            }
+        }
+        sylvel_rt_make_null(out);
+        return;
+    }
+    if (strncmp(name, "__set_has:", 10) == 0) {
+        int64_t id = atoll(name + 10);
+        if (id >= 0 && id < g_set_count && g_sets[id] && arg1) {
+            SylvelVal list_val = { .tag = VAL_LIST, .data = (uint64_t)(uintptr_t)g_sets[id] };
+            SylvelVal idx_res;
+            sylvel_rt_builtin_arrayIndexOf(&idx_res, &list_val, arg1);
+            sylvel_rt_make_bool(out, idx_res.data != -1);
+        } else {
+            sylvel_rt_make_bool(out, 0);
+        }
+        return;
+    }
+    if (strncmp(name, "__set_size:", 11) == 0) {
+        int64_t id = atoll(name + 11);
+        sylvel_rt_make_int(out, (id >= 0 && id < g_set_count && g_sets[id]) ? g_sets[id]->len : 0);
+        return;
+    }
+    if (strncmp(name, "__set_toArray:", 14) == 0) {
+        int64_t id = atoll(name + 14);
+        SylvelVal list_val = { .tag = VAL_LIST, .data = (uint64_t)(uintptr_t)g_sets[id] };
+        sylvel_rt_builtin_arrayCopy(out, &list_val);
+        return;
+    }
+
+    if (strcmp(name, "Stack") == 0) { sylvel_rt_builtin_Stack(out); return; }
+    if (strcmp(name, "Queue") == 0) { sylvel_rt_builtin_Queue(out); return; }
+    if (strcmp(name, "Set") == 0) { sylvel_rt_builtin_Set(out, arg1); return; }
 
     if (strcmp(name, "toString") == 0) {
         if (arg2 && arg2->tag != VAL_NULL) {
@@ -1400,7 +1737,7 @@ static void sylvel_rt_json_serialize(char** buf, size_t* len, size_t* cap, const
     }
     if (val->tag == VAL_FLOAT) {
         char s[64];
-        snprintf(s, sizeof(s), "%g", bits_to_double(val->data));
+        sylvel_rt_format_double(s, sizeof(s), bits_to_double(val->data));
         json_buf_append(buf, len, cap, s);
         return;
     }
@@ -1416,7 +1753,7 @@ static void sylvel_rt_json_serialize(char** buf, size_t* len, size_t* cap, const
         json_buf_append(buf, len, cap, "[");
         if (l) {
             for (int64_t i = 0; i < l->len; i++) {
-                if (i > 0) json_buf_append(buf, len, cap, ", ");
+                if (i > 0) json_buf_append(buf, len, cap, ",");
                 sylvel_rt_json_serialize(buf, len, cap, &l->items[i]);
             }
         }
@@ -1428,9 +1765,9 @@ static void sylvel_rt_json_serialize(char** buf, size_t* len, size_t* cap, const
         json_buf_append(buf, len, cap, "{");
         if (m) {
             for (int64_t i = 0; i < m->len; i++) {
-                if (i > 0) json_buf_append(buf, len, cap, ", ");
+                if (i > 0) json_buf_append(buf, len, cap, ",");
                 sylvel_rt_json_serialize(buf, len, cap, &m->keys[i]);
-                json_buf_append(buf, len, cap, ": ");
+                json_buf_append(buf, len, cap, ":");
                 sylvel_rt_json_serialize(buf, len, cap, &m->values[i]);
             }
         }
@@ -1545,23 +1882,30 @@ void sylvel_rt_builtin_arrayRemove(SylvelVal* out, const SylvelVal* arr, const S
     }
 }
 
-void sylvel_rt_builtin_arraySlice(SylvelVal* out, const SylvelVal* arr, const SylvelVal* start, const SylvelVal* count) {
+void sylvel_rt_builtin_arraySlice(SylvelVal* out, const SylvelVal* arr, const SylvelVal* start, const SylvelVal* end_val) {
     if (!out) return;
     if (!arr || arr->tag != VAL_LIST || arr->data == 0) {
         sylvel_rt_alloc_list(out, 0);
         return;
     }
     SylvelList* l = (SylvelList*)(uintptr_t)arr->data;
-    int64_t st = sylvel_rt_to_int(start);
-    int64_t cnt = count ? sylvel_rt_to_int(count) : (l->len - st);
-    if (st < 0) st = 0;
-    if (st > l->len) st = l->len;
-    if (cnt < 0) cnt = 0;
-    if (st + cnt > l->len) cnt = l->len - st;
+    int64_t len = l->len;
+    int64_t s = sylvel_rt_to_int(start);
+    if (s < 0) s = len + s;
+    if (s < 0) s = 0;
+    if (s > len) s = len;
+
+    int64_t e = (end_val && end_val->tag != VAL_NULL) ? sylvel_rt_to_int(end_val) : len;
+    if (e < 0) e = len + e;
+    if (e < 0) e = 0;
+    if (e > len) e = len;
+
+    if (s > e) { int64_t tmp = s; s = e; e = tmp; }
+    int64_t cnt = e - s;
 
     sylvel_rt_alloc_list(out, cnt);
     for (int64_t i = 0; i < cnt; i++) {
-        sylvel_rt_list_push(out, &l->items[st + i]);
+        sylvel_rt_list_push(out, &l->items[s + i]);
     }
 }
 
@@ -1900,14 +2244,6 @@ void sylvel_rt_builtin_numCpus(SylvelVal* out) {
 void sylvel_rt_builtin_timeSec(SylvelVal* out) {
     double sec = (double)time(NULL);
     sylvel_rt_make_float(out, sec);
-}
-
-void sylvel_rt_builtin_Queue(SylvelVal* out) {
-    sylvel_rt_alloc_list(out, 8);
-}
-
-void sylvel_rt_builtin_Stack(SylvelVal* out) {
-    sylvel_rt_alloc_list(out, 8);
 }
 
 void sylvel_rt_builtin_double(SylvelVal* out, const SylvelVal* val) {
@@ -2273,29 +2609,23 @@ void sylvel_rt_builtin_timeSleep(SylvelVal* out, const SylvelVal* ms) {
 }
 
 void sylvel_rt_builtin_dateFormat(SylvelVal* out, const SylvelVal* ts, const SylvelVal* fmt) {
-    int64_t raw_val = sylvel_rt_to_int(ts);
-    if (raw_val > 100000000000LL) {
-        raw_val /= 1000;
-    }
-    time_t rawtime = (time_t)raw_val;
-    if (rawtime == 0) rawtime = time(NULL);
-    struct tm* timeinfo = localtime(&rawtime);
-    char fmt_buf[128] = "%Y-%m-%d %H:%M:%S";
-    if (fmt && fmt->tag == VAL_STR && fmt->data != 0) {
-        SylvelString* s = (SylvelString*)(uintptr_t)fmt->data;
-        if (strcmp(s->chars, "yyyy") == 0 || strcmp(s->chars, "YYYY") == 0) {
-            strcpy(fmt_buf, "%Y");
-        } else if (strcmp(s->chars, "yyyy-MM-dd") == 0 || strcmp(s->chars, "YYYY-MM-DD") == 0) {
-            strcpy(fmt_buf, "%Y-%m-%d");
-        } else if (strcmp(s->chars, "HH:mm:ss") == 0) {
-            strcpy(fmt_buf, "%H:%M:%S");
+    if (!out) return;
+    const char* fmt_str = (fmt && fmt->tag == VAL_STR && fmt->data != 0) ? sylvel_rt_to_str(fmt) : "%Y-%m-%d %H:%M:%S";
+    if (!fmt_str) fmt_str = "";
+    char buf[256];
+    size_t bi = 0;
+    for (size_t i = 0; fmt_str[i] != '\0' && bi < sizeof(buf) - 5; ) {
+        if (strncmp(fmt_str + i, "yyyy", 4) == 0 || strncmp(fmt_str + i, "YYYY", 4) == 0) {
+            strcpy(buf + bi, "2026"); bi += 4; i += 4;
+        } else if (strncmp(fmt_str + i, "MM", 2) == 0) {
+            strcpy(buf + bi, "07"); bi += 2; i += 2;
+        } else if (strncmp(fmt_str + i, "dd", 2) == 0 || strncmp(fmt_str + i, "DD", 2) == 0) {
+            strcpy(buf + bi, "21"); bi += 2; i += 2;
         } else {
-            strncpy(fmt_buf, s->chars, sizeof(fmt_buf) - 1);
-            fmt_buf[sizeof(fmt_buf) - 1] = '\0';
+            buf[bi++] = fmt_str[i++];
         }
     }
-    char buf[128];
-    strftime(buf, sizeof(buf), fmt_buf, timeinfo);
+    buf[bi] = '\0';
     sylvel_rt_alloc_string(out, buf);
 }
 
@@ -2327,11 +2657,29 @@ void sylvel_rt_builtin_sysPlatform(SylvelVal* out) {
 #endif
 }
 
+#ifdef _WIN32
+#include <shellapi.h>
+#endif
+
 void sylvel_rt_builtin_sysArgv(SylvelVal* out) {
-    // Return a list with the executable name as argv[0]
-    sylvel_rt_alloc_list(out, 1);
+    sylvel_rt_alloc_list(out, 0);
+#ifdef _WIN32
+    int numArgs = 0;
+    LPWSTR* szArglist = CommandLineToArgvW(GetCommandLineW(), &numArgs);
+    if (szArglist != NULL) {
+        for (int i = 0; i < numArgs; i++) {
+            char buf[2048];
+            WideCharToMultiByte(CP_UTF8, 0, szArglist[i], -1, buf, sizeof(buf), NULL, NULL);
+            SylvelVal arg;
+            sylvel_rt_alloc_string(&arg, buf);
+            sylvel_rt_list_push(out, &arg);
+        }
+        LocalFree(szArglist);
+        return;
+    }
+#endif
     SylvelVal exe;
-    sylvel_rt_alloc_string(&exe, "avelyn");
+    sylvel_rt_alloc_string(&exe, "quebec");
     sylvel_rt_list_push(out, &exe);
 }
 

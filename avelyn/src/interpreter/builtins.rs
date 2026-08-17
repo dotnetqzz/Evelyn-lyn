@@ -963,9 +963,15 @@ pub fn native_net_port_scan(interp: &mut Interpreter, args: Vec<AvelynVal>) -> R
     let host = arg(&args, 0).as_str();
     let ports: Vec<i64> = match args.get(1) {
         Some(AvelynVal::List(l)) => l.borrow().iter().map(|v| v.as_i64()).collect(),
-        _ => vec![],
+        Some(v) => {
+            let start = v.as_i64();
+            let end = args.get(2).map(|e| e.as_i64()).unwrap_or(start);
+            (start..=end).collect()
+        }
+        None => vec![],
     };
-    let timeout = std::time::Duration::from_millis(200);
+    let timeout_ms = args.get(3).map(|t| t.as_i64()).unwrap_or(200);
+    let timeout = std::time::Duration::from_millis(timeout_ms.max(10) as u64);
     let mut open_ports = Vec::new();
     for port in ports {
         let addr = format!("{}:{}", host, port);
@@ -1652,7 +1658,11 @@ pub fn native_sys_last_error_traceback(interp: &mut Interpreter, _: Vec<AvelynVa
 
     let mut lines = vec!["Traceback (most recent call last):".to_string()];
     for (func, file, line) in stack.iter() {
-        lines.push(format!(r#"  File "{}", line {}, in {}"#, file, line, func));
+        let filename = std::path::Path::new(file)
+            .file_name()
+            .map(|f| f.to_string_lossy().to_string())
+            .unwrap_or_else(|| file.clone());
+        lines.push(format!(r#"  File "{}", line {}, in {}"#, filename, line, func));
     }
     if let Some(err) = &interp.last_error {
         lines.push(format!("Error: {}", err.val.format()));

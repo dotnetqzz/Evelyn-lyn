@@ -110,7 +110,6 @@ void sylvel_rt_builtin_assert(SylvelVal* out, const SylvelVal* cond, const Sylve
 void sylvel_rt_builtin_spawnWorkers(SylvelVal* out, const SylvelVal* script, const SylvelVal* count);
 void sylvel_rt_builtin_sysLastErrorTraceback(SylvelVal* out);
 void sylvel_rt_builtin_dateNow(SylvelVal* out);
-void sylvel_rt_builtin_Set(SylvelVal* out);
 void sylvel_rt_builtin_sha256(SylvelVal* out, const SylvelVal* val);
 void sylvel_rt_builtin_md5(SylvelVal* out, const SylvelVal* val);
 void sylvel_rt_builtin_sha1(SylvelVal* out, const SylvelVal* val);
@@ -168,6 +167,8 @@ void sylvel_rt_builtin_numCpus(SylvelVal* out);
 void sylvel_rt_builtin_timeSec(SylvelVal* out);
 void sylvel_rt_builtin_Queue(SylvelVal* out);
 void sylvel_rt_builtin_Stack(SylvelVal* out);
+void sylvel_rt_builtin_Set(SylvelVal* out, const SylvelVal* initial);
+void sylvel_rt_format_double(char* buf, size_t buf_sz, double d);
 void sylvel_rt_builtin_double(SylvelVal* out, const SylvelVal* val);
 void sylvel_rt_builtin_cube(SylvelVal* out, const SylvelVal* val);
 
@@ -199,6 +200,7 @@ void sylvel_rt_builtin_randomBytes(SylvelVal* out, const SylvelVal* count);
 void sylvel_rt_builtin_randomInt(SylvelVal* out, const SylvelVal* a, const SylvelVal* b);
 void sylvel_rt_builtin_timeMs(SylvelVal* out);
 void sylvel_rt_builtin_timeSleep(SylvelVal* out, const SylvelVal* ms);
+void sylvel_rt_builtin_dateNow(SylvelVal* out);
 void sylvel_rt_builtin_dateFormat(SylvelVal* out, const SylvelVal* ts, const SylvelVal* fmt);
 void sylvel_rt_builtin_dateParse(SylvelVal* out, const SylvelVal* str, const SylvelVal* fmt);
 void sylvel_rt_builtin_dateAdd(SylvelVal* out, const SylvelVal* ts, const SylvelVal* amount, const SylvelVal* unit);
