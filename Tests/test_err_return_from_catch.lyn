@@ -1,0 +1,13 @@
+# Test return statement inside catch block
+fn parseOrDefault(val, default_val):
+    try {
+        if val == "bad":
+            throw "err"
+        return toNumber(val)
+    } catch e {
+        return default_val
+    }
+
+assert parseOrDefault("123", 0) == 123, "parse ok failed"
+assert parseOrDefault("bad", -1) == -1, "parse fallback failed"
+print("PASS: test_err_return_from_catch")

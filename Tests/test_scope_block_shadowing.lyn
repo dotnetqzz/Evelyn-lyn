@@ -1,0 +1,10 @@
+# Test variable shadowing in nested lexical block
+let x = 1
+var inner_seen = 0
+if true:
+    let x = 2
+    inner_seen = x
+
+assert inner_seen == 2, "inner block shadow failed"
+assert x == 1, "outer block preserved failed"
+print("PASS: test_scope_block_shadowing")

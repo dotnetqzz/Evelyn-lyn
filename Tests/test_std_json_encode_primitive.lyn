@@ -1,0 +1,6 @@
+# Test JSON encoding of scalar primitives
+assert jsonStringify(42) == "42", "json int failed"
+assert jsonStringify("hello") == "\"hello\"", "json string failed"
+assert jsonStringify(true) == "true", "json bool failed"
+assert jsonStringify(null) == "null", "json null failed"
+print("PASS: test_std_json_encode_primitive")

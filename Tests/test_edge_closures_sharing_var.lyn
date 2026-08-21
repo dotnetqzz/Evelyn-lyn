@@ -1,0 +1,13 @@
+# Test multiple closures reading and mutating common reference
+fn makePair():
+    var shared = 0
+    let inc = def() { shared += 1; return shared; }
+    let dec = def() { shared -= 1; return shared; }
+    return [inc, dec]
+
+let [inc_fn, dec_fn] = makePair()
+assert inc_fn() == 1, "inc 1 failed"
+assert inc_fn() == 2, "inc 2 failed"
+assert dec_fn() == 1, "dec 1 failed"
+assert dec_fn() == 0, "dec 2 failed"
+print("PASS: test_edge_closures_sharing_var")

@@ -1,0 +1,16 @@
+# Test Integer to Roman numeral conversion
+fn toRoman(n):
+    let vals = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
+    let syms = ["M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"]
+    var out = ""
+    var temp = n
+    for i in 0..arrayLen(vals):
+        while temp >= vals[i]:
+            out += syms[i]
+            temp -= vals[i]
+    return out
+
+assert toRoman(1994) == "MCMXCIV", "roman 1994 failed"
+assert toRoman(58) == "LVIII", "roman 58 failed"
+assert toRoman(4) == "IV", "roman 4 failed"
+print("PASS: test_algo_roman_numerals")

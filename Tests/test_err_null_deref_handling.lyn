@@ -1,0 +1,6 @@
+# Test handling null value safely
+let n = null
+assert isNull(n) == true, "null check failed"
+let fallback = n ?? "safe_default"
+assert fallback == "safe_default", "null coalesce fallback failed"
+print("PASS: test_err_null_deref_handling")

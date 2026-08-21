@@ -1,0 +1,15 @@
+# Test try-finally block runs on error
+var finally_ran = false
+var caught = false
+try {
+    try {
+        throw "boom"
+    } finally {
+        finally_ran = true
+    }
+} catch e {
+    caught = true
+}
+assert finally_ran == true, "finally did not run on throw"
+assert caught == true, "outer catch did not receive throw"
+print("PASS: test_err_try_finally_with_error")

@@ -1,0 +1,13 @@
+# Test return statement inside try block
+fn safeDivide(a, b):
+    try {
+        if b == 0:
+            throw "division by zero"
+        return a / b
+    } catch e {
+        return null
+    }
+
+assert safeDivide(10, 2) == 5 or safeDivide(10, 2) == 5.0, "safeDivide ok failed"
+assert safeDivide(10, 0) == null, "safeDivide div zero failed"
+print("PASS: test_err_return_from_try")

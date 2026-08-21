@@ -1,0 +1,9 @@
+# Test newline escape sequence \n
+let s = "line1\nline2"
+assert stringLen(s) == 11, "newline escape len failed"
+assert stringContains(s, "\n"), "contains newline failed"
+let lines = stringSplit(s, "\n")
+assert arrayLen(lines) == 2, "split newline count failed"
+assert lines[0] == "line1", "split line 0 failed"
+assert lines[1] == "line2", "split line 1 failed"
+print("PASS: test_lex_str_escape_newline")

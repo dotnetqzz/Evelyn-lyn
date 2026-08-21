@@ -1,0 +1,15 @@
+# Test generating NxN identity matrix
+fn makeIdentity(n):
+    var m = []
+    for r in 0..n:
+        var row = []
+        for c in 0..n:
+            row = arrayAppend(row, r == c ? 1 : 0)
+        m = arrayAppend(m, row)
+    return m
+
+let I3 = makeIdentity(3)
+assert I3[0] == [1, 0, 0], "identity row 0 failed"
+assert I3[1] == [0, 1, 0], "identity row 1 failed"
+assert I3[2] == [0, 0, 1], "identity row 2 failed"
+print("PASS: test_edge_matrix_identity")

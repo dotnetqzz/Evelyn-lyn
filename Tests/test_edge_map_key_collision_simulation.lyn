@@ -1,0 +1,9 @@
+# Test map with many sequential keys
+var m = {}
+for i in 0..50:
+    m["key_" + toString(i)] = i
+
+for i in 0..50:
+    assert m["key_" + toString(i)] == i, "map lookup sequential key failed"
+
+print("PASS: test_edge_map_key_collision_simulation")

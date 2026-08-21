@@ -1,0 +1,8 @@
+# Test floating point arithmetic operations
+let a = 5.5
+let b = 2.0
+assert a + b == 7.5, "float add failed"
+assert a - b == 3.5, "float sub failed"
+assert a * b == 11.0, "float mul failed"
+assert a / b == 2.75, "float div failed"
+print("PASS: test_lit_float_arith")

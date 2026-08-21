@@ -1,0 +1,4 @@
+# Test regexMatch builtin
+assert regexMatch("^[0-9]+$", "123456") == true, "regex match digits failed"
+assert regexMatch("^[a-z]+$", "123456") == false, "regex match letters failed"
+print("PASS: test_std_sys_regex_match")

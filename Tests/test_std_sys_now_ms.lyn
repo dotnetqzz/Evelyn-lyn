@@ -1,0 +1,5 @@
+# Test nowMs timestamp builtin
+let t1 = nowMs()
+assert isNumber(t1) == true, "nowMs type failed"
+assert t1 > 0, "nowMs positive failed"
+print("PASS: test_std_sys_now_ms")

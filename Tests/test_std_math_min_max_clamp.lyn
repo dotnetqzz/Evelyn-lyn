@@ -1,0 +1,7 @@
+# Test mathMin, mathMax, clamp
+assert mathMin(10, 20) == 10, "min failed"
+assert mathMax(10, 20) == 20, "max failed"
+assert clamp(5, 1, 10) == 5, "clamp inside failed"
+assert clamp(-5, 1, 10) == 1, "clamp below failed"
+assert clamp(15, 1, 10) == 10, "clamp above failed"
+print("PASS: test_std_math_min_max_clamp")

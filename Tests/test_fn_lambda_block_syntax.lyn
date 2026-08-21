@@ -1,0 +1,8 @@
+# Test lambda block syntax def(x) { ... }
+let calc = def(a, b) {
+    let sum = a + b
+    let diff = a - b
+    return sum * diff
+}
+assert calc(5, 3) == 16, "lambda block syntax failed"
+print("PASS: test_fn_lambda_block_syntax")

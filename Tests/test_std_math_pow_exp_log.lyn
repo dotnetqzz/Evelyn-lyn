@@ -1,0 +1,7 @@
+# Test mathPow, mathExp, mathLog, mathLog2, mathLog10
+assert mathPow(2, 8) == 256 or mathPow(2, 8) == 256.0, "pow failed"
+assert mathExp(0) == 1.0, "exp 0 failed"
+assert mathLog(1) == 0.0, "log 1 failed"
+assert mathLog2(8) == 3.0, "log2 8 failed"
+assert mathLog10(100) == 2.0, "log10 100 failed"
+print("PASS: test_std_math_pow_exp_log")

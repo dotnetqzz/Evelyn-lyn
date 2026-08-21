@@ -1,0 +1,17 @@
+# Test generic safeCall function wrapper
+fn safeCall(fn_cb, arg1, arg2):
+    try {
+        return {"ok": true, "result": fn_cb(arg1, arg2)}
+    } catch e {
+        return {"ok": false, "error": toString(e)}
+    }
+
+fn div(a, b):
+    if b == 0: throw "zero_div"
+    return a / b
+
+let s1 = safeCall(div, 10, 2)
+let s2 = safeCall(div, 10, 0)
+assert s1["ok"] == true and (s1["result"] == 5 or s1["result"] == 5.0), "safeCall ok failed"
+assert s2["ok"] == false and s2["error"] == "zero_div", "safeCall err failed"
+print("PASS: test_err_safe_call_wrapper")

@@ -1,0 +1,8 @@
+# Test closure outliving parent function return
+fn makeMultiplier(factor):
+    let f = factor
+    return def(v) => v * f
+
+let mult3 = makeMultiplier(3)
+assert mult3(7) == 21, "closure outliving parent failed"
+print("PASS: test_scope_closure_outlives_parent")

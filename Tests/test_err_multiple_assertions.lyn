@@ -1,0 +1,7 @@
+# Test suite of multiple sequential assertions
+let x = 100
+assert x == 100, "x eq"
+assert x > 50, "x gt"
+assert x < 200, "x lt"
+assert x % 10 == 0, "x mod"
+print("PASS: test_err_multiple_assertions")

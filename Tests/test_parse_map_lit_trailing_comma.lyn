@@ -1,0 +1,4 @@
+# Test trailing comma in map literal
+let m = {"x": 100, "y": 200,}
+assert m["x"] == 100 and m["y"] == 200, "trailing comma map items failed"
+print("PASS: test_parse_map_lit_trailing_comma")

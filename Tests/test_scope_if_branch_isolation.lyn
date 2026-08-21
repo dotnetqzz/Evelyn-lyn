@@ -1,0 +1,9 @@
+# Test variables in if branch
+let flag = true
+var seen = 0
+if flag:
+    let branch_var = 77
+    seen = branch_var
+
+assert seen == 77, "if branch var failed"
+print("PASS: test_scope_if_branch_isolation")

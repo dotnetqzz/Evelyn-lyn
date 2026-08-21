@@ -1,0 +1,4 @@
+# Test timeSec builtin
+let s = timeSec()
+assert isInteger(s) == true and s > 1000000000, "timeSec valid failed"
+print("PASS: test_std_time_sec")

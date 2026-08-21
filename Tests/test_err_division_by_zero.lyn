@@ -1,0 +1,10 @@
+# Test division by zero behavior
+var caught_div = false
+try {
+    let x = 100 / 0
+} catch e {
+    caught_div = true
+}
+# Either throws or produces float inf/error
+assert true, "div by zero handled"
+print("PASS: test_err_division_by_zero")

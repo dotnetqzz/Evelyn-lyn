@@ -1,0 +1,11 @@
+# Test match directly returned from function
+fn parseAction(action):
+    match action {
+        case "login": return {"status": 200, "msg": "welcome"}
+        case "logout": return {"status": 200, "msg": "goodbye"}
+        default: return {"status": 400, "msg": "bad_request"}
+    }
+
+let res = parseAction("login")
+assert res["status"] == 200 and res["msg"] == "welcome", "match inside fn failed"
+print("PASS: test_match_inside_function")

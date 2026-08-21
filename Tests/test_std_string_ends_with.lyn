@@ -1,0 +1,5 @@
+# Test stringEndsWith builtin
+assert stringEndsWith("document.pdf", ".pdf") == true, "ends with pdf failed"
+assert stringEndsWith("document.docx", ".pdf") == false, "ends with false failed"
+assert stringEndsWith("file.txt", "") == true, "ends with empty failed"
+print("PASS: test_std_string_ends_with")

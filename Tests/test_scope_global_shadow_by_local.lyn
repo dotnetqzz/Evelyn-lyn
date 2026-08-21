@@ -1,0 +1,10 @@
+# Test local variable shadowing global variable
+let x = 10
+
+fn shadowTest():
+    let x = 99
+    return x
+
+assert shadowTest() == 99, "shadow inside function failed"
+assert x == 10, "global variable untouched failed"
+print("PASS: test_scope_global_shadow_by_local")

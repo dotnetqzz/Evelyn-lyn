@@ -1,0 +1,5 @@
+# Test array initialization with 10 elements
+let a = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+assert arrayLen(a) == 10, "array len 10 failed"
+assert a[0] == 1 and a[9] == 10, "array bounds elements failed"
+print("PASS: test_arr_create_elements")

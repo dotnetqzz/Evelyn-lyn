@@ -1,0 +1,9 @@
+# Test nested for-in iterating 2D matrix
+let matrix = [[1, 2], [3, 4], [5, 6]]
+var flat = []
+for row in matrix:
+    for col in row:
+        flat = arrayAppend(flat, col)
+
+assert flat == [1, 2, 3, 4, 5, 6], "nested for-in matrix failed"
+print("PASS: test_ctrl_for_in_nested_array")

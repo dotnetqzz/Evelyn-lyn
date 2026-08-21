@@ -1,0 +1,5 @@
+# Test map initialization with key-value pairs
+let m = {"k1": 10, "k2": 20, "k3": 30, "k4": 40, "k5": 50}
+assert arrayLen(mapKeys(m)) == 5, "map pairs count failed"
+assert m["k3"] == 30, "map lookup k3 failed"
+print("PASS: test_map_create_pairs")

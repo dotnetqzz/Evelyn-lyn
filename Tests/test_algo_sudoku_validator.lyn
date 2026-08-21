@@ -1,0 +1,14 @@
+# Test 9x9 Sudoku row validator
+fn isValidRow(row):
+    var seen = {}
+    for n in row:
+        if n < 1 or n > 9: return false
+        let k = toString(n)
+        if mapHas(seen, k): return false
+        seen[k] = true
+    return true
+
+assert isValidRow([1, 2, 3, 4, 5, 6, 7, 8, 9]) == true, "valid row failed"
+assert isValidRow([1, 2, 2, 4, 5, 6, 7, 8, 9]) == false, "duplicate in row failed"
+assert isValidRow([0, 2, 3, 4, 5, 6, 7, 8, 9]) == false, "out of bounds row failed"
+print("PASS: test_algo_sudoku_validator")

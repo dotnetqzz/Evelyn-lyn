@@ -1,0 +1,42 @@
+# Test Levenshtein Edit Distance calculation
+fn min3(a, b, c):
+    var m = a
+    if b < m: m = b
+    if c < m: m = c
+    return m
+
+fn min(a, b):
+    return a < b ? a : b
+
+fn editDist(s1, s2):
+    let m = stringLen(s1)
+    let n = stringLen(s2)
+    var dp = []
+    for i in 0...m:
+        var row = []
+        for j in 0...n:
+            row = arrayAppend(row, 0)
+        dp = arrayAppend(dp, row)
+
+    for i in 0...m:
+        var r = dp[i]
+        r[0] = i
+        dp[i] = r
+
+    var r0 = dp[0]
+    for j in 0...n:
+        r0[j] = j
+    dp[0] = r0
+
+    for i in 1...m:
+        var cur_row = dp[i]
+        for j in 1...n:
+            if stringSub(s1, i - 1, 1) == stringSub(s2, j - 1, 1):
+                cur_row[j] = dp[i - 1][j - 1]
+            else:
+                cur_row[j] = 1 + min3(cur_row[j - 1], dp[i - 1][j], dp[i - 1][j - 1])
+        dp[i] = cur_row
+    return dp[m][n]
+
+assert editDist("kitten", "sitting") == 3, "levenshtein edit distance failed"
+print("PASS: test_algo_edit_distance_levenshtein")

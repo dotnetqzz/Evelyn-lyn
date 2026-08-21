@@ -1,0 +1,22 @@
+# Test string similarity metric based on character overlap
+fn jaccardSim(s1, s2):
+    var set1 = {}
+    for i in 0..stringLen(s1): set1[stringSub(s1, i, 1)] = true
+    var set2 = {}
+    for i in 0..stringLen(s2): set2[stringSub(s2, i, 1)] = true
+
+    var intersection = 0
+    for k in mapKeys(set1):
+        if mapHas(set2, k): intersection += 1
+
+    var union_keys = {}
+    for k in mapKeys(set1): union_keys[k] = true
+    for k in mapKeys(set2): union_keys[k] = true
+    let union_size = arrayLen(mapKeys(union_keys))
+
+    if union_size == 0: return 1.0
+    return float(intersection) / float(union_size)
+
+let sim = jaccardSim("night", "nacht")
+assert sim > 0.3 and sim < 0.8, "jaccard sim failed"
+print("PASS: test_algo_levenshtein_similarity")

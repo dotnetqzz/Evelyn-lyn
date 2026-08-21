@@ -1,0 +1,13 @@
+# Test building array of 1000 integers and summing
+var arr = []
+for i in 1...1000:
+    arr = arrayAppend(arr, i)
+
+assert arrayLen(arr) == 1000, "array 1000 len failed"
+var sum = 0
+for n in arr:
+    sum += n
+
+# n*(n+1)/2 = 1000 * 1001 / 2 = 500500
+assert sum == 500500, "array 1000 sum failed"
+print("PASS: test_edge_large_array_1000")

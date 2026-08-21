@@ -1,0 +1,20 @@
+# Test Shell Sort with Knuth gap sequence
+fn shellSort(arr):
+    var a = deepCopy(arr)
+    let n = arrayLen(a)
+    var gap = 1
+    while gap < n // 3: gap = 3 * gap + 1
+    while gap > 0:
+        for i in gap..n:
+            let temp = a[i]
+            var j = i
+            while j >= gap and a[j - gap] > temp:
+                a[j] = a[j - gap]
+                j -= gap
+            a[j] = temp
+        gap = gap // 3
+    return a
+
+let nums = [35, 33, 42, 10, 14, 19, 27, 44]
+assert shellSort(nums) == [10, 14, 19, 27, 33, 35, 42, 44], "shell sort failed"
+print("PASS: test_algo_shell_sort")

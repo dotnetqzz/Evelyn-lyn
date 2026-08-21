@@ -1,0 +1,5 @@
+# Test greater-than operator >
+assert 10 > 5, "int gt failed"
+assert 3.5 > 2.5, "float gt failed"
+assert (5 > 10) == false, "int gt false failed"
+print("PASS: test_op_cmp_gt")

@@ -1,0 +1,4 @@
+# Test array destructuring with multiple elements
+let [first, second, third] = [100, 200, 300]
+assert first == 100 and second == 200 and third == 300, "array destructure failed"
+print("PASS: test_var_destructure_array_skip")

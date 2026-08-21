@@ -1,11 +1,11 @@
 [package]
-name = "avelyn"
+name = "Avelyn"
 version = "2.5.7"
 edition = "2021"
 rust-version = "1.85"
 
 [[bin]]
-name = "avelyn"
+name = "Avelyn"
 path = "src/main.rs"
 
 [dependencies]

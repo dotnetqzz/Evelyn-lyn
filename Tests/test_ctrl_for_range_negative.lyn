@@ -1,0 +1,7 @@
+# Test for range with negative bounds
+var items = []
+for i in -3..1:
+    items = arrayAppend(items, i)
+
+assert items == [-3, -2, -1, 0], "for range negative failed"
+print("PASS: test_ctrl_for_range_negative")

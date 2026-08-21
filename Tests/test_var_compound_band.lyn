@@ -1,0 +1,5 @@
+# Test compound bitwise and &=
+var x = 0xFF
+x &= 0x0F
+assert x == 0x0F, "&= failed"
+print("PASS: test_var_compound_band")

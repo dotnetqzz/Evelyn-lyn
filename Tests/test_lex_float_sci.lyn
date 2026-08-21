@@ -1,0 +1,10 @@
+# Test scientific notation float tokenization
+let e1 = 1e5
+let e2 = 2.5e3
+let e3 = 1.0e-3
+let e4 = 3E+2
+assert e1 == 100000.0, "1e5 failed"
+assert e2 == 2500.0, "2.5e3 failed"
+assert e3 > 0.0009 and e3 < 0.0011, "1.0e-3 failed"
+assert e4 == 300.0, "3E+2 failed"
+print("PASS: test_lex_float_sci")

@@ -1,0 +1,6 @@
+# Test arrayRemove by index
+var arr = ["a", "b", "c", "d"]
+let removed = arrayRemove(arr, 2)
+assert arr == ["a", "b", "d"], "arrayRemove elements failed"
+assert removed == "c", "arrayRemove returned value failed"
+print("PASS: test_arr_remove")

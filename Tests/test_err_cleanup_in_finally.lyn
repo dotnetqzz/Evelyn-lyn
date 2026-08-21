@@ -1,0 +1,12 @@
+# Test finally block executes for cleanup
+var cleanup_count = 0
+try {
+    cleanup_count += 1
+    throw "err"
+} catch e {
+    pass
+} finally {
+    cleanup_count += 10
+}
+assert cleanup_count == 11, "cleanup in finally failed"
+print("PASS: test_err_cleanup_in_finally")

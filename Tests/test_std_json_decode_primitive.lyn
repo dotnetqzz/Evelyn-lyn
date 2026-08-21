@@ -1,0 +1,6 @@
+# Test JSON decoding of scalar primitives
+assert jsonParse("42") == 42, "parse 42 failed"
+assert jsonParse("\"hello\"") == "hello", "parse hello failed"
+assert jsonParse("true") == true, "parse true failed"
+assert jsonParse("null") == null, "parse null failed"
+print("PASS: test_std_json_decode_primitive")

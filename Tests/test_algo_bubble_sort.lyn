@@ -1,0 +1,15 @@
+# Test Bubble Sort algorithm
+fn bubbleSort(arr):
+    var a = deepCopy(arr)
+    let n = arrayLen(a)
+    for i in 0..n:
+        for j in 0..(n - i - 1):
+            if a[j] > a[j + 1]:
+                let tmp = a[j]
+                a[j] = a[j + 1]
+                a[j + 1] = tmp
+    return a
+
+let nums = [64, 34, 25, 12, 22, 11, 90]
+assert bubbleSort(nums) == [11, 12, 22, 25, 34, 64, 90], "bubble sort failed"
+print("PASS: test_algo_bubble_sort")

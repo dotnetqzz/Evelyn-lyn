@@ -1,0 +1,7 @@
+# Test for-in loop on empty array
+var iterations = 0
+for item in []:
+    iterations += 1
+
+assert iterations == 0, "empty array for loop failed"
+print("PASS: test_ctrl_for_in_array_empty")

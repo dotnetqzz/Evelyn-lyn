@@ -1,0 +1,6 @@
+# Test randomFloat builtin
+for i in 0..10:
+    let rf = randomFloat()
+    assert rf >= 0.0 and rf < 1.0, "randomFloat [0, 1) range failed"
+
+print("PASS: test_std_sys_random_float")

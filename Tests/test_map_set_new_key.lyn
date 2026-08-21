@@ -1,0 +1,7 @@
+# Test inserting new keys into map
+var m = {}
+m["alpha"] = 1
+m["beta"] = 2
+assert m["alpha"] == 1 and m["beta"] == 2, "map insert new keys failed"
+assert arrayLen(mapKeys(m)) == 2, "map insert key count failed"
+print("PASS: test_map_set_new_key")

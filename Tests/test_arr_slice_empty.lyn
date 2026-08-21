@@ -1,0 +1,5 @@
+# Test arraySlice with identical start and end index
+let arr = [1, 2, 3, 4]
+let sub = arraySlice(arr, 2, 2)
+assert arrayLen(sub) == 0, "empty arraySlice len failed"
+print("PASS: test_arr_slice_empty")

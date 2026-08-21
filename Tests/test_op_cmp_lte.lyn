@@ -1,0 +1,5 @@
+# Test less-than-or-equal operator <=
+assert 5 <= 10, "lte less failed"
+assert 5 <= 5, "lte equal failed"
+assert (6 <= 5) == false, "lte false failed"
+print("PASS: test_op_cmp_lte")

@@ -1,0 +1,7 @@
+# Test logical OR operator
+assert (true or true) == true, "true or true failed"
+assert (true or false) == true, "true or false failed"
+assert (false or true) == true, "false or true failed"
+assert (false or false) == false, "false or false failed"
+assert (false || true) == true, "|| failed"
+print("PASS: test_op_logic_or")

@@ -1,0 +1,13 @@
+# Test closure state modification
+fn makeCounter():
+    var c = 0
+    return def() {
+        c += 1
+        return c
+    }
+
+let c1 = makeCounter()
+assert c1() == 1, "counter 1st call failed"
+assert c1() == 2, "counter 2nd call failed"
+assert c1() == 3, "counter 3rd call failed"
+print("PASS: test_scope_closure_capture_mutable")

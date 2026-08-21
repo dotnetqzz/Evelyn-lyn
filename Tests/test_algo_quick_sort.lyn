@@ -1,0 +1,20 @@
+# Test Quick Sort algorithm
+fn quickSort(arr):
+    if arrayLen(arr) <= 1:
+        return arr
+    let pivot = arr[0]
+    var less = []
+    var equal = []
+    var greater = []
+    for x in arr:
+        if x < pivot:
+            less = arrayAppend(less, x)
+        elif x == pivot:
+            equal = arrayAppend(equal, x)
+        else:
+            greater = arrayAppend(greater, x)
+    return arrayConcat(arrayConcat(quickSort(less), equal), quickSort(greater))
+
+let nums = [10, 7, 8, 9, 1, 5]
+assert quickSort(nums) == [1, 5, 7, 8, 9, 10], "quick sort failed"
+print("PASS: test_algo_quick_sort")

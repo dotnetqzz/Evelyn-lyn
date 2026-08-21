@@ -1,0 +1,16 @@
+# Test struct with 5 fields
+struct Config {
+    host,
+    port,
+    ssl,
+    timeout,
+    retries
+}
+
+let cfg = Config("127.0.0.1", 8080, true, 5000, 3)
+assert cfg.host == "127.0.0.1", "cfg host failed"
+assert cfg.port == 8080, "cfg port failed"
+assert cfg.ssl == true, "cfg ssl failed"
+assert cfg.timeout == 5000, "cfg timeout failed"
+assert cfg.retries == 3, "cfg retries failed"
+print("PASS: test_type_struct_multiple_fields")

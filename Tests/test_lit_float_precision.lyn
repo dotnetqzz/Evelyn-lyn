@@ -1,0 +1,5 @@
+# Test float comparison with small epsilon
+let sum_val = 0.1 + 0.2
+let diff = mathAbs(sum_val - 0.3)
+assert diff < 0.000001, "float epsilon precision failed"
+print("PASS: test_lit_float_precision")

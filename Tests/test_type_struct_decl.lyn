@@ -1,0 +1,10 @@
+# Test struct declaration and instantiation
+struct Point {
+    x,
+    y
+}
+
+let p = Point(10, 20)
+assert p.x == 10, "struct point x failed"
+assert p.y == 20, "struct point y failed"
+print("PASS: test_type_struct_decl")

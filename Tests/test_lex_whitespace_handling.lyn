@@ -1,0 +1,6 @@
+# Test arbitrary whitespace between tokens
+let   a    =    10   
+let   b  =   20  
+let   c=a+b   
+assert c == 30, "whitespace handling failed"
+print("PASS: test_lex_whitespace_handling")

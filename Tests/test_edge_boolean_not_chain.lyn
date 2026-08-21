@@ -1,0 +1,5 @@
+# Test chain of logical NOT operators
+assert not not not not true == true, "4 nots true failed"
+assert not not not not false == false, "4 nots false failed"
+assert not not not true == false, "3 nots true failed"
+print("PASS: test_edge_boolean_not_chain")

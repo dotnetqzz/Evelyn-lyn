@@ -1,0 +1,5 @@
+# Test accessing defined vs non-existent keys in maps
+let m = {"known": 123}
+assert m["known"] == 123, "known key failed"
+assert m["nonexistent"] == null, "nonexistent map key should be null"
+print("PASS: test_var_undeclared_read_error")

@@ -1,0 +1,7 @@
+# Test function without return statement returns null
+fn doNothing():
+    let x = 10
+
+let res = doNothing()
+assert isNull(res) == true, "no return returns null failed"
+print("PASS: test_fn_no_return_returns_null")

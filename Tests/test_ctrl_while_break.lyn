@@ -1,0 +1,9 @@
+# Test while loop with break
+var i = 0
+while true:
+    if i == 5:
+        break
+    i += 1
+
+assert i == 5, "while break failed"
+print("PASS: test_ctrl_while_break")

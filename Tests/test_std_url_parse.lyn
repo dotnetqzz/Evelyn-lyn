@@ -1,0 +1,5 @@
+# Test sysUrlParse builtin
+let parsed = sysUrlParse("https://example.com:8080/path/test?query=1#hash")
+assert parsed["host"] == "example.com", "url parse host failed"
+assert parsed["scheme"] == "https", "url parse scheme failed"
+print("PASS: test_std_url_parse")

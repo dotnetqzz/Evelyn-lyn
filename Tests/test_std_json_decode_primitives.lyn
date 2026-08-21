@@ -1,0 +1,6 @@
+# Test jsonDecode / jsonParse on primitive values
+assert jsonDecode("123") == 123, "decode int failed"
+assert jsonDecode("\"hello\"") == "hello", "decode str failed"
+assert jsonDecode("true") == true, "decode bool failed"
+assert jsonDecode("null") == null, "decode null failed"
+print("PASS: test_std_json_decode_primitives")

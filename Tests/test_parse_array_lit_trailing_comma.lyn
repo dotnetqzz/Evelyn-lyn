@@ -1,0 +1,5 @@
+# Test trailing comma in array literal
+let a = [1, 2, 3,]
+assert arrayLen(a) == 3, "trailing comma array len failed"
+assert a[2] == 3, "trailing comma array item failed"
+print("PASS: test_parse_array_lit_trailing_comma")

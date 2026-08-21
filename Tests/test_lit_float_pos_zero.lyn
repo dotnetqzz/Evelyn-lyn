@@ -1,0 +1,5 @@
+# Test positive float zero
+let fz = 0.0
+assert fz == 0.0, "float 0.0 failed"
+assert fz + 1.5 == 1.5, "float zero addition failed"
+print("PASS: test_lit_float_pos_zero")

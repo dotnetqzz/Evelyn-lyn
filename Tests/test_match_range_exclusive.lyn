@@ -1,0 +1,14 @@
+# Test match with range patterns
+fn categorizeAge(age):
+    match age {
+        case 0...12:  return "child"
+        case 13...19: return "teen"
+        case 20...64: return "adult"
+        default:      return "senior"
+    }
+
+assert categorizeAge(5) == "child", "match range child failed"
+assert categorizeAge(15) == "teen", "match range teen failed"
+assert categorizeAge(30) == "adult", "match range adult failed"
+assert categorizeAge(70) == "senior", "match range senior failed"
+print("PASS: test_match_range_exclusive")

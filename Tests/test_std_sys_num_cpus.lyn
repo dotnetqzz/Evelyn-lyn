@@ -1,0 +1,5 @@
+# Test numCpus builtin
+let cpus = numCpus()
+assert isInteger(cpus) == true, "numCpus type failed"
+assert cpus >= 1, "numCpus at least 1 failed"
+print("PASS: test_std_sys_num_cpus")

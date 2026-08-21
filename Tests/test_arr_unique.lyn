@@ -1,0 +1,5 @@
+# Test arrayUnique removing duplicate elements
+let with_dups = [1, 2, 2, 3, 1, 4, 5, 3]
+let uniq = arrayUnique(with_dups)
+assert uniq == [1, 2, 3, 4, 5], "arrayUnique failed"
+print("PASS: test_arr_unique")

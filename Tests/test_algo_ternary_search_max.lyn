@@ -1,0 +1,18 @@
+# Test Ternary Search for maximum of concave parabola: f(x) = -(x-5)^2 + 100
+fn f(x): return -(x - 5) * (x - 5) + 100
+
+fn ternarySearchMax():
+    var low = 0
+    var high = 10
+    while high - low > 2:
+        let m1 = low + (high - low) // 3
+        let m2 = high - (high - low) // 3
+        if f(m1) < f(m2): low = m1
+        else: high = m2
+    var max_x = low
+    for x in (low + 1)...high:
+        if f(x) > f(max_x): max_x = x
+    return max_x
+
+assert ternarySearchMax() == 5, "ternary search maximum at x=5 failed"
+print("PASS: test_algo_ternary_search_max")

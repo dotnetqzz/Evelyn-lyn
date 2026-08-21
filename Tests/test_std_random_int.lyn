@@ -1,0 +1,9 @@
+# Test randomInt generating numbers within range
+var all_in_range = true
+for i in 0..20:
+    let r = randomInt(10, 20)
+    if r < 10 or r > 20:
+        all_in_range = false
+
+assert all_in_range == true, "randomInt range check failed"
+print("PASS: test_std_random_int")

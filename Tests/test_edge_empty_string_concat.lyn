@@ -1,0 +1,7 @@
+# Test concatenating 10 empty strings
+var s = ""
+for i in 0..10:
+    s += ""
+
+assert stringLen(s) == 0, "10 empty string concat failed"
+print("PASS: test_edge_empty_string_concat")

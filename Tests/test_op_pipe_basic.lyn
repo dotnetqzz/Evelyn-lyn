@@ -1,0 +1,7 @@
+# Test basic pipe operator |>
+fn addOne(x): return x + 1
+fn double(x): return x * 2
+
+let res = 10 |> addOne |> double
+assert res == 22, "pipe basic failed"
+print("PASS: test_op_pipe_basic")

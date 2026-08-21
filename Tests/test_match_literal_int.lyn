@@ -1,0 +1,13 @@
+# Test match on integer literals
+fn describeCode(code):
+    match code {
+        case 200: return "OK"
+        case 404: return "Not Found"
+        case 500: return "Internal Error"
+        default: return "Other"
+    }
+
+assert describeCode(200) == "OK", "match int 200 failed"
+assert describeCode(404) == "Not Found", "match int 404 failed"
+assert describeCode(999) == "Other", "match int default failed"
+print("PASS: test_match_literal_int")

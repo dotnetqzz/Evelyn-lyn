@@ -1,0 +1,5 @@
+# Test bitwise OR operator |
+assert (0b1100 | 0b1010) == 0b1110, "bitwise or failed"
+assert (0xF0 | 0x0F) == 0xFF, "hex or failed"
+assert (8 | 4) == 12, "dec or failed"
+print("PASS: test_op_bitwise_or")

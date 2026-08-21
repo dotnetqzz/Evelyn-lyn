@@ -1,0 +1,13 @@
+# Test return statement inside catch block
+fn handleWithFallback(flag):
+    try {
+        if flag:
+            throw "error"
+        return "TRY_OK"
+    } catch e {
+        return "CATCH_FALLBACK"
+    }
+
+assert handleWithFallback(false) == "TRY_OK", "return in try failed"
+assert handleWithFallback(true) == "CATCH_FALLBACK", "return in catch failed"
+print("PASS: test_err_return_inside_catch")

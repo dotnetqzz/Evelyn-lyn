@@ -1,0 +1,24 @@
+# Test arbitrary-precision integer addition via string arithmetic
+fn addBigInts(a_str, b_str):
+    var i = stringLen(a_str) - 1
+    var j = stringLen(b_str) - 1
+    var carry = 0
+    var result_digits = []
+
+    while i >= 0 or j >= 0 or carry > 0:
+        let d1 = i >= 0 ? charCodeAt(a_str, i) - 48 : 0
+        let d2 = j >= 0 ? charCodeAt(b_str, j) - 48 : 0
+        let sum = d1 + d2 + carry
+        result_digits = arrayUnshift(result_digits, sum % 10)
+        carry = sum // 10
+        i -= 1
+        j -= 1
+
+    var out = ""
+    for d in result_digits:
+        out += toString(d)
+    return out
+
+let sum = addBigInts("99999999999999999999", "1")
+assert sum == "100000000000000000000", "big int string add failed"
+print("PASS: test_algo_big_int_addition")

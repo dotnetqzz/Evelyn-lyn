@@ -1,0 +1,6 @@
+# Test parameterless function returning value
+fn getPiApprox():
+    return 3.14159
+
+assert getPiApprox() > 3.14, "parameterless fn failed"
+print("PASS: test_fn_no_params_return_val")

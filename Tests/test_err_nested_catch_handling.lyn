@@ -1,0 +1,14 @@
+# Test inner catch recovers, outer executes normally
+var outer_flag = false
+try {
+    try {
+        throw "recoverable"
+    } catch e {
+        pass
+    }
+    outer_flag = true
+} catch e {
+    outer_flag = false
+}
+assert outer_flag == true, "inner recovery outer flow failed"
+print("PASS: test_err_nested_catch_handling")

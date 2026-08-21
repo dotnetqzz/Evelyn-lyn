@@ -1,0 +1,9 @@
+# Test catching assertion failure in try-catch
+var caught_assert = false
+try {
+    assert 10 == 20, "deliberate assertion mismatch"
+} catch e {
+    caught_assert = true
+}
+assert caught_assert == true, "assertion failure was not caught"
+print("PASS: test_err_assert_failure_caught")

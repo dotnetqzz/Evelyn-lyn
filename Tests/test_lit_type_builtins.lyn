@@ -1,0 +1,9 @@
+# Test type() builtin on all basic types
+assert type(42) == "int", "type int failed"
+assert type(3.14) == "float", "type float failed"
+assert type("hello") == "string", "type string failed"
+assert type(true) == "bool", "type bool failed"
+assert type(null) == "null", "type null failed"
+assert type([1, 2]) == "array", "type array failed"
+assert type({"k": 1}) == "map", "type map failed"
+print("PASS: test_lit_type_builtins")

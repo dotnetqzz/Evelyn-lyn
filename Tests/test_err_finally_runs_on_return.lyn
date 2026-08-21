@@ -1,0 +1,13 @@
+# Test finally block executes on function return
+var finally_ran = false
+fn testFinally():
+    try {
+        return 42
+    } finally {
+        finally_ran = true
+    }
+
+let ret = testFinally()
+assert ret == 42, "function return failed"
+assert finally_ran == true, "finally ran on return failed"
+print("PASS: test_err_finally_runs_on_return")

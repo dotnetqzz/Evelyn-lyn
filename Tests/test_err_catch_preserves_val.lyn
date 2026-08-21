@@ -1,0 +1,10 @@
+# Test exact preserved value in catch block
+let original_payload = [1, 2, 3, "error_token"]
+var received = null
+try {
+    throw original_payload
+} catch e {
+    received = e
+}
+assert deepEqual(received, original_payload) == true, "payload preservation failed"
+print("PASS: test_err_catch_preserves_val")

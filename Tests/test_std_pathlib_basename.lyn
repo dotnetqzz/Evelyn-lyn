@@ -1,0 +1,4 @@
+# Test pathBasename builtin
+let b = pathBasename("folder/subfolder/document.pdf")
+assert b == "document.pdf", "pathBasename failed"
+print("PASS: test_std_pathlib_basename")

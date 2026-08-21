@@ -1,0 +1,5 @@
+# Test basic string interpolation
+let name = "Alice"
+let greeting = "Hello, \(name)!"
+assert greeting == "Hello, Alice!", "basic interpolation failed"
+print("PASS: test_lex_interp_basic")

@@ -1,6 +1,6 @@
-# Sylvel Language Reference
+# Evelyn Language Reference (Avelyn v2.5.7)
 
-> **Sylvel** is a dynamically-typed, indentation-aware scripting language with a Python-like syntax and a rich standard library. It is compiled to an AST and evaluated by a tree-walking interpreter written in Swift.
+> **Evelyn** (runtime & compiler: **Avelyn**) is a modern, dynamically-typed, indentation-aware programming language with an expressive Python/Swift-inspired syntax, a rich standard library, and dual execution modes: an instant **high-performance interpreter** and an **AOT native compiler pipeline** generating standalone, highly-optimized machine binaries.
 
 ---
 
@@ -54,24 +54,24 @@
 ### Running a Script
 
 ```
-sylvel hello.syl
+avelyn hello.lyn
 ```
 
 ### Hello World
 
-```sylvel
+```lyn
 print("Hello, World!")
 ```
 
 ### Importing the Full Standard Library
 
-```sylvel
+```lyn
 import "init"   # loads every stdlib module at once
 ```
 
 Or import individual modules:
 
-```sylvel
+```lyn
 import "math"
 import "string"
 import "json"
@@ -79,156 +79,326 @@ import "json"
 
 ---
 
-## 2. Core Syntax
+## 2. Syntax Mechanics & Runtime Behavior
 
-### 2.1 Variables & Bindings
+Evelyn is engineered around an intuitive, expressive grammar that blends the clean readability of Python with the functional power and safety of Swift.
 
-| Keyword | Mutability | Description |
-|---------|-----------|-------------|
-| `let`   | Immutable  | Cannot be reassigned after declaration |
-| `var`   | Mutable    | Can be freely reassigned |
+---
 
-```sylvel
-let name = "Alice"    # immutable
-var age  = 30         # mutable
+### 2.1 Lexical Grammar & Block Mechanics
 
-age = 31              # OK
-name = "Bob"          # ERROR: Cannot assign to immutable binding 'name'
+#### Dual Block Styles: Indentation vs Braces
+Evelyn supports both **indentation-aware blocks** (colon `:` followed by indented lines) and **explicit brace blocks** (`{ ... }`):
+
+```lyn
+# Indentation-based block (Python style)
+if count > 10:
+    let factor = 2
+    total += count * factor
+
+# Brace-delimited block (C/Swift style)
+if count > 10 {
+    let factor = 2
+    total += count * factor
+}
 ```
 
-**Compound assignment** operators work on `var` bindings:
+#### Statement Termination & Multi-line Constructs
+- **Newlines** naturally terminate statements.
+- **Semicolons (`;`)** can optionally be used to place multiple statements on a single line:
+  ```lyn
+  let a = 1; let b = 2; let c = a + b
+  ```
+- Multi-line arrays, maps, and parenthesized expressions automatically continue across lines without requiring trailing backslashes:
+  ```lyn
+  let matrix = [
+      [1, 2, 3],
+      [4, 5, 6],
+      [7, 8, 9]
+  ]
+  ```
 
-```sylvel
-var x = 10
-x += 5     # x = 15
-x -= 3     # x = 12
-x *= 2     # x = 24
-x /= 4     # x = 6
-x %= 4     # x = 2
+#### Literals & Number Formats
+Evelyn supports first-class numeric literals across various radices, with underscore `_` visual separators:
+
+```lyn
+let decimal_val  = 1_000_000     # Decimal with separators
+let hex_val      = 0xDEAD_BEEF   # Hexadecimal (base 16)
+let binary_val   = 0b1011_0010   # Binary (base 2)
+let octal_val    = 0o755         # Octal (base 8)
+let float_val    = 3.14159265    # IEEE 754 64-bit float
+let sci_val      = 2.5e-4        # Scientific notation (0.00025)
+```
+
+#### String Literals, Escapes & Interpolation
+Strings in Evelyn are UTF-8 encoded and support standard escape sequences:
+- `\n` (Newline), `\t` (Tab), `\r` (Carriage return), `\0` (Null byte), `\\` (Backslash), `\"` (Double quote), `\'` (Single quote).
+- **String Interpolation**: Expressions embedded inside `\(...)` are evaluated at runtime and converted to strings:
+  ```lyn
+  let user = "Alice"
+  let score = 95
+  print("User: \(user), Score: \(score + 5)/100")
+  ```
+
+---
+
+### 2.2 Variable Bindings, Scoping & Mutability
+
+#### `let` (Immutable) vs `var` (Mutable)
+- **`let`**: Declares an immutable binding. Once assigned, reassigning to a `let` variable triggers a compilation error / runtime exception:
+  ```lyn
+  let maxRetries = 5
+  # maxRetries = 6  <-- ERROR: Cannot reassign immutable binding
+  ```
+- **`var`**: Declares a mutable variable that can be reassigned and mutated with compound operators:
+  ```lyn
+  var balance = 100
+  balance += 50    # balance = 150
+  balance -= 20    # balance = 130
+  balance *= 2     # balance = 260
+  balance /= 4     # balance = 65
+  balance %= 10    # balance = 5
+  ```
+
+#### Compound Bitwise Operators
+`var` integers can be modified directly with bitwise compound operators:
+`&=` (AND), `|=` (OR), `^=` (XOR), `<<=` (Left Shift), `>>=` (Right Shift).
+
+#### Lexical Block Scoping & Variable Shadowing
+Variables are strictly scoped to the block in which they are defined. Inner scopes can shadow outer variables without overwriting them:
+
+```lyn
+let x = 10
+if true:
+    let x = 99      # Shadows outer x for this block
+    print(x)        # 99
+
+print(x)            # 10 (outer x preserved)
 ```
 
 ---
 
-### 2.2 Data Types
+### 2.3 Destructuring Assignment
 
-Sylvel is dynamically typed. All values are one of:
+Evelyn provides pattern destructuring for arrays and maps:
 
-| Type     | Example Literal            | Notes |
-|----------|---------------------------|-------|
-| Integer  | `42`, `0xFF`, `0b1010`, `0o17` | Hex, binary, octal |
-| Float    | `3.14`, `2.5e-3`           | IEEE 754 double |
-| String   | `"hello"`                  | UTF-8, escape sequences |
-| Boolean  | `true`, `false`            | |
-| Null     | `null`                     | Absence of value |
-| Array    | `[1, 2, 3]`               | Ordered, heterogeneous |
-| Map      | `{"key": value}`           | String-keyed hash map |
-| Function | `def(x) => x * 2`         | First-class value |
+#### Array Destructuring
+```lyn
+let [first, second, third] = [10, 20, 30]
+print(first)   # 10
+print(second)  # 20
 
-#### Numbers
-
-```sylvel
-let a = 42          # integer
-let b = 3.14        # float
-let c = 0xFF        # hex → 255
-let d = 0b1101      # binary → 13
-let e = 0o17        # octal → 15
-let f = 1_000_000   # underscores as separators
-let g = 2.5e3       # scientific → 2500.0
+# Swapping variables via array destructuring
+var a = 1
+var b = 2
+let [tmpA, tmpB] = [b, a]
+a = tmpA
+b = tmpB
 ```
 
-#### Strings
+#### Map Destructuring
+Map keys are mapped directly into local variable bindings:
+```lyn
+let userMap = {"id": 101, "username": "evelyn_dev", "role": "admin"}
+let {"id": uid, "username": uName} = userMap
 
-```sylvel
-let s = "Hello, World!"
-let esc = "Line one\nLine two\tTabbed"
-# Escape sequences: \n \t \r \0 \\ \" \'
+print(uid)     # 101
+print(uName)   # evelyn_dev
 ```
 
-#### String Interpolation
-
-Embed any expression with `\(...)`:
-
-```sylvel
-let name = "World"
-let n = 42
-print("Hello, \(name)!")           # Hello, World!
-print("The answer is \(n * 2)")    # The answer is 84
-print("Pi ≈ \(math["pi"])")
+#### Destructuring in Loops
+```lyn
+let points = [[0, 0], [10, 20], [30, 40]]
+for point in points:
+    let [x, y] = point
+    print("Point: (\(x), \(y))")
 ```
 
-#### Arrays
+---
 
-```sylvel
-let fruits = ["apple", "banana", "cherry"]
-print(fruits[0])      # apple
-print(fruits[2])      # cherry
+### 2.4 Truthiness & Logic Semantics
 
-var nums = [1, 2, 3]
-nums[0] = 99           # index assignment
+#### Truthiness Rules
+In Evelyn, the following values are evaluated as **falsy** in conditionals:
+- `false` (Boolean false)
+- `null` (Null value)
+- `0` and `0.0` (Zero numbers)
+- `""` (Empty string)
+- `[]` (Empty array)
+- `{}` (Empty map)
+
+All other values (including non-zero numbers, non-empty strings, collections, structs, and functions) are **truthy**.
+
+#### Logical Operators & Short-Circuit Evaluation
+- **`and` / `&&`**: Evaluates the right operand only if the left operand is truthy.
+- **`or` / `||`**: Evaluates the right operand only if the left operand is falsy.
+- **`not` / `!`**: Inverts boolean truthiness.
+
+```lyn
+# Short-circuit guarantee: fnTrigger() is never executed
+let res = false and fnTrigger()
 ```
 
-Arrays are heterogeneous:
-
-```sylvel
-let mixed = [1, "hello", true, null, [2, 3]]
+#### Null-Coalescing Operator (`??`)
+Provides a clean fallback value when dealing with `null`:
+```lyn
+let configuredPort = null
+let port = configuredPort ?? 8080   # port = 8080
 ```
 
-#### Maps
+#### Ternary Conditional Operator (`? :`)
+Inline conditional expressions:
+```lyn
+let status = age >= 18 ? "Adult" : "Minor"
+```
 
-```sylvel
-let person = {
-    "name": "Alice",
-    "age":  30,
-    "active": true
+---
+
+### 2.5 Functions, Closures & Execution Pipeline
+
+#### Named Function Declarations & Default Arguments
+Functions can be declared using either `fn` or `def`:
+
+```lyn
+fn calculateTotal(subtotal, taxRate = 0.05, discount = 0.0):
+    return (subtotal - discount) * (1.0 + taxRate)
+
+let total = calculateTotal(100.0)             # uses defaults: (100 - 0) * 1.05 = 105.0
+let custom = calculateTotal(100.0, 0.10, 10.0) # (100 - 10) * 1.10 = 99.0
+```
+
+#### Variadic Parameters (`...args`)
+Collects variable numbers of arguments into a dynamic array:
+
+```lyn
+fn sumValues(...values):
+    var sum = 0
+    for v in values: sum += v
+    return sum
+
+print(sumValues(1, 2, 3, 4, 5))   # 15
+```
+
+#### Anonymous Functions (Lambdas)
+- **Arrow Expression Form**: `def(x) => x * 2`
+- **Block Form**: `def(x) { let r = x * 2; return r }`
+
+#### Lexical Closures & State Accumulators
+Functions capture their enclosing environment by reference, allowing stateful generators:
+
+```lyn
+fn createCounter(initial = 0):
+    var count = initial
+    return def(step = 1) {
+        count += step
+        return count
+    }
+
+let counterA = createCounter(10)
+print(counterA(5))    # 15
+print(counterA(5))    # 20
+```
+
+#### Forward Pipe Operator (`|>`)
+Pipelines transform values linearly without deeply nested function calls:
+
+```lyn
+fn addFive(x): return x + 5
+fn double(x): return x * 2
+fn square(x): return x * x
+
+# Evaluates as: square(double(addFive(5)))
+let result = 5 |> addFive |> double |> square
+print(result)   # ( (5 + 5) * 2 )^2 = 20^2 = 400
+```
+
+---
+
+### 2.6 Pattern Matching & Enums
+
+#### `match` and `switch` Expressions
+Pattern matching checks expressions against values, ranges, and types without fallthrough:
+
+```lyn
+fn evaluateCode(status):
+    match status {
+        case 200:
+            return "SUCCESS"
+        case 400...499:
+            return "CLIENT_ERROR"
+        case 500...599:
+            return "SERVER_ERROR"
+        default:
+            return "UNKNOWN_STATUS"
+    }
+```
+
+#### Enums & Algebraic Data Types (ADTs)
+Enums support both unit variants and variants carrying payload values:
+
+```lyn
+enum OrderStatus {
+    Created,
+    Processing(workerId),
+    Shipped(trackingNumber),
+    Cancelled(reason)
 }
 
-print(person["name"])       # Alice
-person["age"] = 31          # update
-person["email"] = "a@b.com" # add new key
+let myOrder = OrderStatus.Shipped("TRACK_998124")
+
+match myOrder {
+    case OrderStatus.Created:
+        print("Order has been created")
+    case OrderStatus.Processing(worker):
+        print("Processing by worker: \(worker)")
+    case OrderStatus.Shipped(tracking):
+        print("Shipped with tracking: \(tracking)")
+    case OrderStatus.Cancelled(reason):
+        print("Cancelled: \(reason)")
+}
 ```
 
 ---
 
-### 2.3 Operators
+### 2.7 Structs & Object Representation
 
-#### Arithmetic
+Structs provide lightweight record types with named fields:
 
-| Operator | Description | Example |
-|----------|-------------|---------|
-| `+` | Addition / string concat | `1+2` → `3`, `"a"+"b"` → `"ab"` |
-| `-` | Subtraction | `5-2` → `3` |
-| `*` | Multiplication | `3*4` → `12` |
-| `/` | Division (float) | `7/2` → `3.5` |
-| `//` | Floor division | `7//2` → `3` |
-| `%` | Modulo | `7%3` → `1` |
-| `**` | Exponentiation | `2**8` → `256` |
+```lyn
+struct Point3D {
+    x,
+    y,
+    z
+}
 
-#### Comparison
+let pt = Point3D(10, 20, 30)
+print("X: \(pt.x), Y: \(pt.y), Z: \(pt.z)")
 
-| `==` | `!=` | `<` | `>` | `<=` | `>=` |
-
-#### Logical
-
-| Operator | Keyword | Description |
-|----------|---------|-------------|
-| `&&` | `and` | Short-circuit AND |
-| `\|\|` | `or` | Short-circuit OR |
-| `!` | `not` | Logical NOT |
-
-#### Range Operators
-
-| `..` | Exclusive range | `1..5` → 1, 2, 3, 4 |
-| `...` | Inclusive range | `1...5` → 1, 2, 3, 4, 5 |
+# Mutating struct instances
+pt.x = 99
+print(pt.x)   # 99
+```
 
 ---
 
-### 2.4 Comments
+### 2.8 Error Handling & Exception Lifecycle
 
-```sylvel
-# Single-line comment
+Evelyn uses structured `try` / `catch` / `finally` blocks for reliable error recovery and deterministic resource cleanup:
 
-/* Multi-line
-   comment */
+```lyn
+var fileHandle = "OPEN_FILE_DESCRIPTOR"
+
+try {
+    # Thrown values can be strings, numbers, maps, or structs
+    if errorOccurred:
+        throw {"code": 503, "message": "ServiceUnavailable"}
+} catch err {
+    print("Caught error: \(toString(err))")
+} finally {
+    # Finally blocks are guaranteed to execute even if errors are rethrown
+    fileHandle = "CLOSED"
+    print("Resource closed safely.")
+}
 ```
 
 ---
@@ -239,7 +409,7 @@ person["email"] = "a@b.com" # add new key
 
 Both **indentation-delimited** (Python-style) and **brace-delimited** (C-style) blocks work:
 
-```sylvel
+```lyn
 # Indentation style
 if x > 0:
     print("positive")
@@ -260,7 +430,7 @@ if x > 0 {
 
 ### 3.2 while
 
-```sylvel
+```lyn
 var i = 0
 while i < 5:
     print(i)
@@ -272,7 +442,7 @@ while i < 5:
 
 ### 3.3 for / in (collections)
 
-```sylvel
+```lyn
 let fruits = ["apple", "banana", "cherry"]
 for fruit in fruits:
     print(fruit)
@@ -286,7 +456,7 @@ for ch in "hello":
 
 ### 3.4 for / in (ranges)
 
-```sylvel
+```lyn
 for i in 0..5:      # exclusive: 0,1,2,3,4
     print(i)
 
@@ -300,7 +470,7 @@ for i in 1...5:     # inclusive: 1,2,3,4,5
 
 Both `switch` and `match` are identical keywords. Cases do **not** fall through.
 
-```sylvel
+```lyn
 let day = "Monday"
 switch day {
     case "Monday":
@@ -324,7 +494,7 @@ match code {
 
 ### 3.6 break & continue
 
-```sylvel
+```lyn
 for i in 1...10:
     if i == 5: break       # exit loop
     print(i)               # 1 2 3 4
@@ -340,7 +510,7 @@ for i in 1...10:
 
 ### 4.1 Named Functions
 
-```sylvel
+```lyn
 def greet(name) {
     return "Hello, " + name + "!"
 }
@@ -360,13 +530,13 @@ A function with no explicit `return` returns `null`.
 ### 4.2 Anonymous Functions (Lambdas)
 
 **Arrow form** — single-expression body:
-```sylvel
+```lyn
 let double = def(x) => x * 2
 print(double(5))   # 10
 ```
 
 **Block form** — multi-statement body:
-```sylvel
+```lyn
 let square = def(n) {
     let result = n * n
     return result
@@ -380,7 +550,7 @@ print(square(7))   # 49
 
 Functions are values — store, pass, and return them freely:
 
-```sylvel
+```lyn
 def apply(fn, value) {
     return fn(value)
 }
@@ -402,7 +572,7 @@ print(ops["mul"](3, 7))    # 21
 
 Use `...name` to collect extra arguments into an array:
 
-```sylvel
+```lyn
 def sum(...nums) {
     var total = 0
     for n in nums: total += n
@@ -424,7 +594,7 @@ log("INFO", "Server started", "Port 8080")
 
 Functions capture their surrounding lexical scope:
 
-```sylvel
+```lyn
 def makeCounter() {
     var count = 0
     def increment() {
@@ -442,9 +612,11 @@ print(counter())   # 3
 
 ---
 
-## 5. Error Handling
+## 5. Error Handling & Diagnostics
 
-```sylvel
+### 5.1 Structured Exception Handling: `try` / `catch` / `finally`
+
+```lyn
 try {
     throw "Something went wrong"
 } catch e {
@@ -456,7 +628,7 @@ try {
 
 **Custom error objects:**
 
-```sylvel
+```lyn
 def safeDivide(a, b) {
     if b == 0 {
         throw {"code": 400, "message": "Division by zero"}
@@ -475,7 +647,7 @@ try {
 
 **Re-throwing:**
 
-```sylvel
+```lyn
 try {
     riskyOperation()
 } catch e {
@@ -486,14 +658,44 @@ try {
 
 ---
 
+### 5.2 Python-Style Error Traceback & Diagnostics
+
+When an unhandled runtime error or exception occurs, Evelyn prints a comprehensive, Python-style traceback detailing the file, line number, call stack frames, offending source code line, and categorized error type:
+
+```text
+Traceback (most recent call last):
+  File "calculator.lyn", line 12, in processItem
+    let subtotal = price * count
+  File "main.lyn", line 45, in <main>
+    processItem("Widget", undefined_quantity)
+NameError: variable 'undefined_quantity' is not defined
+```
+
+#### Standard Error Categories
+
+| Error Category | Trigger Condition | Example Output |
+|---|---|---|
+| **`NameError`** | Accessing an undeclared or out-of-scope variable | `NameError: variable 'foo' is not defined` |
+| **`TypeError`** | Applying incompatible types to operators or functions | `TypeError: cannot apply operator '+' to int and string` |
+| **`ZeroDivisionError`** | Division or modulo by zero (`/`, `//`, `%`) | `ZeroDivisionError: division by zero` |
+| **`IndexError`** | Accessing array indices out of bounds | `IndexError: array index out of bounds (index 5, length 3)` |
+| **`KeyError`** | Accessing non-existent required map keys | `KeyError: key 'username' not found` |
+| **`AssertionError`** | Failed `assert` conditions | `AssertionError: expected score 100, got 50` |
+| **`MutabilityError`** | Attempting to reassign an immutable `let` binding | `MutabilityError: Cannot assign to immutable binding 'maxCount'` |
+| **`UncaughtException`** | Unhandled thrown values | `UncaughtException: DatabaseConnectionTimeout` |
+| **`SyntaxError`** | Parser unexpected tokens or missing delimiters | `SyntaxError: expected ':' or '{' after if condition` |
+| **`RuntimeError`** | General runtime failure | `RuntimeError: stack overflow in recursive call` |
+
+---
+
 ## 6. Modules & Imports
 
-```sylvel
-import "math"           # stdlib module (no .syl needed)
+```lyn
+import "math"           # stdlib module (no .lyn needed)
 import "string"
 import "json"
 
-import "utils.syl"      # local file
+import "utils.lyn"      # local file
 import "./helpers/fmt"  # relative path
 
 import "init"           # load ALL stdlib modules at once
@@ -501,7 +703,7 @@ import "init"           # load ALL stdlib modules at once
 
 After importing, module variables are available:
 
-```sylvel
+```lyn
 import "math"
 print(math["pi"])           # 3.141592653589793
 print(math["floor"](3.7))   # 3
@@ -526,7 +728,7 @@ These are always available, no import needed.
 | `isMap(v)` | bool | `true` if map |
 | `typeOf(v)` | string | Returns type name string |
 
-```sylvel
+```lyn
 print(isNull(null))       # true
 print(isString("hi"))     # true
 print(isNumber(3.14))     # true
@@ -545,7 +747,7 @@ print(typeOf("hello"))    # string
 | `toNumber(v)` | Alias for numeric conversion |
 | `toBool(v)` | Truthy coercion |
 
-```sylvel
+```lyn
 print(toString(42))        # 42
 print(toString([1,2,3]))   # [1, 2, 3]
 print(numToString(10.0))   # 10
@@ -571,7 +773,7 @@ print(stringToNum("3.14")) # 3.14
 | `stringPadStart(s, w, ch)` | Pad start to width |
 | `stringPadEnd(s, w, ch)` | Pad end to width |
 
-```sylvel
+```lyn
 print(stringLen("hello"))                  # 5
 print(stringSub("hello world", 6, 5))     # world
 print(stringSplit("a,b,c", ","))           # [a, b, c]
@@ -600,7 +802,7 @@ print(stringReplaceAll("aaa","a","b"))    # bbb
 | `arrayFind(arr, fn)` | First match |
 | `arrayFindIndex(arr, fn)` | Index of first match |
 
-```sylvel
+```lyn
 var nums = [3,1,4,1,5]
 arrayAppend(nums, 9)
 print(arrayLen(nums))          # 6
@@ -630,7 +832,7 @@ print(total)   # 10
 | `mapLen(m)` | Number of keys |
 | `mapMerge(m1, m2)` | Merge, m2 wins on conflict |
 
-```sylvel
+```lyn
 let cfg = {"host": "localhost", "port": 8080}
 print(mapKeys(cfg))           # [host, port]
 mapSet(cfg, "debug", true)
@@ -713,7 +915,7 @@ print(mapLen(cfg))             # 2
 
 ### 8.1 `string`
 
-```sylvel
+```lyn
 import "string"
 ```
 
@@ -746,7 +948,7 @@ import "string"
 
 **Examples:**
 
-```sylvel
+```lyn
 import "string"
 
 print(string["repeat"]("ab", 3))           # ababab
@@ -777,7 +979,7 @@ print(string["snakeCase"]("helloWorld"))   # hello_world
 
 ### 8.2 `array`
 
-```sylvel
+```lyn
 import "array"
 ```
 
@@ -807,7 +1009,7 @@ import "array"
 
 **Examples:**
 
-```sylvel
+```lyn
 import "array"
 
 print(array["range"](0, 5, null))          # [0, 1, 2, 3, 4]
@@ -834,7 +1036,7 @@ print(array["union"]([1,2,3],[3,4,5]))         # [1, 2, 3, 4, 5]
 
 ### 8.3 `math`
 
-```sylvel
+```lyn
 import "math"
 ```
 
@@ -859,7 +1061,7 @@ import "math"
 
 **Examples:**
 
-```sylvel
+```lyn
 import "math"
 
 print(math["pi"])              # 3.141592653589793
@@ -883,7 +1085,7 @@ print(7 // 2)    # 3
 
 ### 8.4 `io` & `path`
 
-```sylvel
+```lyn
 import "io"
 ```
 
@@ -916,7 +1118,7 @@ import "io"
 
 **Examples:**
 
-```sylvel
+```lyn
 import "io"
 
 io["write"]("hello.txt", "Hello, World!")
@@ -940,7 +1142,7 @@ print(path["join"](["/usr","local","file.txt"])) # /usr/local/file.txt
 
 ### 8.5 `json`
 
-```sylvel
+```lyn
 import "json"
 ```
 
@@ -957,7 +1159,7 @@ import "json"
 
 **Examples:**
 
-```sylvel
+```lyn
 import "json"
 
 let data = json["loads"]("{\"name\":\"Alice\",\"age\":30}")
@@ -993,7 +1195,7 @@ print(json["validate"]("not json"))       # false
 
 ### 8.6 `http`
 
-```sylvel
+```lyn
 import "http"
 ```
 
@@ -1018,7 +1220,7 @@ All methods return a **response map**:
 
 **Examples:**
 
-```sylvel
+```lyn
 import "http"
 
 # GET
@@ -1039,11 +1241,11 @@ let secure = http["get"]("https://api.example.com/profile", headers)
 
 # Build URL with query string
 let url = http["buildUrl"]("https://api.example.com/search", {
-    "q": "sylvel lang",
+    "q": "Avelyn lang",
     "limit": 10
 })
 print(url)
-# https://api.example.com/search?q=sylvel%20lang&limit=10
+# https://api.example.com/search?q=Avelyn%20lang&limit=10
 
 # Download file
 http["download"]("https://example.com/file.zip", "output.zip")
@@ -1053,17 +1255,17 @@ http["download"]("https://example.com/file.zip", "output.zip")
 
 ### 8.7 `web`
 
-```sylvel
+```lyn
 import "web"
 ```
 
 Flask/Express-style HTTP server framework.
 
-```sylvel
+```lyn
 let app = web["app"]()
 
 app["get"]("/", def(req) {
-    return app["json"]({"message": "Hello from Sylvel!"})
+    return app["json"]({"message": "Hello from Evelyn!"})
 })
 
 app["post"]("/users", def(req) {
@@ -1093,7 +1295,7 @@ app["run"](8080)
 
 #### Global response helpers
 
-```sylvel
+```lyn
 web["json"]({"ok": true})            # JSON 200
 web["error"]("Not found", 404)       # JSON error
 web["html"]("<h1>Hello</h1>")        # HTML 200
@@ -1118,7 +1320,7 @@ web["parseBody"](req)                   # parse JSON body
 
 ### 8.8 `middleware`
 
-```sylvel
+```lyn
 import "middleware"
 ```
 
@@ -1133,7 +1335,7 @@ import "middleware"
 
 **Examples:**
 
-```sylvel
+```lyn
 import "web"
 import "middleware"
 
@@ -1172,7 +1374,7 @@ app["run"](3000)
 
 ### 8.9 `async`
 
-```sylvel
+```lyn
 import "async"
 ```
 
@@ -1186,7 +1388,7 @@ Cooperative event-loop and JavaScript-style Promises.
 
 **Event loop example:**
 
-```sylvel
+```lyn
 import "async"
 
 async["delay"](100, def() { print("100ms") })
@@ -1199,7 +1401,7 @@ async["loop"]()
 
 **Promise example:**
 
-```sylvel
+```lyn
 import "async"
 
 let p = async["promise"](def(resolve, reject) {
@@ -1225,7 +1427,7 @@ async["loop"]()
 
 ### 8.10 `datetime`
 
-```sylvel
+```lyn
 import "datetime"
 ```
 
@@ -1249,7 +1451,7 @@ import "datetime"
 
 **Examples:**
 
-```sylvel
+```lyn
 import "datetime"
 
 let now = datetime["now"]()
@@ -1276,7 +1478,7 @@ print(datetime["relative"](fiveMinAgo))   # 5 minutes ago
 
 ### 8.11 `random`
 
-```sylvel
+```lyn
 import "random"
 ```
 
@@ -1293,7 +1495,7 @@ All functions use OS-level CSPRNG (cryptographically secure).
 
 **Examples:**
 
-```sylvel
+```lyn
 import "random"
 
 print(random["random"]())           # e.g. 0.7392...
@@ -1309,7 +1511,7 @@ print(hand)   # 3 unique random cards
 
 ### 8.12 `re` (Regex)
 
-```sylvel
+```lyn
 import "re"
 ```
 
@@ -1326,7 +1528,7 @@ import "re"
 
 **Examples:**
 
-```sylvel
+```lyn
 import "re"
 
 print(re["search"]("\\d+", "abc 123"))        # true
@@ -1354,13 +1556,13 @@ print(safe)      # a\+b\*c
 
 ### 8.13 `collections`
 
-```sylvel
+```lyn
 import "collections"
 ```
 
 #### Stack (LIFO)
 
-```sylvel
+```lyn
 let s = Stack()
 s["push"](1)
 s["push"](2)
@@ -1383,7 +1585,7 @@ print(s["toArray"]()) # [1, 2]
 
 #### Queue (FIFO)
 
-```sylvel
+```lyn
 let q = Queue()
 q["enqueue"]("task1")
 q["enqueue"]("task2")
@@ -1403,7 +1605,7 @@ print(q["size"]())     # 1
 
 #### Set (unique collection)
 
-```sylvel
+```lyn
 let s = Set(["a", "b", "c", "a"])  # deduped on init
 s["add"]("d")
 s["add"]("b")              # no-op
@@ -1425,7 +1627,7 @@ print(s["toArray"]())      # [a, c, d]
 
 ### 8.14 `functional`
 
-```sylvel
+```lyn
 import "functional"
 ```
 
@@ -1438,7 +1640,7 @@ import "functional"
 
 **Examples:**
 
-```sylvel
+```lyn
 import "functional"
 
 # Partial application
@@ -1478,7 +1680,7 @@ print(transform("  hello  "))  # HELLO
 
 ### 8.15 `logger`
 
-```sylvel
+```lyn
 import "logger"
 ```
 
@@ -1505,7 +1707,7 @@ Leveled, structured logger.
 
 **Examples:**
 
-```sylvel
+```lyn
 import "logger"
 
 logger["info"]("Server started")
@@ -1530,7 +1732,7 @@ logger["warn"]("visible")  # shown
 
 ### 8.16 `validate`
 
-```sylvel
+```lyn
 import "validate"
 ```
 
@@ -1553,7 +1755,7 @@ Input validation — returns `null` on success, error string on failure.
 
 **Examples:**
 
-```sylvel
+```lyn
 import "validate"
 
 print(validate["required"](null, "username"))
@@ -1588,7 +1790,7 @@ for e in errors { print(e) }
 
 ### 8.17 `test`
 
-```sylvel
+```lyn
 import "test"
 ```
 
@@ -1618,7 +1820,7 @@ pytest / Jest-style testing framework.
 
 **Example:**
 
-```sylvel
+```lyn
 import "test"
 import "string"
 
@@ -1674,7 +1876,7 @@ All tests passed!
 
 ### 8.18 `cli`
 
-```sylvel
+```lyn
 import "cli"
 ```
 
@@ -1692,7 +1894,7 @@ Built-in: `--help` / `-h` always triggers help and exits.
 
 **Example:**
 
-```sylvel
+```lyn
 import "cli"
 import "sys"
 
@@ -1716,13 +1918,13 @@ for file in files {
 }
 ```
 
-Run: `sylvel tool.syl --verbose -o result.txt file1.txt file2.txt`
+Run: `avelyn tool.lyn --verbose -o result.txt file1.txt file2.txt`
 
 ---
 
 ### 8.19 `term`
 
-```sylvel
+```lyn
 import "term"
 ```
 
@@ -1748,7 +1950,7 @@ Available codes: `reset`, `bold`, `dim`, `underline`, `blink`, `reverse`, `black
 
 **Examples:**
 
-```sylvel
+```lyn
 import "term"
 
 print(term["red"]("Error!"))
@@ -1766,7 +1968,7 @@ term["printGreen"]("All tests passed!")
 
 ### 8.20 `prompt`
 
-```sylvel
+```lyn
 import "prompt"
 ```
 
@@ -1780,7 +1982,7 @@ Interactive CLI prompts.
 
 **Examples:**
 
-```sylvel
+```lyn
 import "prompt"
 
 let name = prompt["askInput"]("What is your name?", "World")
@@ -1799,7 +2001,7 @@ print("You chose: " + color)
 
 ### 8.21 `template`
 
-```sylvel
+```lyn
 import "template"
 ```
 
@@ -1815,7 +2017,7 @@ String templating with `{{variable}}` placeholders.
 
 **Examples:**
 
-```sylvel
+```lyn
 import "template"
 
 let tmpl = "Hello, {{name}}! You are {{age}} years old."
@@ -1841,7 +2043,7 @@ print(template["htmlTable"](rows, ["name", "score"]))
 
 ### 8.22 `config`
 
-```sylvel
+```lyn
 import "config"
 ```
 
@@ -1865,7 +2067,7 @@ Configuration management: env var → JSON file → default fallback.
 }
 ```
 
-```sylvel
+```lyn
 import "config"
 
 let cfg = config["load"]("config.json")
@@ -1886,7 +2088,7 @@ print("Connecting to " + host + ":" + numToString(port))
 
 ### 8.23 `uuid`
 
-```sylvel
+```lyn
 import "uuid"
 ```
 
@@ -1895,7 +2097,7 @@ import "uuid"
 | `uuid4` | `()` | Generate random UUID v4 |
 | `isValid` | `(s)` | True if string is valid UUID v4 |
 
-```sylvel
+```lyn
 import "uuid"
 
 let id = uuid["uuid4"]()
@@ -1908,7 +2110,7 @@ print(uuid["isValid"]("not-uuid"))  # false
 
 ### 8.24 `secrets`
 
-```sylvel
+```lyn
 import "secrets"
 ```
 
@@ -1921,7 +2123,7 @@ OS CSPRNG-backed token generation.
 | `token_urlsafe` | `(n)` | URL-safe base64 token |
 | `choice` | `(arr)` | Cryptographically secure random choice |
 
-```sylvel
+```lyn
 import "secrets"
 
 let session = secrets["token_urlsafe"](32)
@@ -1937,18 +2139,18 @@ let otp = secrets["choice"](["0","1","2","3","4","5","6","7","8","9"])
 
 ### 8.25 `lzw`
 
-```sylvel
+```lyn
 import "lzw"
 ```
 
-Pure Sylvel Lempel-Ziv-Welch compression.
+Pure Evelyn Lempel-Ziv-Welch compression.
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
 | `compress` | `(s)` | Compress string → array of codes |
 | `decompress` | `(arr)` | Decompress codes → original string |
 
-```sylvel
+```lyn
 import "lzw"
 
 let original = "ABABABABABABABAB"
@@ -1963,13 +2165,13 @@ print(restored == original)   # true
 
 ### 8.26 `pathlib`
 
-```sylvel
+```lyn
 import "pathlib"
 ```
 
 Object-oriented path management.
 
-```sylvel
+```lyn
 let p = pathlib["Path"]("/home/user/docs/report.pdf")
 ```
 
@@ -1985,7 +2187,7 @@ let p = pathlib["Path"]("/home/user/docs/report.pdf")
 | `read()` | Read file contents |
 | `write(data)` | Write data to file |
 
-```sylvel
+```lyn
 import "pathlib"
 
 let p = pathlib["Path"]("/home/user/docs/report.pdf")
@@ -2007,7 +2209,7 @@ if readme["exists"]() {
 
 ### 8.27 `sys` & `os`
 
-```sylvel
+```lyn
 import "sys"
 import "os"
 ```
@@ -2017,12 +2219,12 @@ import "os"
 | Field / Method | Description |
 |----------------|-------------|
 | `argv` | Command-line arguments array |
-| `version` | Sylvel version (`"1.5.0"`) |
+| `version` | Evelyn version (`"1.5.0"`) |
 | `exit(code)` | Exit process |
 | `stdout.write(s)` | Write to stdout |
 | `stderr.write(s)` | Write to stderr |
 
-```sylvel
+```lyn
 import "sys"
 
 print(sys["version"])    # 1.5.0
@@ -2046,7 +2248,7 @@ if arrayLen(sys["argv"]) < 2 {
 | `environ(key)` | Read env variable |
 | `listdir(p)` | List directory |
 
-```sylvel
+```lyn
 import "os"
 
 print(os["environ"]("HOME"))
@@ -2059,7 +2261,7 @@ os["system"]("echo", ["Hello!"])
 
 ### 8.28 `hashlib`, `base64` & `hex`
 
-```sylvel
+```lyn
 import "hashlib"
 import "base64"
 import "hex"
@@ -2073,7 +2275,7 @@ import "hex"
 | `sha1(s)` | SHA-1 digest |
 | `sha256(s)` | SHA-256 digest |
 
-```sylvel
+```lyn
 import "hashlib"
 
 print(hashlib["md5"]("hello"))
@@ -2085,7 +2287,7 @@ print(hashlib["sha256"]("hello"))
 
 #### `base64`
 
-```sylvel
+```lyn
 import "base64"
 
 let enc = base64["b64encode"]("Hello, World!")
@@ -2095,7 +2297,7 @@ print(base64["b64decode"](enc))     # Hello, World!
 
 #### `hex`
 
-```sylvel
+```lyn
 import "hex"
 
 let h = hex["encode"]("hello")
@@ -2107,7 +2309,7 @@ print(hex["decode"](h))     # hello
 
 ### 8.29 `dotenv`
 
-```sylvel
+```lyn
 import "dotenv"
 ```
 
@@ -2125,7 +2327,7 @@ SECRET_KEY=my-secret
 DEBUG=true
 ```
 
-```sylvel
+```lyn
 import "dotenv"
 
 dotenv["load"](".env")
@@ -2137,17 +2339,17 @@ print(dotenv["get"]("DEBUG", "false"))
 
 ### 8.30 `glob` & `shutil`
 
-```sylvel
+```lyn
 import "glob"
 import "shutil"
 ```
 
 #### `glob` — file pattern matching
 
-```sylvel
+```lyn
 import "glob"
 
-let sylFiles = glob["glob"]("src/**/*.syl")
+let sylFiles = glob["glob"]("src/**/*.lyn")
 for f in sylFiles { print(f) }
 ```
 
@@ -2160,7 +2362,7 @@ for f in sylFiles { print(f) }
 | `remove` | `(path)` | Delete file |
 | `rmdir` | `(path)` | Remove directory |
 
-```sylvel
+```lyn
 import "shutil"
 
 shutil["copy"]("config.json", "config.json.bak")
@@ -2172,7 +2374,7 @@ shutil["remove"]("temp.txt")
 
 ### 8.31 `platform` & `time`
 
-```sylvel
+```lyn
 import "platform"
 import "time"
 ```
@@ -2187,7 +2389,7 @@ import "time"
 | `isMac` | True on macOS |
 | `isLinux` | True on Linux |
 
-```sylvel
+```lyn
 import "platform"
 
 print(platform["os"])   # macos
@@ -2203,7 +2405,7 @@ if platform["isWindows"] { print("Windows!") }
 | `sleep` | `(ms)` | Sleep milliseconds |
 | `format` | `(ts, fmt)` | Format timestamp |
 
-```sylvel
+```lyn
 import "time"
 
 let start = time["ms"]()
@@ -2220,7 +2422,7 @@ time["sleep"](500)   # pause 500ms
 
 ### Example 1: Simple REST API
 
-```sylvel
+```lyn
 import "web"
 import "json"
 import "validate"
@@ -2269,7 +2471,7 @@ app["run"](8080)
 
 ### Example 2: File Processing Tool
 
-```sylvel
+```lyn
 import "io"
 import "string"
 import "json"
@@ -2309,7 +2511,7 @@ print("Written to summary.json")
 
 ### Example 3: CLI Tool
 
-```sylvel
+```lyn
 import "cli"
 import "sys"
 import "io"
@@ -2366,7 +2568,7 @@ if stringLen(outputFile) > 0 {
 
 ### Example 4: Async Event Queue
 
-```sylvel
+```lyn
 import "async"
 import "logger"
 import "datetime"
@@ -2394,7 +2596,7 @@ logger["info"]("All tasks completed!")
 
 ### Example 5: Data Validation Pipeline
 
-```sylvel
+```lyn
 import "validate"
 import "json"
 import "logger"
@@ -2439,4 +2641,4 @@ for user in users {
 
 ---
 
-*Sylvel v1.5.0 — Language Reference*
+*Evelyn (Avelyn) v2.5.7 — Official Language & Compiler Reference*

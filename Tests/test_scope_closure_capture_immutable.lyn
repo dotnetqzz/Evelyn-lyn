@@ -1,0 +1,10 @@
+# Test closure capturing immutable outer binding
+fn makeAdder(n):
+    return def(x) => x + n
+
+let add5 = makeAdder(5)
+let add10 = makeAdder(10)
+
+assert add5(20) == 25, "closure add5 failed"
+assert add10(20) == 30, "closure add10 failed"
+print("PASS: test_scope_closure_capture_immutable")

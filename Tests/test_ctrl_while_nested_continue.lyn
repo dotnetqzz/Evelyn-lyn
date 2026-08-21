@@ -1,0 +1,14 @@
+# Test continue in inner while loop
+var outer_i = 0
+var sum = 0
+while outer_i < 3:
+    var inner_j = 0
+    while inner_j < 5:
+        inner_j += 1
+        if inner_j == 3:
+            continue
+        sum += 1
+    outer_i += 1
+
+assert sum == 12, "nested while continue failed"
+print("PASS: test_ctrl_while_nested_continue")

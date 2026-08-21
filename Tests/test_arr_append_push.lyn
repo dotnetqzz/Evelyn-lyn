@@ -1,0 +1,6 @@
+# Test arrayAppend and arrayPush
+var arr = [1, 2]
+arr = arrayAppend(arr, 3)
+arr = arrayPush(arr, 4)
+assert arr == [1, 2, 3, 4], "arrayAppend / push failed"
+print("PASS: test_arr_append_push")

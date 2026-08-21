@@ -1,0 +1,5 @@
+# Test stringUpper builtin
+assert stringUpper("hello") == "HELLO", "stringUpper lower failed"
+assert stringUpper("HeLLo World 123!") == "HELLO WORLD 123!", "stringUpper mixed failed"
+assert stringUpper("") == "", "stringUpper empty failed"
+print("PASS: test_std_string_upper")

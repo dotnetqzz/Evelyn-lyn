@@ -1,0 +1,11 @@
+# Test variables in else branch
+let flag = false
+var seen = 0
+if flag:
+    let branch_a = 11
+else:
+    let branch_b = 22
+    seen = branch_b
+
+assert seen == 22, "else branch var failed"
+print("PASS: test_scope_else_branch_isolation")

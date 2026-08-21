@@ -1,0 +1,7 @@
+# Test multiple string concatenation components
+let a = "A"
+let b = 2
+let c = true
+let s = a + "-" + toString(b) + "-" + toString(c)
+assert s == "A-2-true", "multiple components failed"
+print("PASS: test_lex_interp_multiple")

@@ -1,0 +1,6 @@
+# Test stringRepeat creating 500-char string
+let s = stringRepeat("abcde", 100)
+assert stringLen(s) == 500, "stringRepeat 500 failed"
+assert stringStartsWith(s, "abcde"), "starts with abcde failed"
+assert stringEndsWith(s, "abcde"), "ends with abcde failed"
+print("PASS: test_edge_string_repeat_large")

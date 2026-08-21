@@ -1,0 +1,11 @@
+# Test recursive factorial function
+fn fact(n):
+    if n <= 1:
+        return 1
+    return n * fact(n - 1)
+
+assert fact(0) == 1, "fact(0) failed"
+assert fact(1) == 1, "fact(1) failed"
+assert fact(5) == 120, "fact(5) failed"
+assert fact(8) == 40320, "fact(8) failed"
+print("PASS: test_fn_recursion_factorial")

@@ -1,0 +1,9 @@
+# Test throwing boolean value
+var caught_bool = null
+try {
+    throw false
+} catch e {
+    caught_bool = e
+}
+assert caught_bool == false, "throw bool failed"
+print("PASS: test_err_throw_boolean")

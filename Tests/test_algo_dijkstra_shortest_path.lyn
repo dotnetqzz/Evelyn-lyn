@@ -1,0 +1,41 @@
+# Test Dijkstra Shortest Path on weighted graph
+fn dijkstra(graph, start, num_nodes):
+    var dist = {}
+    var visited = {}
+    for i in 0..num_nodes:
+        dist[toString(i)] = 999999
+        visited[toString(i)] = false
+    dist[toString(start)] = 0
+
+    for step in 0..num_nodes:
+        var min_d = 999999
+        var u = -1
+        for i in 0..num_nodes:
+            let k = toString(i)
+            if not visited[k] and dist[k] < min_d:
+                min_d = dist[k]
+                u = i
+        if u == -1: break
+        visited[toString(u)] = true
+
+        let edges = graph[toString(u)] ?? []
+        for edge in edges:
+            let v = edge[0]
+            let weight = edge[1]
+            let alt = dist[toString(u)] + weight
+            if alt < dist[toString(v)]:
+                dist[toString(v)] = alt
+    return dist
+
+let graph = {
+    "0": [[1, 4], [2, 1]],
+    "1": [[3, 1]],
+    "2": [[1, 2], [3, 5]],
+    "3": []
+}
+let distances = dijkstra(graph, 0, 4)
+assert distances["0"] == 0, "dijkstra node 0 failed"
+assert distances["1"] == 3, "dijkstra node 1 failed"
+assert distances["2"] == 1, "dijkstra node 2 failed"
+assert distances["3"] == 4, "dijkstra node 3 failed"
+print("PASS: test_algo_dijkstra_shortest_path")

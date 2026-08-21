@@ -1,0 +1,5 @@
+# Test compound bitwise or |=
+var x = 0x0F
+x |= 0xF0
+assert x == 0xFF, "|= failed"
+print("PASS: test_var_compound_bor")

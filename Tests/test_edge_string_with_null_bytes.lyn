@@ -1,0 +1,4 @@
+# Test string containing null byte escape
+let s = "hello\0world"
+assert stringLen(s) == 11, "string with null byte len failed"
+print("PASS: test_edge_string_with_null_bytes")

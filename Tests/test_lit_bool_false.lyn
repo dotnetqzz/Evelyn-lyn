@@ -1,0 +1,6 @@
+# Test boolean false literal
+let f = false
+assert f == false, "bool false failed"
+assert not f == true, "not false failed"
+assert (f or false) == false, "false or false failed"
+print("PASS: test_lit_bool_false")

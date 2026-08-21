@@ -1,0 +1,20 @@
+# Test custom structured error hierarchy
+fn makeError(category, code, message):
+    return {"category": category, "code": code, "message": message}
+
+fn validateUser(user):
+    if not mapHas(user, "username"):
+        throw makeError("VALIDATION", 1001, "missing username")
+    if not mapHas(user, "email"):
+        throw makeError("VALIDATION", 1002, "missing email")
+    return true
+
+var err_cat = ""
+try {
+    validateUser({"age": 20})
+} catch e {
+    err_cat = e["category"]
+    assert e["code"] == 1001, "error code mismatch"
+}
+assert err_cat == "VALIDATION", "error category mismatch"
+print("PASS: test_err_custom_error_hierarchy")

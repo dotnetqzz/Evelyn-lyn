@@ -1,0 +1,6 @@
+# Test single argument function call
+fn square(x):
+    return x * x
+
+assert square(9) == 81, "single arg call failed"
+print("PASS: test_parse_fn_call_one_arg")

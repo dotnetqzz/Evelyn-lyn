@@ -1,0 +1,7 @@
+# Test default parameter values computed from basic literals
+fn formatNum(n, decimals = 2, prefix = "$"):
+    return prefix + toString(n)
+
+assert formatNum(50) == "$50", "default param expr failed"
+assert formatNum(50, 4, "EUR ") == "EUR 50", "override expr failed"
+print("PASS: test_fn_default_param_expressions")

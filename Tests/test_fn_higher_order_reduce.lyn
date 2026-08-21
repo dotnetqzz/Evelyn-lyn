@@ -1,0 +1,12 @@
+# Test custom reduce higher order function
+fn myReduce(arr, fn_cb, initial):
+    var acc = initial
+    for item in arr:
+        acc = fn_cb(acc, item)
+    return acc
+
+let sum = myReduce([1, 2, 3, 4, 5], def(acc, x) => acc + x, 0)
+let prod = myReduce([1, 2, 3, 4, 5], def(acc, x) => acc * x, 1)
+assert sum == 15, "reduce sum failed"
+assert prod == 120, "reduce prod failed"
+print("PASS: test_fn_higher_order_reduce")

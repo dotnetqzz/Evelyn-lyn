@@ -1,0 +1,5 @@
+# Test sorting array of mixed positive, negative, and zero integers
+let nums = [0, -5, 10, -20, 3, 0, 7]
+let sorted = arraySort(nums)
+assert sorted == [-20, -5, 0, 0, 3, 7, 10], "sort mixed numbers failed"
+print("PASS: test_edge_array_sort_mixed_numbers")

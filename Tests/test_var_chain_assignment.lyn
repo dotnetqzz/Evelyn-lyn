@@ -1,0 +1,9 @@
+# Test chain assignments / state updates
+var a = 1
+var b = 2
+var c = 3
+a = b + c
+b = a * 2
+c = a + b
+assert a == 5 and b == 10 and c == 15, "chain assignment failed"
+print("PASS: test_var_chain_assignment")

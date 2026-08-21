@@ -1,0 +1,16 @@
+# Test memoized function using closure cache map
+fn makeMemoFib():
+    var cache = {"0": 0, "1": 1}
+    fn fibMem(n):
+        let key = toString(n)
+        if cache[key] != null:
+            return cache[key]
+        let val = fibMem(n - 1) + fibMem(n - 2)
+        cache[key] = val
+        return val
+    return fibMem
+
+let memFib = makeMemoFib()
+assert memFib(20) == 6765, "memoized fib(20) failed"
+assert memFib(30) == 832040, "memoized fib(30) failed"
+print("PASS: test_fn_memoization")

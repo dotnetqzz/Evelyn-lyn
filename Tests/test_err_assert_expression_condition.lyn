@@ -1,0 +1,6 @@
+# Test assert with complex boolean expression
+let a = 10
+let b = 20
+let c = 30
+assert (a + b == c) and (c - b == a), "compound condition assert failed"
+print("PASS: test_err_assert_expression_condition")

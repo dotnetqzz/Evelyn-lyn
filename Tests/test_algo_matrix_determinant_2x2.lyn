@@ -1,0 +1,7 @@
+# Test 2x2 matrix determinant calculation: ad - bc
+fn det2x2(m):
+    return m[0][0] * m[1][1] - m[0][1] * m[1][0]
+
+let m = [[4, 6], [3, 8]]
+assert det2x2(m) == 14, "det 2x2 failed"
+print("PASS: test_algo_matrix_determinant_2x2")

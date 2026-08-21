@@ -1,0 +1,10 @@
+# Test match on boolean literals
+fn boolStr(b):
+    match b {
+        case true: return "YES"
+        case false: return "NO"
+    }
+
+assert boolStr(true) == "YES", "match bool true failed"
+assert boolStr(false) == "NO", "match bool false failed"
+print("PASS: test_match_literal_bool")

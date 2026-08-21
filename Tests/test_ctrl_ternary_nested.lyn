@@ -1,0 +1,9 @@
+# Test nested ternary expressions
+fn classify(score):
+    return score >= 90 ? "A" : (score >= 80 ? "B" : (score >= 70 ? "C" : "F"))
+
+assert classify(95) == "A", "ternary A failed"
+assert classify(85) == "B", "ternary B failed"
+assert classify(75) == "C", "ternary C failed"
+assert classify(50) == "F", "ternary F failed"
+print("PASS: test_ctrl_ternary_nested")

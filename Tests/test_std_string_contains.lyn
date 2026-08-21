@@ -1,0 +1,5 @@
+# Test stringContains builtin
+assert stringContains("hello world", "world") == true, "stringContains found failed"
+assert stringContains("hello world", "xyz") == false, "stringContains absent failed"
+assert stringContains("hello", "") == true, "stringContains empty failed"
+print("PASS: test_std_string_contains")

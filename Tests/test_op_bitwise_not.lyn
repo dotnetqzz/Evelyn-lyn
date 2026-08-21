@@ -1,0 +1,6 @@
+# Test bitwise NOT operator ~
+let x = 0
+assert ~x == -1, "bitwise not 0 failed"
+let a = 5
+assert ~a == -6, "bitwise not 5 failed"
+print("PASS: test_op_bitwise_not")

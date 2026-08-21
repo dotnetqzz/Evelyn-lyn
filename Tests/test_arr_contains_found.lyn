@@ -1,0 +1,4 @@
+# Test arrayContains returning true when element present
+let items = ["alpha", "beta", "gamma"]
+assert arrayContains(items, "beta") == true, "arrayContains found failed"
+print("PASS: test_arr_contains_found")

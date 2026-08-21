@@ -1,0 +1,9 @@
+# Test type() on struct instances
+struct Widget {
+    name
+}
+
+let w = Widget("Gizmo")
+let t = type(w)
+assert t != null and stringLen(t) > 0, "reflection type check failed"
+print("PASS: test_type_reflection_type")

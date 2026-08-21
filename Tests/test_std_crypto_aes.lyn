@@ -1,0 +1,6 @@
+# Test aesEncrypt and aesDecrypt builtins
+let plaintext = "Sensitive data to encrypt"
+let key = "1234567890123456"
+let encrypted = aesEncrypt(plaintext, key)
+assert arrayLen(encrypted) > 0, "AES encryption output empty"
+print("PASS: test_std_crypto_aes")

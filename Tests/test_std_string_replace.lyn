@@ -1,0 +1,5 @@
+# Test stringReplace builtin
+let orig = "The blue dog and the blue cat"
+let replaced = stringReplace(orig, "blue", "red")
+assert replaced == "The red dog and the red cat", "stringReplace failed"
+print("PASS: test_std_string_replace")

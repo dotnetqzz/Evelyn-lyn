@@ -1,0 +1,5 @@
+# Test arraySort on already sorted array
+let sorted_orig = [1, 2, 3, 4, 5]
+let res = arraySort(sorted_orig)
+assert res == [1, 2, 3, 4, 5], "sort already sorted failed"
+print("PASS: test_arr_sort_already_sorted")

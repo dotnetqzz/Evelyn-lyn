@@ -1,0 +1,5 @@
+# Test mathSin, mathCos, mathTan
+assert mathSin(0) == 0.0, "sin 0 failed"
+assert mathCos(0) == 1.0, "cos 0 failed"
+assert mathTan(0) == 0.0, "tan 0 failed"
+print("PASS: test_std_math_trig")

@@ -1,0 +1,12 @@
+# Test mutual recursion up to depth 30
+fn isEvenD(n):
+    if n == 0: return true
+    return isOddD(n - 1)
+
+fn isOddD(n):
+    if n == 0: return false
+    return isEvenD(n - 1)
+
+assert isEvenD(30) == true, "mutual recursion 30 even failed"
+assert isOddD(30) == false, "mutual recursion 30 odd failed"
+print("PASS: test_edge_mutual_recursion_depth")

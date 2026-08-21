@@ -1,0 +1,6 @@
+# Test charCodeAt and charFromCode
+assert charCodeAt("A", 0) == 65, "charCodeAt 'A' failed"
+assert charCodeAt("z", 0) == 122, "charCodeAt 'z' failed"
+assert charFromCode(65) == "A", "charFromCode 65 failed"
+assert charFromCode(122) == "z", "charFromCode 122 failed"
+print("PASS: test_std_string_char_code")

@@ -1,0 +1,5 @@
+# Test arraySlice extracting middle sub-array
+let arr = [0, 1, 2, 3, 4, 5, 6]
+let sub = arraySlice(arr, 2, 5)
+assert sub == [2, 3, 4], "arraySlice middle failed"
+print("PASS: test_arr_slice_middle")

@@ -1,0 +1,7 @@
+# Test arrayCopy produces independent array
+let orig = [1, 2, 3]
+let copy = arrayCopy(orig)
+copy[0] = 999
+assert orig[0] == 1, "arrayCopy isolation failed"
+assert copy[0] == 999, "arrayCopy mutation failed"
+print("PASS: test_arr_copy_independence")

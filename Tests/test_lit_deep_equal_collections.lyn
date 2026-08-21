@@ -1,0 +1,7 @@
+# Test deepEqual on arrays and maps
+let a1 = [1, [2, 3], {"x": 10}]
+let a2 = [1, [2, 3], {"x": 10}]
+let a3 = [1, [2, 4], {"x": 10}]
+assert deepEqual(a1, a2) == true, "deepEqual identical failed"
+assert deepEqual(a1, a3) == false, "deepEqual diff failed"
+print("PASS: test_lit_deep_equal_collections")

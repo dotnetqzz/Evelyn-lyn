@@ -1,0 +1,4 @@
+# Test mapHas returning false for absent key
+let m = {"enabled": true}
+assert mapHas(m, "disabled") == false, "mapHas false failed"
+print("PASS: test_map_has_false")

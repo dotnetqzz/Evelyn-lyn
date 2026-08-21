@@ -1,0 +1,6 @@
+# Test compound division /=
+var x = 100
+x /= 2
+x /= 5
+assert x == 10 or x == 10.0, "/= failed"
+print("PASS: test_var_compound_div")

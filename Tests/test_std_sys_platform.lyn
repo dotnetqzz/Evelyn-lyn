@@ -1,0 +1,5 @@
+# Test sysPlatform builtin
+let plat = sysPlatform()
+assert stringLen(plat) > 0, "sysPlatform empty failed"
+assert isString(plat) == true, "sysPlatform type failed"
+print("PASS: test_std_sys_platform")

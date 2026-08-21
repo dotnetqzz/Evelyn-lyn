@@ -1,0 +1,4 @@
+# Test mathHypot builtin (sqrt(x^2 + y^2))
+let h = mathHypot(3, 4)
+assert h == 5.0, "mathHypot(3, 4) failed"
+print("PASS: test_std_math_hypot")

@@ -1,0 +1,6 @@
+# Test arrayConcat combining two arrays
+let a1 = [1, 2]
+let a2 = [3, 4, 5]
+let comb = arrayConcat(a1, a2)
+assert comb == [1, 2, 3, 4, 5], "arrayConcat failed"
+print("PASS: test_arr_concat")

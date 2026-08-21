@@ -1,0 +1,4 @@
+# Test empty byte array
+let b = b""
+assert arrayLen(b) == 0, "empty bytes len failed"
+print("PASS: test_lit_bytes_empty")

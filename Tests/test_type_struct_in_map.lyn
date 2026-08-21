@@ -1,0 +1,13 @@
+# Test map containing struct instances
+struct Session {
+    user_id,
+    token
+}
+
+let sessions = {
+    "sess_1": Session(101, "tok_abc"),
+    "sess_2": Session(102, "tok_xyz")
+}
+assert sessions["sess_1"].user_id == 101, "struct in map lookup failed"
+assert sessions["sess_2"].token == "tok_xyz", "struct in map token failed"
+print("PASS: test_type_struct_in_map")

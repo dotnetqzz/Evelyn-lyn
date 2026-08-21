@@ -1,0 +1,5 @@
+# Test sysArch builtin
+let arch = sysArch()
+assert stringLen(arch) > 0, "sysArch empty failed"
+assert isString(arch) == true, "sysArch type failed"
+print("PASS: test_std_sys_arch")

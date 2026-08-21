@@ -1,0 +1,9 @@
+# Test pipe token |>
+fn addTen(x):
+    return x + 10
+fn triple(x):
+    return x * 3
+
+let res = 5 |> addTen |> triple
+assert res == 45, "pipe token failed"
+print("PASS: test_lex_pipe_token")

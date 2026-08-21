@@ -1,0 +1,4 @@
+# Test 10-level nested map lookup
+let m = {"l1": {"l2": {"l3": {"l4": {"l5": {"l6": {"l7": {"l8": {"l9": {"l10": "FOUND"}}}}}}}}}}
+assert m["l1"]["l2"]["l3"]["l4"]["l5"]["l6"]["l7"]["l8"]["l9"]["l10"] == "FOUND", "10 deep map failed"
+print("PASS: test_edge_nested_maps_10_deep")

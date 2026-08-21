@@ -1,0 +1,8 @@
+# Test merging empty maps
+let m1 = {}
+let m2 = {}
+var out = {}
+for k in mapKeys(m1): out[k] = m1[k]
+for k in mapKeys(m2): out[k] = m2[k]
+assert arrayLen(mapKeys(out)) == 0, "empty map merge failed"
+print("PASS: test_edge_empty_map_merge")

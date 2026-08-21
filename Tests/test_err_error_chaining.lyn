@@ -1,0 +1,20 @@
+# Test wrapping error with contextual information
+fn lowLevel():
+    throw "connection refused"
+
+fn highLevel():
+    try {
+        lowLevel()
+    } catch e {
+        throw "ServiceError: " + toString(e)
+    }
+
+var final_err = ""
+try {
+    highLevel()
+} catch e {
+    final_err = toString(e)
+}
+assert stringContains(final_err, "ServiceError"), "high level prefix failed"
+assert stringContains(final_err, "connection refused"), "low level msg failed"
+print("PASS: test_err_error_chaining")

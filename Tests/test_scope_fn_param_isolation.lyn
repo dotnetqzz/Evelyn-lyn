@@ -1,0 +1,10 @@
+# Test function parameters do not leak to outer scope
+let p = "original"
+
+fn testParam(p):
+    return p + "_modified"
+
+let ret = testParam("arg")
+assert ret == "arg_modified", "param return failed"
+assert p == "original", "outer p preserved failed"
+print("PASS: test_scope_fn_param_isolation")

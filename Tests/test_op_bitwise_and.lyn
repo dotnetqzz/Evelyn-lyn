@@ -1,0 +1,5 @@
+# Test bitwise AND operator &
+assert (0b1100 & 0b1010) == 0b1000, "bitwise and failed"
+assert (0xFF & 0x0F) == 0x0F, "hex and failed"
+assert (15 & 7) == 7, "dec and failed"
+print("PASS: test_op_bitwise_and")

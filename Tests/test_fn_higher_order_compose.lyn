@@ -1,0 +1,13 @@
+# Test function composition: compose(f, g)(x) == f(g(x))
+fn compose(f, g):
+    return def(x) => f(g(x))
+
+fn addOne(x): return x + 1
+fn double(x): return x * 2
+
+let addThenDouble = compose(double, addOne) # (x+1)*2
+let doubleThenAdd = compose(addOne, double) # (x*2)+1
+
+assert addThenDouble(5) == 12, "compose addThenDouble failed"
+assert doubleThenAdd(5) == 11, "compose doubleThenAdd failed"
+print("PASS: test_fn_higher_order_compose")

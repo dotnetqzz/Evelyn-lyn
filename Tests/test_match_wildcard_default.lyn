@@ -1,0 +1,10 @@
+# Test match with wildcard / default catch-all
+fn categorize(val):
+    match val {
+        case "admin": return "superuser"
+        default:      return "regular_user"
+    }
+
+assert categorize("admin") == "superuser", "match specific arm failed"
+assert categorize("guest") == "regular_user", "match default arm failed"
+print("PASS: test_match_wildcard_default")

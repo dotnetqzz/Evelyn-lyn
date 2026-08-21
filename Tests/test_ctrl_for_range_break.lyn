@@ -1,0 +1,9 @@
+# Test break in for range
+var last_i = -1
+for i in 0..100:
+    if i == 7:
+        last_i = i
+        break
+
+assert last_i == 7, "for range break failed"
+print("PASS: test_ctrl_for_range_break")

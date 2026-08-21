@@ -1,0 +1,17 @@
+# Test grouping items into map of arrays
+let records = [
+    {"type": "fruit", "name": "apple"},
+    {"type": "veg",   "name": "carrot"},
+    {"type": "fruit", "name": "banana"},
+    {"type": "veg",   "name": "pea"}
+]
+var groups = {}
+for r in records:
+    let t = r["type"]
+    if not mapHas(groups, t):
+        groups[t] = []
+    groups[t] = arrayAppend(groups[t], r["name"])
+
+assert groups["fruit"] == ["apple", "banana"], "group fruits failed"
+assert groups["veg"] == ["carrot", "pea"], "group veg failed"
+print("PASS: test_map_group_by")

@@ -1,0 +1,7 @@
+# Test function with multiple default parameters
+fn makeVector(a = 1, b = 2, c = 3, d = 4, e = 5):
+    return a + b + c + d + e
+
+assert makeVector() == 15, "all defaults failed"
+assert makeVector(10, 20) == 42, "two overridden defaults failed"
+print("PASS: test_edge_function_many_defaults_10")

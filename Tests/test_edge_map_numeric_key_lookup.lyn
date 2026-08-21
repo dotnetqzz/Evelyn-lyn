@@ -1,0 +1,5 @@
+# Test map with numeric string keys
+let m = {"1": "one", "2": "two"}
+assert m[toString(1)] == "one", "numeric key 1 failed"
+assert m[toString(2)] == "two", "numeric key 2 failed"
+print("PASS: test_edge_map_numeric_key_lookup")

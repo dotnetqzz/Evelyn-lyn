@@ -1,0 +1,6 @@
+# Test concatenating empty arrays
+let a = []
+let b = []
+let c = arrayConcat(a, b)
+assert arrayLen(c) == 0, "empty array concat failed"
+print("PASS: test_edge_empty_array_concat")

@@ -1,0 +1,11 @@
+# Test if-elif chain matching first condition
+fn check(n):
+    if n > 10:
+        return "greater_than_10"
+    elif n > 5:
+        return "greater_than_5"
+    else:
+        return "otherwise"
+
+assert check(15) == "greater_than_10", "if-elif 1st branch failed"
+print("PASS: test_ctrl_if_elif_first")

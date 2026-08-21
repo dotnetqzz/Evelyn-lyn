@@ -1,0 +1,7 @@
+# Test deleting all keys from map
+var m = {"a": 1, "b": 2, "c": 3}
+mapDelete(m, "a")
+mapDelete(m, "b")
+mapDelete(m, "c")
+assert arrayLen(mapKeys(m)) == 0, "drain map keys failed"
+print("PASS: test_edge_map_delete_all_keys")

@@ -1,0 +1,6 @@
+# Test randomInt builtin
+for i in 0..10:
+    let r = randomInt(10, 20)
+    assert r >= 10 and r <= 20, "randomInt range failed"
+
+print("PASS: test_std_sys_random_int")

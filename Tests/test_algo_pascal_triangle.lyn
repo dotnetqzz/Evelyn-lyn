@@ -1,0 +1,21 @@
+# Test Pascal Triangle generation
+fn pascal(num_rows):
+    var triangle = []
+    for r in 0..num_rows:
+        var row = []
+        for c in 0...(r):
+            if c == 0 or c == r:
+                row = arrayAppend(row, 1)
+            else:
+                let val = triangle[r - 1][c - 1] + triangle[r - 1][c]
+                row = arrayAppend(row, val)
+        triangle = arrayAppend(triangle, row)
+    return triangle
+
+let p = pascal(5)
+assert p[0] == [1], "pascal row 0 failed"
+assert p[1] == [1, 1], "pascal row 1 failed"
+assert p[2] == [1, 2, 1], "pascal row 2 failed"
+assert p[3] == [1, 3, 3, 1], "pascal row 3 failed"
+assert p[4] == [1, 4, 6, 4, 1], "pascal row 4 failed"
+print("PASS: test_algo_pascal_triangle")

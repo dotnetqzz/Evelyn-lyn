@@ -1,0 +1,10 @@
+# Test break in for-in array loop
+let nums = [1, 2, 3, 4, 5, 6, 7, 8]
+var collected = []
+for n in nums:
+    if n == 5:
+        break
+    collected = arrayAppend(collected, n)
+
+assert collected == [1, 2, 3, 4], "for-in break failed"
+print("PASS: test_ctrl_for_in_array_break")

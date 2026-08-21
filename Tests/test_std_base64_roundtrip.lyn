@@ -1,0 +1,5 @@
+# Test base64 encode roundtrip
+let original = "Testing 1, 2, 3... UTF-8 symbols"
+let enc = base64Encode(original)
+assert stringLen(enc) > 0, "base64 roundtrip encode failed"
+print("PASS: test_std_base64_roundtrip")

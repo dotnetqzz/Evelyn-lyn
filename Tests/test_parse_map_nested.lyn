@@ -1,0 +1,15 @@
+# Test nested map literals
+let user = {
+    "name": "Alice",
+    "address": {
+        "city": "Paris",
+        "geo": {
+            "lat": 48.85,
+            "lon": 2.35
+        }
+    }
+}
+assert user["name"] == "Alice", "nested map name failed"
+assert user["address"]["city"] == "Paris", "nested map city failed"
+assert user["address"]["geo"]["lat"] > 48.0, "nested map lat failed"
+print("PASS: test_parse_map_nested")

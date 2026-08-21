@@ -1,0 +1,6 @@
+# Test left associativity of subtraction and division
+let r1 = 20 - 10 - 5
+let r2 = 24 / 4 / 2
+assert r1 == 5, "20 - 10 - 5 == 5 failed"
+assert r2 == 3 or r2 == 3.0, "24 / 4 / 2 == 3 failed"
+print("PASS: test_parse_op_assoc_left")

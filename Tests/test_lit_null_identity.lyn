@@ -1,0 +1,10 @@
+# Test null literal identity and inequality with non-null values
+let n = null
+assert n == null, "null == null failed"
+assert isNull(n) == true, "isNull(null) failed"
+assert n != 0, "null != 0 failed"
+assert n != "", "null != empty str failed"
+assert n != false, "null != false failed"
+assert n != [], "null != [] failed"
+assert n != {}, "null != {} failed"
+print("PASS: test_lit_null_identity")

@@ -1,0 +1,9 @@
+# Test bare return statement returns null
+fn earlyExit(flag):
+    if flag:
+        return
+    return 100
+
+assert isNull(earlyExit(true)) == true, "bare return failed"
+assert earlyExit(false) == 100, "non-bare return failed"
+print("PASS: test_fn_bare_return_returns_null")

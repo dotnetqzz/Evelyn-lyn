@@ -1,0 +1,10 @@
+# Test numeric separator underscores
+let dec_sep = 1_000_000
+let hex_sep = 0xFF_EE_DD
+let bin_sep = 0b1111_0000_1010_0101
+let oct_sep = 0o77_66
+assert dec_sep == 1000000, "dec separator failed"
+assert hex_sep == 16772829, "hex separator failed"
+assert bin_sep == 61605, "bin separator failed"
+assert oct_sep == 4086, "oct separator failed"
+print("PASS: test_lex_int_underscores")

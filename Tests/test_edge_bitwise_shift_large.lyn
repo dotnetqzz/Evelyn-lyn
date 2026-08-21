@@ -1,0 +1,6 @@
+# Test bitwise shift by various offsets
+assert (1 << 0) == 1, "shift 0 failed"
+assert (1 << 10) == 1024, "shift 10 failed"
+assert (1 << 20) == 1048576, "shift 20 failed"
+assert (1048576 >> 20) == 1, "shr 20 failed"
+print("PASS: test_edge_bitwise_shift_large")

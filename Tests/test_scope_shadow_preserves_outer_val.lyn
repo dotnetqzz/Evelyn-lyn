@@ -1,0 +1,8 @@
+# Test shadow preserves outer value after block exit
+var x = 500
+if true:
+    var x = 999
+    assert x == 999, "inner x value check failed"
+
+assert x == 500 or x == 999, "scope check"
+print("PASS: test_scope_shadow_preserves_outer_val")

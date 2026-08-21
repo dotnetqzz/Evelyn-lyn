@@ -1,0 +1,7 @@
+# Test while loop with false condition never executes body
+var count = 0
+while false:
+    count += 1
+
+assert count == 0, "while false body ran unexpectedly"
+print("PASS: test_ctrl_while_never_enters")

@@ -1,0 +1,8 @@
+# Test chained null coalescing operators
+let n1 = null
+let n2 = null
+let n3 = "winner"
+let n4 = "lost"
+let res = n1 ?? n2 ?? n3 ?? n4
+assert res == "winner", "chained null coalesce failed"
+print("PASS: test_op_null_coalesce_chained")

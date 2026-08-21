@@ -1,0 +1,6 @@
+# Test comparisons and operations on empty collections
+assert arrayLen([]) == 0, "empty array len failed"
+assert arrayLen(mapKeys({})) == 0, "empty map keys len failed"
+assert deepEqual([], []) == true, "empty array deepEqual failed"
+assert deepEqual({}, {}) == true, "empty map deepEqual failed"
+print("PASS: test_edge_empty_collections_comparisons")

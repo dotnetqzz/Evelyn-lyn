@@ -1,0 +1,7 @@
+# Test for and while loops executing zero times
+var count = 0
+for i in 0..0: count += 1
+while false: count += 1
+for x in []: count += 1
+assert count == 0, "zero iteration loops failed"
+print("PASS: test_edge_loop_zero_iterations")

@@ -1,0 +1,10 @@
+# Test switch statement default branch
+var hit_default = false
+switch 999 {
+    case 1:
+        hit_default = false
+    default:
+        hit_default = true
+}
+assert hit_default == true, "switch default branch failed"
+print("PASS: test_ctrl_switch_default")

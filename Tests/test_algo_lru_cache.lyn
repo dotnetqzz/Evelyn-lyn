@@ -1,0 +1,34 @@
+# Test Least Recently Used (LRU) cache policy
+fn makeLru(cap):
+    return {"cap": cap, "keys": [], "data": {}}
+
+fn lruGet(cache, key):
+    if not mapHas(cache["data"], key):
+        return null
+    var keys = cache["keys"]
+    let idx = arrayIndexOf(keys, key)
+    if idx != -1:
+        arrayRemove(keys, idx)
+        keys = arrayPush(keys, key)
+    cache["keys"] = keys
+    return cache["data"][key]
+
+fn lruPut(cache, key, val):
+    if mapHas(cache["data"], key):
+        var keys = cache["keys"]
+        let idx = arrayIndexOf(keys, key)
+        arrayRemove(keys, idx)
+    elif arrayLen(cache["keys"]) >= cache["cap"]:
+        let oldest = arrayShift(cache["keys"])
+        mapDelete(cache["data"], oldest)
+    cache["keys"] = arrayPush(cache["keys"], key)
+    cache["data"][key] = val
+
+var cache = makeLru(2)
+lruPut(cache, "a", 1)
+lruPut(cache, "b", 2)
+assert lruGet(cache, "a") == 1, "lru get a failed"
+lruPut(cache, "c", 3) # evicts b
+assert lruGet(cache, "b") == null, "lru b evicted failed"
+assert lruGet(cache, "c") == 3, "lru get c failed"
+print("PASS: test_algo_lru_cache")

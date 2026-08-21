@@ -1,0 +1,8 @@
+# Test struct field values
+struct Counter {
+    val
+}
+
+let c = Counter(15)
+assert c.val == 15, "struct field val failed"
+print("PASS: test_type_struct_field_mutation")

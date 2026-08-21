@@ -1,0 +1,5 @@
+# Test stringTrim / strip builtin
+assert stringTrim("  hello  ") == "hello", "stringTrim spaces failed"
+assert stringTrim("\t\n hello \r\n") == "hello", "stringTrim whitespace failed"
+assert stringTrim("no_trim") == "no_trim", "stringTrim untouched failed"
+print("PASS: test_std_string_trim")

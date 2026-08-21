@@ -1,0 +1,6 @@
+# Test less-than operator <
+assert 5 < 10, "int lt failed"
+assert 2.5 < 2.6, "float lt failed"
+assert (10 < 5) == false, "int lt false failed"
+assert (5 < 5) == false, "int lt equal failed"
+print("PASS: test_op_cmp_lt")

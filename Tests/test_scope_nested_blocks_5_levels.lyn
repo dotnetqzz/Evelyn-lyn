@@ -1,0 +1,15 @@
+# Test 5 levels of nested lexical blocks
+let a = 1
+var total = 0
+if true:
+    let b = 2
+    if true:
+        let c = 3
+        if true:
+            let d = 4
+            if true:
+                let e = 5
+                total = a + b + c + d + e
+
+assert total == 15, "5 level block scoping failed"
+print("PASS: test_scope_nested_blocks_5_levels")

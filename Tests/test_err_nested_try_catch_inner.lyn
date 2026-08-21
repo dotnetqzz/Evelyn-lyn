@@ -1,0 +1,15 @@
+# Test inner try-catch intercepts error without triggering outer catch
+var inner_caught = false
+var outer_caught = false
+try {
+    try {
+        throw "inner_error"
+    } catch e {
+        inner_caught = true
+    }
+} catch e {
+    outer_caught = true
+}
+assert inner_caught == true, "inner catch did not run"
+assert outer_caught == false, "outer catch ran unexpectedly"
+print("PASS: test_err_nested_try_catch_inner")

@@ -1,0 +1,12 @@
+# Test full try-catch-finally control flow order
+var order = []
+try {
+    order = arrayAppend(order, "try")
+    throw "err"
+} catch e {
+    order = arrayAppend(order, "catch")
+} finally {
+    order = arrayAppend(order, "finally")
+}
+assert order == ["try", "catch", "finally"], "try-catch-finally order failed"
+print("PASS: test_err_try_catch_finally_flow")

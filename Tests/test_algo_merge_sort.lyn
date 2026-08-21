@@ -1,0 +1,31 @@
+# Test Merge Sort algorithm
+fn merge(left, right):
+    var res = []
+    var i = 0
+    var j = 0
+    while i < arrayLen(left) and j < arrayLen(right):
+        if left[i] <= right[j]:
+            res = arrayAppend(res, left[i])
+            i += 1
+        else:
+            res = arrayAppend(res, right[j])
+            j += 1
+    while i < arrayLen(left):
+        res = arrayAppend(res, left[i])
+        i += 1
+    while j < arrayLen(right):
+        res = arrayAppend(res, right[j])
+        j += 1
+    return res
+
+fn mergeSort(arr):
+    if arrayLen(arr) <= 1:
+        return arr
+    let mid = arrayLen(arr) // 2
+    let left = mergeSort(arraySlice(arr, 0, mid))
+    let right = mergeSort(arraySlice(arr, mid, arrayLen(arr)))
+    return merge(left, right)
+
+let nums = [38, 27, 43, 3, 9, 82, 10]
+assert mergeSort(nums) == [3, 9, 10, 27, 38, 43, 82], "merge sort failed"
+print("PASS: test_algo_merge_sort")

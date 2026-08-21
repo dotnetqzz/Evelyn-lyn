@@ -1,0 +1,11 @@
+# Test checking powers of two using bitwise arithmetic: (n & (n - 1)) == 0
+fn isPowerOfTwo(n):
+    if n <= 0: return false
+    return (n & (n - 1)) == 0
+
+assert isPowerOfTwo(1) == true, "power of 2 (1) failed"
+assert isPowerOfTwo(2) == true, "power of 2 (2) failed"
+assert isPowerOfTwo(16) == true, "power of 2 (16) failed"
+assert isPowerOfTwo(18) == false, "power of 2 (18) failed"
+assert isPowerOfTwo(64) == true, "power of 2 (64) failed"
+print("PASS: test_edge_bitwise_power_of_two")

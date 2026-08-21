@@ -1,0 +1,8 @@
+# Test mapping over map values
+let m = {"a": 10, "b": 20, "c": 30}
+var doubled = {}
+for k in mapKeys(m):
+    doubled[k] = m[k] * 2
+
+assert doubled["a"] == 20 and doubled["b"] == 40 and doubled["c"] == 60, "transform map values failed"
+print("PASS: test_map_transform_values")

@@ -1,0 +1,12 @@
+# Test basic try-catch block catching thrown string
+var caught = false
+var err_msg = ""
+try {
+    throw "custom_error"
+} catch e {
+    caught = true
+    err_msg = toString(e)
+}
+assert caught == true, "try catch not triggered"
+assert err_msg == "custom_error", "caught message failed"
+print("PASS: test_err_try_catch_basic")

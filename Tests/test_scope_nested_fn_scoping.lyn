@@ -1,0 +1,9 @@
+# Test inner function accessing outer function local variables
+fn outer(x):
+    let y = 10
+    fn inner(z):
+        return x + y + z
+    return inner(5)
+
+assert outer(20) == 35, "nested fn scoping failed"
+print("PASS: test_scope_nested_fn_scoping")

@@ -1,0 +1,6 @@
+# Test function call with default values for omitted arguments
+fn optArgs(a, b = 100):
+    return a + b
+
+assert optArgs(50) == 150, "omitted arg default failed"
+print("PASS: test_fn_call_with_fewer_args")

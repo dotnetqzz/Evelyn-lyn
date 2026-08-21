@@ -1,0 +1,11 @@
+# Test sibling functions have isolated local frames
+fn funcA():
+    let secret = "A"
+    return secret
+
+fn funcB():
+    let secret = "B"
+    return secret
+
+assert funcA() == "A" and funcB() == "B", "sibling fn isolation failed"
+print("PASS: test_scope_sibling_fn_isolation")

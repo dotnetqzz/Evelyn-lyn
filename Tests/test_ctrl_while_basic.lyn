@@ -1,0 +1,10 @@
+# Test basic while loop counting
+var i = 0
+var sum = 0
+while i < 5:
+    sum += i
+    i += 1
+
+assert sum == 10, "while loop sum failed"
+assert i == 5, "while loop final i failed"
+print("PASS: test_ctrl_while_basic")

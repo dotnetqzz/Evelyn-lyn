@@ -1,0 +1,14 @@
+# Test CRC32 checksum calculation simulation
+fn simpleChecksum(s):
+    var sum = 0
+    for i in 0..stringLen(s):
+        sum = (sum * 31 + charCodeAt(s, i)) & 0xFFFFFFFF
+    return sum
+
+let c1 = simpleChecksum("Hello World")
+let c2 = simpleChecksum("Hello World")
+let c3 = simpleChecksum("hello world")
+
+assert c1 == c2, "checksum deterministic failed"
+assert c1 != c3, "checksum case sensitivity failed"
+print("PASS: test_algo_crc32_simulation")

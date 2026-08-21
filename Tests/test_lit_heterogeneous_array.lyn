@@ -1,0 +1,10 @@
+# Test array with mixed heterogeneous element types
+let mixed = [42, 3.14, "text", true, null, [1, 2], {"key": 100}]
+assert mixed[0] == 42, "mixed int failed"
+assert mixed[1] == 3.14, "mixed float failed"
+assert mixed[2] == "text", "mixed str failed"
+assert mixed[3] == true, "mixed bool failed"
+assert mixed[4] == null, "mixed null failed"
+assert mixed[5][0] == 1, "mixed array failed"
+assert mixed[6]["key"] == 100, "mixed map failed"
+print("PASS: test_lit_heterogeneous_array")

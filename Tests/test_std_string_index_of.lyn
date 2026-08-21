@@ -1,0 +1,5 @@
+# Test stringIndexOf builtin
+let s = "abcdefghij"
+assert stringIndexOf(s, "cde") == 2, "stringIndexOf found failed"
+assert stringIndexOf(s, "xyz") == -1, "stringIndexOf absent failed"
+print("PASS: test_std_string_index_of")

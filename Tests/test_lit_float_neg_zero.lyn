@@ -1,0 +1,4 @@
+# Test negative float zero
+let fnz = -0.0
+assert fnz == 0.0, "float -0.0 equality failed"
+print("PASS: test_lit_float_neg_zero")

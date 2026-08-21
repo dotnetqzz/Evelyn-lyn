@@ -1,0 +1,12 @@
+# Test comparing two struct instances
+struct Point {
+    x,
+    y
+}
+
+let p1 = Point(5, 10)
+let p2 = Point(5, 10)
+let p3 = Point(5, 12)
+assert deepEqual(p1, p2) == true, "struct deepEqual true failed"
+assert deepEqual(p1, p3) == false, "struct deepEqual false failed"
+print("PASS: test_type_struct_equality")

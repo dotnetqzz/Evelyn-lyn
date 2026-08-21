@@ -1,0 +1,4 @@
+# Test sysEnv reading environment variables
+let path_var = sysEnv("PATH")
+assert path_var != null and stringLen(path_var) > 0, "sysEnv PATH read failed"
+print("PASS: test_std_sys_env")

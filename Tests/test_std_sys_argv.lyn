@@ -1,0 +1,4 @@
+# Test sysArgv returning list of arguments
+let args = sysArgv()
+assert isArray(args) == true, "sysArgv returning array failed"
+print("PASS: test_std_sys_argv")

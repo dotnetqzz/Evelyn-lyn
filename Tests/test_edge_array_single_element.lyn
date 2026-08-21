@@ -1,0 +1,9 @@
+# Test single element array boundaries
+let a = [42]
+assert arrayLen(a) == 1, "single array len"
+assert a[0] == 42, "single array get"
+a[0] = 99
+assert a[0] == 99, "single array set"
+let popped = arrayPop(a)
+assert popped == 99 and arrayLen(a) == 0, "single array pop"
+print("PASS: test_edge_array_single_element")

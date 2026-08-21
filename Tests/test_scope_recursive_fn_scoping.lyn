@@ -1,0 +1,9 @@
+# Test separate local frames in recursive function
+fn sumDown(n):
+    if n <= 0:
+        return 0
+    let local_val = n
+    return local_val + sumDown(n - 1)
+
+assert sumDown(5) == 15, "recursive local frames failed"
+print("PASS: test_scope_recursive_fn_scoping")

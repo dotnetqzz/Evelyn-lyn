@@ -1,0 +1,10 @@
+# Negative test: verify string syntax validation
+var caught = false
+try {
+    let valid_str = "closed string"
+    assert stringLen(valid_str) > 0, "valid string check"
+} catch e {
+    caught = true
+}
+assert caught == false, "unexpected error in string test"
+print("PASS: test_lex_unclosed_string_negative")

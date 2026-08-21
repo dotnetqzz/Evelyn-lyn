@@ -1,0 +1,5 @@
+# Test arrayInsert at arbitrary position
+var arr = [10, 30, 40]
+arr = arrayInsert(arr, 1, 20)
+assert arr == [10, 20, 30, 40], "arrayInsert failed"
+print("PASS: test_arr_insert")

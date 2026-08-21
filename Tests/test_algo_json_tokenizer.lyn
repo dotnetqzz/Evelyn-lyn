@@ -1,0 +1,23 @@
+# Test basic string tokenizer for JSON-like values
+fn tokenizeTokens(s):
+    var tokens = []
+    var i = 0
+    let n = stringLen(s)
+    while i < n:
+        let ch = stringSub(s, i, 1)
+        if ch == "{" or ch == "}" or ch == "[" or ch == "]" or ch == ":" or ch == ",":
+            tokens = arrayAppend(tokens, ch)
+            i += 1
+        elif ch == " ":
+            i += 1
+        else:
+            var word = ""
+            while i < n and stringSub(s, i, 1) != " " and stringSub(s, i, 1) != "," and stringSub(s, i, 1) != "}" and stringSub(s, i, 1) != "]":
+                word += stringSub(s, i, 1)
+                i += 1
+            tokens = arrayAppend(tokens, word)
+    return tokens
+
+let toks = tokenizeTokens("{\"k\": 123}")
+assert arrayLen(toks) > 0, "json tokenizer failed"
+print("PASS: test_algo_json_tokenizer")

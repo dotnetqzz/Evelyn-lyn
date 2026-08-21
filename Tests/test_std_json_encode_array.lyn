@@ -1,0 +1,7 @@
+# Test JSON encoding of arrays
+let arr = [1, "two", true, null]
+let s = jsonStringify(arr)
+assert stringContains(s, "1"), "json arr 1 failed"
+assert stringContains(s, "two"), "json arr two failed"
+assert stringContains(s, "true"), "json arr true failed"
+print("PASS: test_std_json_encode_array")

@@ -1,0 +1,5 @@
+# Test whitespace only strings
+let s = "   \t\n\r   "
+assert stringTrim(s) == "", "trim whitespace only failed"
+assert stringLen(s) == 10, "whitespace only len failed"
+print("PASS: test_edge_str_whitespace_only")

@@ -1,0 +1,12 @@
+# Test early return deeply inside nested while/for loops
+fn searchGrid(grid, target):
+    for r in 0..arrayLen(grid):
+        for c in 0..arrayLen(grid[r]):
+            if grid[r][c] == target:
+                return [r, c]
+    return null
+
+let g = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+let pos = searchGrid(g, 5)
+assert pos[0] == 1 and pos[1] == 1, "early return in loop failed"
+print("PASS: test_fn_early_return_in_loop")

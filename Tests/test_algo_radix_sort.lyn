@@ -1,0 +1,20 @@
+# Test Radix Sort LSD on integers
+fn radixSort(arr):
+    var a = deepCopy(arr)
+    var max_val = a[0]
+    for x in a:
+        if x > max_val: max_val = x
+    var exp = 1
+    while max_val // exp > 0:
+        var buckets = [[], [], [], [], [], [], [], [], [], []]
+        for num in a:
+            let digit = (num // exp) % 10
+            var b = buckets[digit]
+            b = arrayAppend(b, num)
+            buckets[digit] = b
+        a = arrayFlatten(buckets)
+        exp *= 10
+    return a
+
+assert radixSort([170, 45, 75, 90, 802, 24, 2, 66]) == [2, 24, 45, 66, 75, 90, 170, 802], "radix sort failed"
+print("PASS: test_algo_radix_sort")

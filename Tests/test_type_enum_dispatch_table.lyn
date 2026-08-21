@@ -1,0 +1,22 @@
+# Test mapping enum variants to handler functions
+enum Action {
+    Increment,
+    Decrement,
+    Reset
+}
+
+fn applyAction(state, act):
+    match act {
+        case Action.Increment: return state + 1
+        case Action.Decrement: return state - 1
+        case Action.Reset: return 0
+    }
+
+var count = 10
+count = applyAction(count, Action.Increment)
+count = applyAction(count, Action.Increment)
+count = applyAction(count, Action.Decrement)
+assert count == 11, "enum dispatch intermediate failed"
+count = applyAction(count, Action.Reset)
+assert count == 0, "enum dispatch reset failed"
+print("PASS: test_type_enum_dispatch_table")

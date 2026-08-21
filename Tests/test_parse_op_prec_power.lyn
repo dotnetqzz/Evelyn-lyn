@@ -1,0 +1,6 @@
+# Test exponentiation precedence over multiplication
+let r1 = 2 * 3 ** 2
+let r2 = 3 ** 2 * 2
+assert r1 == 18, "2 * 3 ** 2 == 18 failed"
+assert r2 == 18, "3 ** 2 * 2 == 18 failed"
+print("PASS: test_parse_op_prec_power")

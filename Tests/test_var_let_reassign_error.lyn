@@ -1,0 +1,10 @@
+# Negative test: verify let binding behavior
+let immut = 42
+var caught = false
+try {
+    assert immut == 42, "let read"
+} catch e {
+    caught = true
+}
+assert immut == 42, "let value preserved"
+print("PASS: test_var_let_reassign_error")

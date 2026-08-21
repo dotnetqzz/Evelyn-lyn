@@ -1,0 +1,9 @@
+# Test completely empty catch block suppresses error
+var continued = false
+try {
+    throw "ignored"
+} catch e {
+}
+continued = true
+assert continued == true, "empty catch suppression failed"
+print("PASS: test_err_empty_catch_block")

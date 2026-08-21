@@ -1,0 +1,6 @@
+# Test negative zero float behavior
+let nz = -0.0
+let pz = 0.0
+assert nz == pz, "-0.0 == 0.0 failed"
+assert nz + 5.0 == 5.0, "-0.0 + 5.0 failed"
+print("PASS: test_edge_negative_zero_float")

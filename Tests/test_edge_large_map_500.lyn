@@ -1,0 +1,10 @@
+# Test inserting and retrieving 200 keys in map
+var m = {}
+for i in 0..200:
+    m["key_" + toString(i)] = i * 3
+
+assert arrayLen(mapKeys(m)) == 200, "map 200 keys len failed"
+assert m["key_0"] == 0, "map key_0 failed"
+assert m["key_100"] == 300, "map key_100 failed"
+assert m["key_199"] == 597, "map key_199 failed"
+print("PASS: test_edge_large_map_500")

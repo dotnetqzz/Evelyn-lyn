@@ -1,0 +1,5 @@
+# Test mutating elements by index
+var nums = [10, 20, 30]
+nums[1] = 999
+assert nums[0] == 10 and nums[1] == 999 and nums[2] == 30, "index set failed"
+print("PASS: test_arr_index_set")

@@ -1,0 +1,7 @@
+# Test for-range exclusive: 0..5 (0, 1, 2, 3, 4)
+var items = []
+for i in 0..5:
+    items = arrayAppend(items, i)
+
+assert items == [0, 1, 2, 3, 4], "for range exclusive failed"
+print("PASS: test_ctrl_for_range_exclusive")

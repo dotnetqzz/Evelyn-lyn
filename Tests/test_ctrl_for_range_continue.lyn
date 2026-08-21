@@ -1,0 +1,9 @@
+# Test continue in for range
+var sum_odds = 0
+for i in 0..10:
+    if i % 2 == 0:
+        continue
+    sum_odds += i
+
+assert sum_odds == 25, "for range continue failed"
+print("PASS: test_ctrl_for_range_continue")

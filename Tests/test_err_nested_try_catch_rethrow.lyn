@@ -1,0 +1,16 @@
+# Test inner catch rethrowing error to outer catch
+var inner_seen = false
+var outer_seen = false
+try {
+    try {
+        throw "original_fault"
+    } catch e {
+        inner_seen = true
+        throw e
+    }
+} catch e {
+    outer_seen = true
+    assert toString(e) == "original_fault", "rethrow value mismatch"
+}
+assert inner_seen == true and outer_seen == true, "rethrow propagation failed"
+print("PASS: test_err_nested_try_catch_rethrow")

@@ -1,0 +1,19 @@
+# Test 90-degree clockwise matrix rotation
+let m = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+]
+# Rotated 90 deg clockwise:
+# [7, 4, 1]
+# [8, 5, 2]
+# [9, 6, 3]
+let rot = [
+    [m[2][0], m[1][0], m[0][0]],
+    [m[2][1], m[1][1], m[0][1]],
+    [m[2][2], m[1][2], m[0][2]]
+]
+assert rot[0] == [7, 4, 1], "matrix rot row 0 failed"
+assert rot[1] == [8, 5, 2], "matrix rot row 1 failed"
+assert rot[2] == [9, 6, 3], "matrix rot row 2 failed"
+print("PASS: test_algo_matrix_rotation")

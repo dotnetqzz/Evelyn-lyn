@@ -1,0 +1,8 @@
+# Test for-in loop summing array elements
+let numbers = [10, 20, 30, 40, 50]
+var sum = 0
+for n in numbers:
+    sum += n
+
+assert sum == 150, "for-in array sum failed"
+print("PASS: test_ctrl_for_in_array_multi")

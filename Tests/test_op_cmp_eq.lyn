@@ -1,0 +1,8 @@
+# Test equality operator ==
+assert 42 == 42, "int eq failed"
+assert 3.14 == 3.14, "float eq failed"
+assert "hello" == "hello", "str eq failed"
+assert true == true, "bool eq failed"
+assert null == null, "null eq failed"
+assert (42 == 43) == false, "neq false failed"
+print("PASS: test_op_cmp_eq")

@@ -1,0 +1,7 @@
+# Test deepEqual on maps
+let m1 = {"a": 1, "b": [2, 3]}
+let m2 = {"a": 1, "b": [2, 3]}
+let m3 = {"a": 1, "b": [2, 4]}
+assert deepEqual(m1, m2) == true, "map deepEqual true failed"
+assert deepEqual(m1, m3) == false, "map deepEqual false failed"
+print("PASS: test_map_equality_comparison")

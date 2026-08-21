@@ -1,0 +1,17 @@
+# Test Selection Sort algorithm
+fn selectionSort(arr):
+    var a = deepCopy(arr)
+    let n = arrayLen(a)
+    for i in 0..n:
+        var min_idx = i
+        for j in (i + 1)..n:
+            if a[j] < a[min_idx]:
+                min_idx = j
+        let tmp = a[i]
+        a[i] = a[min_idx]
+        a[min_idx] = tmp
+    return a
+
+let nums = [64, 25, 12, 22, 11]
+assert selectionSort(nums) == [11, 12, 22, 25, 64], "selection sort failed"
+print("PASS: test_algo_selection_sort")

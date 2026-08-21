@@ -1,0 +1,5 @@
+# Test arrayUnshift prepending element
+var arr = [20, 30]
+arr = arrayUnshift(arr, 10)
+assert arr == [10, 20, 30], "arrayUnshift failed"
+print("PASS: test_arr_unshift")

@@ -1,0 +1,11 @@
+# Test in-order traversal of binary search tree represented as map
+fn makeNode(val, left = null, right = null):
+    return {"val": val, "left": left, "right": right}
+
+fn inOrder(node):
+    if node == null: return []
+    return arrayConcat(arrayConcat(inOrder(node["left"]), [node["val"]]), inOrder(node["right"]))
+
+let bst = makeNode(4, makeNode(2, makeNode(1), makeNode(3)), makeNode(6, makeNode(5), makeNode(7)))
+assert inOrder(bst) == [1, 2, 3, 4, 5, 6, 7], "bst in-order traversal failed"
+print("PASS: test_algo_binary_tree_traversals")

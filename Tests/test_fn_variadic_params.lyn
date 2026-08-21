@@ -1,0 +1,11 @@
+# Test variadic parameters ...args
+fn sumAll(...args):
+    var total = 0
+    for x in args:
+        total += x
+    return total
+
+assert sumAll(1, 2, 3, 4, 5) == 15, "variadic sum failed"
+assert sumAll(10, 20) == 30, "variadic 2 args failed"
+assert sumAll() == 0, "variadic 0 args failed"
+print("PASS: test_fn_variadic_params")

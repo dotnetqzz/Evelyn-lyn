@@ -1,0 +1,22 @@
+# Test 4 nested try-catch blocks
+var status = "INIT"
+try {
+    try {
+        try {
+            try {
+                throw "deep_nest_error"
+            } catch e {
+                status = "CAUGHT_L4"
+            }
+        } catch e {
+            status = "CAUGHT_L3"
+        }
+    } catch e {
+        status = "CAUGHT_L2"
+    }
+} catch e {
+    status = "CAUGHT_L1"
+}
+
+assert status == "CAUGHT_L4", "4-depth try catch failed"
+print("PASS: test_edge_nested_try_catch_depth_4")

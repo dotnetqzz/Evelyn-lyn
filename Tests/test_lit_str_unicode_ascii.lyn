@@ -1,0 +1,5 @@
+# Test ASCII standard strings
+let s = "The quick brown fox jumps over the lazy dog 1234567890"
+assert stringLen(s) == 54, "pangram len failed"
+assert stringContains(s, "brown fox"), "contains brown fox failed"
+print("PASS: test_lit_str_unicode_ascii")

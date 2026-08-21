@@ -1,0 +1,9 @@
+# Test match when no specific case matches
+var reached = ""
+match 12345 {
+    case 1: reached = "ONE"
+    case 2: reached = "TWO"
+    default: reached = "FALLTHROUGH"
+}
+assert reached == "FALLTHROUGH", "match fallthrough failed"
+print("PASS: test_match_fallthrough_default")

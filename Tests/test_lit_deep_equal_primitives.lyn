@@ -1,0 +1,7 @@
+# Test deepEqual on scalar types
+assert deepEqual(10, 10) == true, "deepEqual int failed"
+assert deepEqual(10, 20) == false, "deepEqual int neq failed"
+assert deepEqual("a", "a") == true, "deepEqual str failed"
+assert deepEqual(true, true) == true, "deepEqual bool failed"
+assert deepEqual(null, null) == true, "deepEqual null failed"
+print("PASS: test_lit_deep_equal_primitives")

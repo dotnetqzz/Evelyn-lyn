@@ -1,0 +1,9 @@
+# Test mapValues builtin
+let m = {"x": 100, "y": 200, "z": 300}
+let vals = mapValues(m)
+assert arrayLen(vals) == 3, "mapValues len failed"
+var sum = 0
+for v in vals:
+    sum += v
+assert sum == 600, "mapValues sum failed"
+print("PASS: test_map_values")

@@ -1,0 +1,18 @@
+# Test if condition truthiness matrix
+var t_count = 0
+if true: t_count += 1
+if 1: t_count += 1
+if -1: t_count += 1
+if "non-empty": t_count += 1
+if [1]: t_count += 1
+if {"a": 1}: t_count += 1
+
+var f_count = 0
+if false: f_count += 1
+if 0: f_count += 1
+if "": f_count += 1
+if null: f_count += 1
+
+assert t_count == 6, "truthy count failed"
+assert f_count == 0, "falsy count failed"
+print("PASS: test_lit_truthiness_matrix")

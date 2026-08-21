@@ -1,0 +1,6 @@
+# Test string concatenation with +=
+var s = "Hello"
+s += ", "
+s += "World!"
+assert s == "Hello, World!", "+= string concat failed"
+print("PASS: test_var_compound_string_concat")

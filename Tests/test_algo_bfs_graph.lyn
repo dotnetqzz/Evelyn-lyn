@@ -1,0 +1,27 @@
+# Test Breadth-First Search on graph
+fn bfs(graph, start):
+    var visited = []
+    var queue = [start]
+    visited = arrayAppend(visited, start)
+
+    while arrayLen(queue) > 0:
+        let node = arrayShift(queue)
+        let neighbors = graph[node] ?? []
+        for next_node in neighbors:
+            if not arrayContains(visited, next_node):
+                visited = arrayAppend(visited, next_node)
+                queue = arrayPush(queue, next_node)
+    return visited
+
+let g = {
+    "A": ["B", "C"],
+    "B": ["D", "E"],
+    "C": ["F"],
+    "D": [],
+    "E": ["F"],
+    "F": []
+}
+
+let order = bfs(g, "A")
+assert order == ["A", "B", "C", "D", "E", "F"], "bfs traversal failed"
+print("PASS: test_algo_bfs_graph")

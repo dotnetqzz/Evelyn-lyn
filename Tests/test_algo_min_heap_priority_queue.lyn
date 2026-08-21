@@ -1,0 +1,19 @@
+# Test Priority Queue simulation
+var pq = []
+fn pqPush(item):
+    pq = arrayAppend(pq, item)
+    pq = sorted(pq)
+
+fn pqPop():
+    return arrayShift(pq)
+
+pqPush(50)
+pqPush(20)
+pqPush(30)
+pqPush(10)
+
+assert pqPop() == 10, "pqPop 1st failed"
+assert pqPop() == 20, "pqPop 2nd failed"
+assert pqPop() == 30, "pqPop 3rd failed"
+assert pqPop() == 50, "pqPop 4th failed"
+print("PASS: test_algo_min_heap_priority_queue")

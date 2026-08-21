@@ -1,0 +1,5 @@
+# Test arithmetic multiplication operator *
+assert 6 * 7 == 42, "int mul failed"
+assert 2.5 * 4.0 == 10.0, "float mul failed"
+assert 0 * 100 == 0, "mul by zero failed"
+print("PASS: test_op_arith_mul")

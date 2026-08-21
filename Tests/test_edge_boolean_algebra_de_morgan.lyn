@@ -1,0 +1,11 @@
+# Test De Morgan's laws: not (A and B) == (not A or not B)
+fn testDeMorgan(a, b):
+    let left = not (a and b)
+    let right = (not a) or (not b)
+    return left == right
+
+assert testDeMorgan(true, true) == true, "de morgan TT failed"
+assert testDeMorgan(true, false) == true, "de morgan TF failed"
+assert testDeMorgan(false, true) == true, "de morgan FT failed"
+assert testDeMorgan(false, false) == true, "de morgan FF failed"
+print("PASS: test_edge_boolean_algebra_de_morgan")

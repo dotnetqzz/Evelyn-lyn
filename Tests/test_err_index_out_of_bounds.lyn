@@ -1,0 +1,12 @@
+# Test array index out of bounds safe handling
+let arr = [10, 20]
+var caught_oob = false
+try {
+    let val = arr[999]
+    if isNull(val):
+        caught_oob = true
+} catch e {
+    caught_oob = true
+}
+assert caught_oob == true, "array oob handling failed"
+print("PASS: test_err_index_out_of_bounds")

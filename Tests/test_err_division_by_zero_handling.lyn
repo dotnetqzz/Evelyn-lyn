@@ -1,0 +1,14 @@
+# Test division by zero validation and guard
+fn divide(a, b):
+    if b == 0:
+        throw "DivisionByZeroError"
+    return a / b
+
+var err_caught = false
+try {
+    divide(10, 0)
+} catch e {
+    err_caught = true
+}
+assert err_caught == true, "div zero guard failed"
+print("PASS: test_err_division_by_zero_handling")

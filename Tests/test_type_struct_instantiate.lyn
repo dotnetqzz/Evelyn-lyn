@@ -1,0 +1,12 @@
+# Test struct constructor with multiple field types
+struct User {
+    id,
+    name,
+    active
+}
+
+let u = User(101, "Alice", true)
+assert u.id == 101, "user id failed"
+assert u.name == "Alice", "user name failed"
+assert u.active == true, "user active failed"
+print("PASS: test_type_struct_instantiate")

@@ -1,0 +1,4 @@
+# Test single pair map literal
+let m = {"key": 123}
+assert m["key"] == 123, "single map item failed"
+print("PASS: test_parse_map_lit_single")

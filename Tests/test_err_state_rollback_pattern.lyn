@@ -1,0 +1,21 @@
+# Test state rollback pattern on transaction failure
+var account_balance = 1000
+fn transfer(amount):
+    let old_balance = account_balance
+    account_balance -= amount
+    try {
+        if account_balance < 0:
+            throw "insufficient funds"
+    } catch e {
+        account_balance = old_balance
+        throw e
+    }
+
+try {
+    transfer(1500)
+} catch e {
+    pass
+}
+
+assert account_balance == 1000, "state rollback failed"
+print("PASS: test_err_state_rollback_pattern")

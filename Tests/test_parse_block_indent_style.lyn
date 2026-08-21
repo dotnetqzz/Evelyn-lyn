@@ -1,0 +1,9 @@
+# Test indentation-based block syntax
+var res = 0
+if true:
+    let x = 15
+    let y = 25
+    res = x + y
+
+assert res == 40, "indent block failed"
+print("PASS: test_parse_block_indent_style")

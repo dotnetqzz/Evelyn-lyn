@@ -1,0 +1,9 @@
+# Test map literal spanning multiple lines
+let config = {
+    "host": "127.0.0.1",
+    "port": 8080,
+    "ssl": true,
+}
+assert config["port"] == 8080, "multiline map port failed"
+assert config["ssl"] == true, "multiline map ssl failed"
+print("PASS: test_parse_multiline_map")

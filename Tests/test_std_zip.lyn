@@ -1,0 +1,9 @@
+# Test zip builtin
+let a = [1, 2, 3]
+let b = ["a", "b", "c"]
+let zipped = zip(a, b)
+assert arrayLen(zipped) == 3, "zip len failed"
+assert zipped[0] == [1, "a"], "zip [0] failed"
+assert zipped[1] == [2, "b"], "zip [1] failed"
+assert zipped[2] == [3, "c"], "zip [2] failed"
+print("PASS: test_std_zip")

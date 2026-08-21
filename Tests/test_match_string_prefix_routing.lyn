@@ -1,0 +1,13 @@
+# Test string prefix classification
+fn classifyUrl(url):
+    if stringStartsWith(url, "https://"):
+        return "SECURE"
+    elif stringStartsWith(url, "http://"):
+        return "INSECURE"
+    else:
+        return "OTHER"
+
+assert classifyUrl("https://example.com") == "SECURE", "https failed"
+assert classifyUrl("http://example.com") == "INSECURE", "http failed"
+assert classifyUrl("ftp://example.com") == "OTHER", "other failed"
+print("PASS: test_match_string_prefix_routing")

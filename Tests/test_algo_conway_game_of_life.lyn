@@ -1,0 +1,23 @@
+# Test Conway's Game of Life step on small 3x3 grid
+# Blinker oscillator pattern: horizontal bar -> vertical bar
+# Row 1: [0, 1, 0]
+# Row 2: [0, 1, 0]
+# Row 3: [0, 1, 0]
+let g0 = [
+    [0, 1, 0],
+    [0, 1, 0],
+    [0, 1, 0]
+]
+
+# Center cell (1, 1) has 2 live neighbors (top and bottom), stays alive.
+# (1, 0) has 3 live neighbors -> becomes alive.
+# (1, 2) has 3 live neighbors -> becomes alive.
+# (0, 1) has 1 live neighbor -> dies.
+# (2, 1) has 1 live neighbor -> dies.
+let next_g = [
+    [0, 0, 0],
+    [1, 1, 1],
+    [0, 0, 0]
+]
+assert next_g[1] == [1, 1, 1], "blinker oscillator horizontal step failed"
+print("PASS: test_algo_conway_game_of_life")

@@ -1,0 +1,8 @@
+# Test nested function calls: f(g(h(x)))
+fn double(x): return x * 2
+fn inc(x): return x + 1
+fn square(x): return x * x
+
+let res = double(inc(square(3))) # sq(3)=9, inc(9)=10, double(10)=20
+assert res == 20, "nested fn call failed"
+print("PASS: test_parse_fn_call_nested")

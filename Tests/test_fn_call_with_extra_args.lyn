@@ -1,0 +1,6 @@
+# Test function called with arguments
+fn addTwo(a, b):
+    return a + b
+
+assert addTwo(10, 20) == 30, "addTwo failed"
+print("PASS: test_fn_call_with_extra_args")

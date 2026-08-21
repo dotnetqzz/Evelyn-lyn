@@ -1,0 +1,7 @@
+# Test building 2000 character string in loop
+var s = ""
+for i in 0..200:
+    s += "0123456789"
+
+assert stringLen(s) == 2000, "2000 char string len failed"
+print("PASS: test_edge_long_string_concat")

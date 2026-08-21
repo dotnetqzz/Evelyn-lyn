@@ -1,0 +1,15 @@
+# Test break in inner while loop only exits inner loop
+var outer_count = 0
+var inner_total = 0
+while outer_count < 3:
+    var inner_count = 0
+    while true:
+        if inner_count == 4:
+            break
+        inner_count += 1
+        inner_total += 1
+    outer_count += 1
+
+assert outer_count == 3, "outer count failed"
+assert inner_total == 12, "inner total failed"
+print("PASS: test_ctrl_while_nested_break")

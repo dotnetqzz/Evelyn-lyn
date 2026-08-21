@@ -1,0 +1,10 @@
+# Test FIFO queue operations
+var queue = []
+queue = arrayPush(queue, "task1")
+queue = arrayPush(queue, "task2")
+queue = arrayPush(queue, "task3")
+
+let first = arrayShift(queue)
+assert first == "task1", "queue FIFO first failed"
+assert queue[0] == "task2" and queue[1] == "task3", "queue remaining failed"
+print("PASS: test_arr_queue_operations")

@@ -1,0 +1,5 @@
+# Test stringJoin joining string elements
+let parts = ["red", "green", "blue"]
+let joined = stringJoin(parts, "-")
+assert joined == "red-green-blue", "stringJoin failed"
+print("PASS: test_arr_join_strings")

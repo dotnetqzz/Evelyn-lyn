@@ -1,0 +1,5 @@
+# Test interpolation containing array indexing and math
+let nums = [10, 20, 30]
+let s = "Result: \(nums[1] * 2 + 5)"
+assert s == "Result: 45", "complex expr interpolation failed"
+print("PASS: test_edge_interp_str_complex_expr")

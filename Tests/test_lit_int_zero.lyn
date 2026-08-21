@@ -1,0 +1,7 @@
+# Test integer zero and negative zero
+let z1 = 0
+let z2 = -0
+assert z1 == 0, "int 0 failed"
+assert z2 == 0, "int -0 failed"
+assert z1 == z2, "0 == -0 failed"
+print("PASS: test_lit_int_zero")

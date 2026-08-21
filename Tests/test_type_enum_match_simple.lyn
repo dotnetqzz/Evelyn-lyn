@@ -1,0 +1,18 @@
+# Test matching on simple enum variants
+enum TrafficLight {
+    Red,
+    Yellow,
+    Green
+}
+
+fn nextAction(light):
+    match light {
+        case TrafficLight.Red: return "STOP"
+        case TrafficLight.Yellow: return "CAUTION"
+        case TrafficLight.Green: return "GO"
+    }
+
+assert nextAction(TrafficLight.Red) == "STOP", "traffic light red failed"
+assert nextAction(TrafficLight.Green) == "GO", "traffic light green failed"
+assert nextAction(TrafficLight.Yellow) == "CAUTION", "traffic light yellow failed"
+print("PASS: test_type_enum_match_simple")

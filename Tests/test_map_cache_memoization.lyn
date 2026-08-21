@@ -1,0 +1,14 @@
+# Test function caching in map
+var cache = {}
+fn squareWithCache(n):
+    let key = toString(n)
+    if mapHas(cache, key):
+        return cache[key]
+    let res = n * n
+    cache[key] = res
+    return res
+
+assert squareWithCache(5) == 25, "first call cache failed"
+assert squareWithCache(5) == 25, "second call cached result failed"
+assert mapHas(cache, "5") == true, "cache entry present failed"
+print("PASS: test_map_cache_memoization")

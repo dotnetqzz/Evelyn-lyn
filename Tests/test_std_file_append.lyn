@@ -1,0 +1,8 @@
+# Test appending to file
+let temp_path = "scratch/_test_tmp_append.txt"
+writeFile(temp_path, "Line1\n")
+appendFile(temp_path, "Line2\n")
+let combined = readFile(temp_path)
+assert stringContains(combined, "Line1") and stringContains(combined, "Line2"), "appendFile combined failed"
+sysRemoveFile(temp_path)
+print("PASS: test_std_file_append")

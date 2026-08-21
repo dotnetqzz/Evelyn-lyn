@@ -1,0 +1,5 @@
+# Test array slice with edge bounds
+let arr = [1, 2, 3, 4, 5]
+let sub = arraySlice(arr, 0, 5)
+assert sub == [1, 2, 3, 4, 5], "full slice failed"
+print("PASS: test_edge_array_slice_out_of_bounds")

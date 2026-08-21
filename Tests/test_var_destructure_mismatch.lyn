@@ -1,0 +1,4 @@
+# Test destructuring with partial / missing elements
+let [x, y] = [1, 2, 3, 4]
+assert x == 1 and y == 2, "destructure partial elements"
+print("PASS: test_var_destructure_mismatch")

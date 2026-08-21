@@ -1,0 +1,4 @@
+# Test dateNow / time returning positive timestamp
+let t = dateNow()
+assert isInteger(t) == true and t > 1000000000, "dateNow valid timestamp failed"
+print("PASS: test_std_date_now")

@@ -1,0 +1,15 @@
+# Test pattern matching struct fields
+struct Response {
+    code,
+    body
+}
+
+fn handleResponse(r):
+    if r.code == 200:
+        return "SUCCESS: " + r.body
+    else:
+        return "FAILURE"
+
+let resp = Response(200, "all ok")
+assert handleResponse(resp) == "SUCCESS: all ok", "struct pattern match failed"
+print("PASS: test_type_struct_pattern_match")

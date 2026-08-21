@@ -1,0 +1,10 @@
+# Test bitmasking utility
+let packed_rgb = 0x123456
+let r = (packed_rgb >> 16) & 0xFF
+let g = (packed_rgb >> 8) & 0xFF
+let b = packed_rgb & 0xFF
+
+assert r == 0x12, "mask red failed"
+assert g == 0x34, "mask green failed"
+assert b == 0x56, "mask blue failed"
+print("PASS: test_op_bitwise_masking")

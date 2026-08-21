@@ -1,0 +1,6 @@
+# Test mathFloor, mathCeil, mathRound
+assert mathFloor(3.7) == 3 or mathFloor(3.7) == 3.0, "floor failed"
+assert mathCeil(3.2) == 4 or mathCeil(3.2) == 4.0, "ceil failed"
+assert mathRound(3.5) == 4 or mathRound(3.5) == 4.0, "round up failed"
+assert mathRound(3.4) == 3 or mathRound(3.4) == 3.0, "round down failed"
+print("PASS: test_std_math_floor_ceil_round")

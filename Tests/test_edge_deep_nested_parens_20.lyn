@@ -1,0 +1,4 @@
+# Test deeply parenthesized expressions
+let r = ((((((((((1 + 1) * 2) - 1) * 2) - 1) * 2) - 1) * 2) - 1) * 2) - 1
+assert r == 65, "deeply parenthesized expression failed"
+print("PASS: test_edge_deep_nested_parens_20")

@@ -1,0 +1,6 @@
+# Test precedence: arithmetic over comparison
+let r1 = 3 + 4 > 2 * 3
+let r2 = 10 - 5 == 2 + 3
+assert r1 == true, "3 + 4 > 2 * 3 failed"
+assert r2 == true, "10 - 5 == 2 + 3 failed"
+print("PASS: test_parse_op_prec_compare")

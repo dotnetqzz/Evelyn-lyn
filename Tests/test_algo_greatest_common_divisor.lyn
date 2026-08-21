@@ -1,0 +1,12 @@
+# Test GCD and LCM
+fn gcd(a, b):
+    if b == 0: return a
+    return gcd(b, a % b)
+
+fn lcm(a, b):
+    return (a * b) // gcd(a, b)
+
+assert gcd(24, 36) == 12, "gcd 24, 36 failed"
+assert lcm(4, 6) == 12, "lcm 4, 6 failed"
+assert lcm(21, 6) == 42, "lcm 21, 6 failed"
+print("PASS: test_algo_greatest_common_divisor")

@@ -1,0 +1,5 @@
+# Test stringJoin on empty array
+let empty = []
+let joined = stringJoin(empty, ",")
+assert joined == "", "stringJoin empty failed"
+print("PASS: test_arr_join_empty")

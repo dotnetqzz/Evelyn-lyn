@@ -1,0 +1,9 @@
+# Test valid identifier tokenization
+let _underscore = 1
+let var_with_numbers_123 = 2
+let camelCaseVar = 3
+let PascalCaseVar = 4
+let UPPER_CASE_CONST = 5
+let combined = _underscore + var_with_numbers_123 + camelCaseVar + PascalCaseVar + UPPER_CASE_CONST
+assert combined == 15, "identifier parsing failed"
+print("PASS: test_lex_identifiers")

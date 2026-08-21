@@ -1,0 +1,7 @@
+# Test single default parameter
+fn greet(name, greeting = "Hello"):
+    return greeting + ", " + name
+
+assert greet("Bob") == "Hello, Bob", "default param failed"
+assert greet("Bob", "Hi") == "Hi, Bob", "override default param failed"
+print("PASS: test_fn_default_param_single")

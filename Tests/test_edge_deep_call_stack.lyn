@@ -1,0 +1,7 @@
+# Test recursive call stack return propagation
+fn chainCall(n):
+    if n <= 1: return 1
+    return 1 + chainCall(n - 1)
+
+assert chainCall(50) == 50, "deep call stack failed"
+print("PASS: test_edge_deep_call_stack")

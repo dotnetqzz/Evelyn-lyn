@@ -1,0 +1,28 @@
+# Test multi-stage validation throwing specific errors
+fn validateUser(user):
+    if not mapHas(user, "username"):
+        throw "missing username"
+    if stringLen(user["username"]) < 3:
+        throw "username too short"
+    if not mapHas(user, "age"):
+        throw "missing age"
+    if user["age"] < 18:
+        throw "underage"
+    return true
+
+var caught_short = ""
+try {
+    validateUser({"username": "ab", "age": 20})
+} catch e {
+    caught_short = toString(e)
+}
+assert caught_short == "username too short", "validation short failed"
+
+var caught_age = ""
+try {
+    validateUser({"username": "alice", "age": 15})
+} catch e {
+    caught_age = toString(e)
+}
+assert caught_age == "underage", "validation underage failed"
+print("PASS: test_err_validation_pipeline")

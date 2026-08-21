@@ -1,0 +1,6 @@
+# Test fn keyword function definition
+fn multiply(a, b):
+    return a * b
+
+assert multiply(6, 7) == 42, "fn syntax failed"
+print("PASS: test_fn_fn_syntax")

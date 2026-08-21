@@ -1,0 +1,8 @@
+# Test map serialization and deserialization via JSON
+let orig = {"name": "Alice", "age": 30, "active": true}
+let json_str = jsonStringify(orig)
+let parsed = jsonParse(json_str)
+assert parsed["name"] == "Alice", "json roundtrip name failed"
+assert parsed["age"] == 30, "json roundtrip age failed"
+assert parsed["active"] == true, "json roundtrip active failed"
+print("PASS: test_map_json_roundtrip")

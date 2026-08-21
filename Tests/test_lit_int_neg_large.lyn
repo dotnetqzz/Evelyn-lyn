@@ -1,0 +1,6 @@
+# Test large negative 64-bit integer values
+let neg_large = -9223372036854775800
+assert neg_large < -9000000000000000000, "large neg int comparison failed"
+let prev_val = neg_large - 5
+assert prev_val == -9223372036854775805, "large neg int subtraction failed"
+print("PASS: test_lit_int_neg_large")

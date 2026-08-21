@@ -1,0 +1,7 @@
+# Test long string creation and length
+var s = ""
+for i in 0..100:
+    s += "0123456789"
+
+assert stringLen(s) == 1000, "long string len failed"
+print("PASS: test_lit_str_long")

@@ -1,0 +1,16 @@
+# Test state machine transitions using map
+let transitions = {
+    "IDLE": {"start": "RUNNING"},
+    "RUNNING": {"pause": "PAUSED", "stop": "IDLE"},
+    "PAUSED": {"resume": "RUNNING", "stop": "IDLE"}
+}
+var current_state = "IDLE"
+current_state = transitions[current_state]["start"]
+assert current_state == "RUNNING", "transition to RUNNING failed"
+current_state = transitions[current_state]["pause"]
+assert current_state == "PAUSED", "transition to PAUSED failed"
+current_state = transitions[current_state]["resume"]
+assert current_state == "RUNNING", "transition to RUNNING 2 failed"
+current_state = transitions[current_state]["stop"]
+assert current_state == "IDLE", "transition to IDLE failed"
+print("PASS: test_map_state_machine")

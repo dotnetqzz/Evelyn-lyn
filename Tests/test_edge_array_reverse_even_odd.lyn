@@ -1,0 +1,6 @@
+# Test arrayReverse on even and odd length arrays
+let odd = [1, 2, 3, 4, 5]
+let even = [1, 2, 3, 4]
+assert arrayReverse(odd) == [5, 4, 3, 2, 1], "reverse odd failed"
+assert arrayReverse(even) == [4, 3, 2, 1], "reverse even failed"
+print("PASS: test_edge_array_reverse_even_odd")

@@ -1,0 +1,5 @@
+# Test 10 chained pipe operations
+fn inc(x): return x + 1
+let res = 0 |> inc |> inc |> inc |> inc |> inc |> inc |> inc |> inc |> inc |> inc
+assert res == 10, "10 chained pipes failed"
+print("PASS: test_edge_chained_pipes_10")

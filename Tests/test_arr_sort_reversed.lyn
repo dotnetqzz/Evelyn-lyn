@@ -1,0 +1,5 @@
+# Test arraySort on reverse sorted array
+let desc = [5, 4, 3, 2, 1]
+let res = arraySort(desc)
+assert res == [1, 2, 3, 4, 5], "sort descending failed"
+print("PASS: test_arr_sort_reversed")

@@ -1,0 +1,7 @@
+# Test map lookup fallback with null coalescing ??
+let opts = {"host": "0.0.0.0"}
+let host = opts["host"] ?? "127.0.0.1"
+let port = opts["port"] ?? 8080
+assert host == "0.0.0.0", "opts host lookup failed"
+assert port == 8080, "opts port default fallback failed"
+print("PASS: test_map_defaults_with_coalesce")

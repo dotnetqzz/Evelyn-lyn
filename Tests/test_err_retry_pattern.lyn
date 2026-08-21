@@ -1,0 +1,22 @@
+# Test retry operation helper
+var attempts = 0
+fn flakyOperation():
+    attempts += 1
+    if attempts < 3:
+        throw "temporary_network_fail"
+    return "SUCCESS_ON_ATTEMPT_3"
+
+fn retry(op, max_retries):
+    var last_err = null
+    for i in 1...max_retries:
+        try {
+            return op()
+        } catch e {
+            last_err = e
+        }
+    throw last_err
+
+let result = retry(flakyOperation, 5)
+assert result == "SUCCESS_ON_ATTEMPT_3", "retry result failed"
+assert attempts == 3, "retry attempts count failed"
+print("PASS: test_err_retry_pattern")

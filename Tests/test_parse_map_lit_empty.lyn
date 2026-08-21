@@ -1,0 +1,4 @@
+# Test empty map literal
+let m = {}
+assert arrayLen(mapKeys(m)) == 0, "empty map keys failed"
+print("PASS: test_parse_map_lit_empty")

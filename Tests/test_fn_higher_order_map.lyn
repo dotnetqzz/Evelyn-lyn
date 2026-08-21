@@ -1,0 +1,10 @@
+# Test custom map higher order function
+fn myMap(arr, fn_cb):
+    var out = []
+    for item in arr:
+        out = arrayAppend(out, fn_cb(item))
+    return out
+
+let doubles = myMap([1, 2, 3, 4], def(x) => x * 2)
+assert doubles == [2, 4, 6, 8], "custom map failed"
+print("PASS: test_fn_higher_order_map")

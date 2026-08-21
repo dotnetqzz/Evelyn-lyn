@@ -1,0 +1,5 @@
+# Test backslash escape sequence \\
+let s = "path\\to\\file"
+assert stringLen(s) == 12, "backslash escape len failed"
+assert stringContains(s, "\\"), "contains backslash failed"
+print("PASS: test_lex_str_escape_backslash")

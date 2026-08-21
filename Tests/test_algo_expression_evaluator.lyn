@@ -1,0 +1,27 @@
+# Test arithmetic expression evaluator
+fn evalRpn(tokens):
+    var stack = []
+    for tok in tokens:
+        if tok == "+":
+            let b = arrayPop(stack)
+            let a = arrayPop(stack)
+            stack = arrayPush(stack, a + b)
+        elif tok == "-":
+            let b = arrayPop(stack)
+            let a = arrayPop(stack)
+            stack = arrayPush(stack, a - b)
+        elif tok == "*":
+            let b = arrayPop(stack)
+            let a = arrayPop(stack)
+            stack = arrayPush(stack, a * b)
+        elif tok == "/":
+            let b = arrayPop(stack)
+            let a = arrayPop(stack)
+            stack = arrayPush(stack, a // b)
+        else:
+            stack = arrayPush(stack, toNumber(tok))
+    return stack[0]
+
+let tokens = ["3", "4", "+", "2", "*", "7", "/"]
+assert evalRpn(tokens) == 2, "rpn eval failed"
+print("PASS: test_algo_expression_evaluator")

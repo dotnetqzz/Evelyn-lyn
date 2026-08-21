@@ -1,0 +1,18 @@
+# Test 3 levels of nested if-else statements
+fn nest3(a, b, c):
+    if a:
+        if b:
+            if c:
+                return "ALL_TRUE"
+            else:
+                return "C_FALSE"
+        else:
+            return "B_FALSE"
+    else:
+        return "A_FALSE"
+
+assert nest3(true, true, true) == "ALL_TRUE", "nest3 all true failed"
+assert nest3(true, true, false) == "C_FALSE", "nest3 C false failed"
+assert nest3(true, false, true) == "B_FALSE", "nest3 B false failed"
+assert nest3(false, true, true) == "A_FALSE", "nest3 A false failed"
+print("PASS: test_ctrl_if_nested_3_levels")

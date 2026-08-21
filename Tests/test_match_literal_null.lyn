@@ -1,0 +1,10 @@
+# Test match on null literal
+fn checkNull(val):
+    match val {
+        case null: return "IS_NULL"
+        default: return "NOT_NULL"
+    }
+
+assert checkNull(null) == "IS_NULL", "match null failed"
+assert checkNull(42) == "NOT_NULL", "match non-null failed"
+print("PASS: test_match_literal_null")

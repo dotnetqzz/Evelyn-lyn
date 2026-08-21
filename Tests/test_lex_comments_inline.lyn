@@ -1,0 +1,7 @@
+# Test inline comments after expressions
+let x = 10 # this is ten
+let y = 20 # this is twenty
+# full line comment
+let z = x + y # thirty
+assert z == 30, "inline comment parsing failed"
+print("PASS: test_lex_comments_inline")

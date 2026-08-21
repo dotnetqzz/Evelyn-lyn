@@ -1,0 +1,5 @@
+# Test mixed array and map destructuring
+let [item1, sub] = [42, {"subKey": "nested_val"}]
+let {"subKey": subKey} = sub
+assert item1 == 42 and subKey == "nested_val", "mixed destructure failed"
+print("PASS: test_var_destructure_nested_mixed")

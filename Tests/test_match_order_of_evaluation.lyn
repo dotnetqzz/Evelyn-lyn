@@ -1,0 +1,10 @@
+# Test that first matching arm executes in match
+fn testOrder(x):
+    match x {
+        case 1...10: return "first"
+        case 5...15: return "second"
+        default:     return "none"
+    }
+
+assert testOrder(7) == "first", "match order of evaluation failed"
+print("PASS: test_match_order_of_evaluation")

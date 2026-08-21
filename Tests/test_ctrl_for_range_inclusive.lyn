@@ -1,0 +1,7 @@
+# Test for-range inclusive: 1...5 (1, 2, 3, 4, 5)
+var items = []
+for i in 1...5:
+    items = arrayAppend(items, i)
+
+assert items == [1, 2, 3, 4, 5], "for range inclusive failed"
+print("PASS: test_ctrl_for_range_inclusive")

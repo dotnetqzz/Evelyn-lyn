@@ -1,0 +1,13 @@
+# Test word frequency counter with map
+let words = ["apple", "banana", "apple", "cherry", "banana", "apple"]
+var freqs = {}
+for w in words:
+    if mapHas(freqs, w):
+        freqs[w] = freqs[w] + 1
+    else:
+        freqs[w] = 1
+
+assert freqs["apple"] == 3, "freq apple failed"
+assert freqs["banana"] == 2, "freq banana failed"
+assert freqs["cherry"] == 1, "freq cherry failed"
+print("PASS: test_map_count_frequencies")

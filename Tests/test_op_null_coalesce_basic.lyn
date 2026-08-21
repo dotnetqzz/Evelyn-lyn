@@ -1,0 +1,7 @@
+# Test null coalescing operator ??
+let a = null
+let b = "fallback"
+assert (a ?? b) == "fallback", "null ?? fallback failed"
+let c = "actual"
+assert (c ?? b) == "actual", "value ?? fallback failed"
+print("PASS: test_op_null_coalesce_basic")

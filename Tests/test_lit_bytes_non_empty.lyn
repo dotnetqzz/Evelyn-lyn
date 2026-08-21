@@ -1,0 +1,5 @@
+# Test non-empty byte array indexing
+let b = b"\x01\x02\x03\x04"
+assert arrayLen(b) == 4, "bytes len 4 failed"
+assert b[0] == 1 and b[1] == 2 and b[2] == 3 and b[3] == 4, "bytes items failed"
+print("PASS: test_lit_bytes_non_empty")

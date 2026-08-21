@@ -1,0 +1,12 @@
+# Test generating array of closures in loop
+var funcs = []
+for i in 0..5:
+    let captured = i
+    funcs = arrayAppend(funcs, def() => captured * 10)
+
+assert funcs[0]() == 0, "closure loop 0 failed"
+assert funcs[1]() == 10, "closure loop 1 failed"
+assert funcs[2]() == 20, "closure loop 2 failed"
+assert funcs[3]() == 30, "closure loop 3 failed"
+assert funcs[4]() == 40, "closure loop 4 failed"
+print("PASS: test_scope_closure_in_loop")

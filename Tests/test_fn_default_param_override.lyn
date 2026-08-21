@@ -1,0 +1,7 @@
+# Test explicit null/value overriding default
+fn testDef(a = 10, b = 20):
+    return a + b
+
+assert testDef(100) == 120, "first override failed"
+assert testDef(100, 200) == 300, "both override failed"
+print("PASS: test_fn_default_param_override")

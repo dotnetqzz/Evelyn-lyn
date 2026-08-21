@@ -1,0 +1,17 @@
+# Test Vigenère polyalphabetic cipher
+fn vigenereEncrypt(text, key):
+    var out = ""
+    let key_len = stringLen(key)
+    for i in 0..stringLen(text):
+        let text_code = charCodeAt(text, i)
+        let key_code = charCodeAt(key, i % key_len) - 65
+        if text_code >= 65 and text_code <= 90:
+            let shifted = ((text_code - 65 + key_code) % 26) + 65
+            out += charFromCode(shifted)
+        else:
+            out += stringSub(text, i, 1)
+    return out
+
+let enc = vigenereEncrypt("ATTACKATDAWN", "LEMON")
+assert enc == "LXFOPVEFRNHR", "vigenere encrypt failed"
+print("PASS: test_algo_vigenere_cipher")

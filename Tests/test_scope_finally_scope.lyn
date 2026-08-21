@@ -1,0 +1,10 @@
+# Test finally block variable scoping
+var fin_val = 0
+try {
+    let x = 10
+} finally {
+    let y = 20
+    fin_val = y
+}
+assert fin_val == 20, "finally scope failed"
+print("PASS: test_scope_finally_scope")

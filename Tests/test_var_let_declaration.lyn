@@ -1,0 +1,8 @@
+# Test let immutable binding declaration
+let a = 100
+let b = "fixed_string"
+let c = [1, 2, 3]
+assert a == 100, "let int read failed"
+assert b == "fixed_string", "let str read failed"
+assert arrayLen(c) == 3, "let array read failed"
+print("PASS: test_var_let_declaration")

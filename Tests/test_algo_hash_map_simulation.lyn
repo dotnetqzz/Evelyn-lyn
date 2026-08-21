@@ -1,0 +1,9 @@
+# Test Hash table with linear probing simulation
+fn simpleHash(key, capacity):
+    var h = 0
+    for i in 0..stringLen(key):
+        h = (h * 31 + charCodeAt(key, i)) % capacity
+    return h
+
+assert simpleHash("test", 100) >= 0 and simpleHash("test", 100) < 100, "hash bounds failed"
+print("PASS: test_algo_hash_map_simulation")

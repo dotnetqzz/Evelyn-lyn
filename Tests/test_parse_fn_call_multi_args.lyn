@@ -1,0 +1,7 @@
+# Test multiple arguments function call
+fn combine(a, b, c):
+    return a + "-" + toString(b) + "-" + toString(c)
+
+let res = combine("val", 42, true)
+assert res == "val-42-true", "multi args call failed"
+print("PASS: test_parse_fn_call_multi_args")

@@ -1,0 +1,7 @@
+# Test delimiter tokenization: () [] {} , : . ;
+let arr = [1, 2, 3]
+let m = {"k": 100}
+let tup_sum = (arr[0] + arr[1]) * arr[2]
+assert tup_sum == 9, "delimiters arithmetic failed"
+assert m["k"] == 100, "delimiters map lookup failed"
+print("PASS: test_lex_delimiters")

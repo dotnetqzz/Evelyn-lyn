@@ -1,0 +1,6 @@
+# Test str() / toString() type conversions
+assert str(123) == "123", "str(123) failed"
+assert str(true) == "true", "str(true) failed"
+assert str(false) == "false", "str(false) failed"
+assert str(null) == "null", "str(null) failed"
+print("PASS: test_lit_str_conversion")

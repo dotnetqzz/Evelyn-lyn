@@ -1,0 +1,5 @@
+# Test string concatenation with quotes
+let inner = "world"
+let s = "Hello, " + inner + "!"
+assert s == "Hello, world!", "interpolation with quotes failed"
+print("PASS: test_edge_interp_str_with_quotes")

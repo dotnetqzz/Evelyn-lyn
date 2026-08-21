@@ -1,0 +1,6 @@
+# Test mathSin and mathCos builtins
+let s0 = mathSin(0)
+let c0 = mathCos(0)
+assert mathAbs(s0) < 0.0001, "mathSin(0) failed"
+assert mathAbs(c0 - 1.0) < 0.0001, "mathCos(0) failed"
+print("PASS: test_std_math_sin_cos")

@@ -1,0 +1,4 @@
+# Test 10-level nested array access
+let a = [[[[[[[[[[42]]]]]]]]]]
+assert a[0][0][0][0][0][0][0][0][0][0] == 42, "10 deep array failed"
+print("PASS: test_edge_nested_arrays_10_deep")

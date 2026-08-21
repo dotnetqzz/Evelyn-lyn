@@ -1,0 +1,5 @@
+# Test base64Decode builtin
+let dec = base64Decode("aGVsbG8gd29ybGQ=")
+assert arrayLen(dec) == 11, "base64Decode byte length failed"
+assert dec[0] == 104 and dec[1] == 101, "base64Decode byte values failed"
+print("PASS: test_std_base64_decode")

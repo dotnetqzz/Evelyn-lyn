@@ -1,0 +1,4 @@
+# Test stringUpper and stringLower
+assert stringUpper("hello World") == "HELLO WORLD", "upper failed"
+assert stringLower("HELLO WORLD") == "hello world", "lower failed"
+print("PASS: test_std_string_upper_lower")

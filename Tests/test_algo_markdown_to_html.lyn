@@ -1,0 +1,16 @@
+# Test basic Markdown to HTML line converter
+fn mdToHtml(line):
+    if stringStartsWith(line, "# "):
+        return "<h1>" + stringSub(line, 2, stringLen(line)) + "</h1>"
+    elif stringStartsWith(line, "## "):
+        return "<h2>" + stringSub(line, 3, stringLen(line)) + "</h2>"
+    elif stringStartsWith(line, "- "):
+        return "<li>" + stringSub(line, 2, stringLen(line)) + "</li>"
+    else:
+        return "<p>" + line + "</p>"
+
+assert mdToHtml("# Title") == "<h1>Title</h1>", "md h1 failed"
+assert mdToHtml("## Subtitle") == "<h2>Subtitle</h2>", "md h2 failed"
+assert mdToHtml("- Item 1") == "<li>Item 1</li>", "md li failed"
+assert mdToHtml("Hello world") == "<p>Hello world</p>", "md p failed"
+print("PASS: test_algo_markdown_to_html")

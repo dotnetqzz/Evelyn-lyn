@@ -1,0 +1,4 @@
+# Test stringRepeat / repeat builtin
+assert stringRepeat("ab", 3) == "ababab", "stringRepeat failed"
+assert stringRepeat("x", 0) == "", "stringRepeat 0 failed"
+print("PASS: test_std_string_repeat")

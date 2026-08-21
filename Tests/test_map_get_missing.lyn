@@ -1,0 +1,4 @@
+# Test looking up absent key returns null
+let m = {"a": 1}
+assert m["missing_key"] == null, "absent key lookup should be null"
+print("PASS: test_map_get_missing")

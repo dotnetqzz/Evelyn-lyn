@@ -1,0 +1,19 @@
+# Test Coin Change minimum coins DP
+fn coinChange(coins, amount):
+    var dp = [0]
+    for i in 1...amount:
+        dp = arrayAppend(dp, 999999)
+
+    for i in 1...amount:
+        for c in coins:
+            if i >= c:
+                let candidate = dp[i - c] + 1
+                if candidate < dp[i]:
+                    dp[i] = candidate
+
+    return dp[amount]
+
+let coins = [1, 2, 5]
+assert coinChange(coins, 11) == 3, "coinChange 11 with 1,2,5 -> 3 (5+5+1) failed"
+assert coinChange(coins, 6) == 2, "coinChange 6 with 1,2,5 -> 2 (5+1) failed"
+print("PASS: test_algo_coin_change_min_coins")

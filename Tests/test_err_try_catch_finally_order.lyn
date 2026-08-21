@@ -1,0 +1,13 @@
+# Test order of execution: try -> catch -> finally
+var order = []
+try {
+    order = arrayAppend(order, "TRY_START")
+    throw "err"
+    order = arrayAppend(order, "TRY_END")
+} catch e {
+    order = arrayAppend(order, "CATCH")
+} finally {
+    order = arrayAppend(order, "FINALLY")
+}
+assert order == ["TRY_START", "CATCH", "FINALLY"], "execution order failed"
+print("PASS: test_err_try_catch_finally_order")

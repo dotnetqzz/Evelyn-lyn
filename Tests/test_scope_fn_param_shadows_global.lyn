@@ -1,0 +1,9 @@
+# Test parameter shadowing global with same name
+let data = [1, 2, 3]
+
+fn process(data):
+    return arrayLen(data)
+
+assert process([10, 20, 30, 40]) == 4, "param shadow failed"
+assert arrayLen(data) == 3, "global data preserved failed"
+print("PASS: test_scope_fn_param_shadows_global")

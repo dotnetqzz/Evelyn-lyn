@@ -1,0 +1,11 @@
+# Test while loop with continue
+var i = 0
+var evens_sum = 0
+while i < 10:
+    i += 1
+    if i % 2 != 0:
+        continue
+    evens_sum += i
+
+assert evens_sum == 30, "while continue failed"
+print("PASS: test_ctrl_while_continue")

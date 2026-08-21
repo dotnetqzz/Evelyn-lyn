@@ -1,0 +1,16 @@
+# Test if - elif - elif - else chain
+fn classify(n):
+    if n < 0:
+        return "negative"
+    elif n == 0:
+        return "zero"
+    elif n < 10:
+        return "small"
+    else:
+        return "large"
+
+assert classify(-5) == "negative", "classify negative failed"
+assert classify(0) == "zero", "classify zero failed"
+assert classify(7) == "small", "classify small failed"
+assert classify(100) == "large", "classify large failed"
+print("PASS: test_parse_if_elif_chain")

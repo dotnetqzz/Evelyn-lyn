@@ -1,0 +1,12 @@
+# Test 7-level chained ternary operator
+fn classify(n):
+    return n >= 90 ? "A" : (n >= 80 ? "B" : (n >= 70 ? "C" : (n >= 60 ? "D" : (n >= 50 ? "E" : (n >= 40 ? "F" : "G")))))
+
+assert classify(95) == "A", "tier A failed"
+assert classify(85) == "B", "tier B failed"
+assert classify(75) == "C", "tier C failed"
+assert classify(65) == "D", "tier D failed"
+assert classify(55) == "E", "tier E failed"
+assert classify(45) == "F", "tier F failed"
+assert classify(20) == "G", "tier G failed"
+print("PASS: test_edge_chained_ternary_7")

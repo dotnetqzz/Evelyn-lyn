@@ -1,0 +1,9 @@
+# Test loop continuing on every iteration
+var sum = 0
+for i in 0..10:
+    if true:
+        continue
+    sum += 1
+
+assert sum == 0, "continue every iteration failed"
+print("PASS: test_edge_loop_continue_every_iteration")

@@ -1,0 +1,17 @@
+# Test array of struct instances
+struct Item {
+    id,
+    price
+}
+
+let inventory = [
+    Item(1, 10),
+    Item(2, 25),
+    Item(3, 15)
+]
+var total_price = 0
+for item in inventory:
+    total_price += item.price
+
+assert total_price == 50, "struct in array sum failed"
+print("PASS: test_type_struct_in_array")

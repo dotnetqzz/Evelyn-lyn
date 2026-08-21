@@ -1,0 +1,4 @@
+# Test pathDirname builtin
+let d1 = pathDirname("path/to/file.txt")
+assert stringContains(d1, "path"), "pathDirname failed"
+print("PASS: test_std_pathlib_dirname")

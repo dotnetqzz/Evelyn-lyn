@@ -1,0 +1,4 @@
+# Test hashSha256 / sha256 builtin
+let h = hashSha256("hello")
+assert h == "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824", "sha256 hello failed"
+print("PASS: test_std_hash_sha256")

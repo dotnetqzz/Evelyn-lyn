@@ -1,0 +1,5 @@
+# Test unicode strings with symbols
+let s = "Alpha β Gamma δ"
+assert stringContains(s, "β"), "contains beta failed"
+assert stringContains(s, "δ"), "contains delta failed"
+print("PASS: test_edge_unicode_surrogate_strings")

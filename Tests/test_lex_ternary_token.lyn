@@ -1,0 +1,6 @@
+# Test ternary tokens ? and :
+let cond1 = true ? "yes" : "no"
+let cond2 = false ? 100 : 200
+assert cond1 == "yes", "ternary true branch failed"
+assert cond2 == 200, "ternary false branch failed"
+print("PASS: test_lex_ternary_token")

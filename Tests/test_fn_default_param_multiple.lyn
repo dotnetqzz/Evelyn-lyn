@@ -1,0 +1,9 @@
+# Test multiple default parameters
+fn createPoint(x = 0, y = 0, z = 0):
+    return [x, y, z]
+
+assert createPoint() == [0, 0, 0], "all defaults failed"
+assert createPoint(5) == [5, 0, 0], "one override failed"
+assert createPoint(5, 10) == [5, 10, 0], "two overrides failed"
+assert createPoint(5, 10, 15) == [5, 10, 15], "three overrides failed"
+print("PASS: test_fn_default_param_multiple")

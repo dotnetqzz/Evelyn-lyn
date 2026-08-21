@@ -1,0 +1,4 @@
+# Test hashMd5 / md5 builtin
+let h = hashMd5("hello")
+assert h == "5d41402abc4b2a76b9719d911017c592", "md5 hello failed"
+print("PASS: test_std_hash_md5")

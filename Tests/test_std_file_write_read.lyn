@@ -1,0 +1,9 @@
+# Test writing, reading, and removing a temporary file
+let temp_path = "scratch/_test_tmp_io.txt"
+writeFile(temp_path, "Evelyn-lyn temporary file contents 12345")
+assert fileExists(temp_path) == true, "temp fileExists failed"
+let read_back = readFile(temp_path)
+assert read_back == "Evelyn-lyn temporary file contents 12345", "readFile contents failed"
+sysRemoveFile(temp_path)
+assert fileExists(temp_path) == false, "file removed check failed"
+print("PASS: test_std_file_write_read")

@@ -1,0 +1,10 @@
+# Test string padding simulation
+fn padStart(s, target_len, pad_char):
+    var out = s
+    while stringLen(out) < target_len:
+        out = pad_char + out
+    return out
+
+assert padStart("42", 5, "0") == "00042", "padStart failed"
+assert padStart("hello", 3, " ") == "hello", "padStart no-op failed"
+print("PASS: test_std_string_pad_start")

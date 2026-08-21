@@ -1,0 +1,18 @@
+# Test 5 levels of nested if statements
+fn nest5(v):
+    if v >= 1:
+        if v >= 2:
+            if v >= 3:
+                if v >= 4:
+                    if v >= 5:
+                        return 5
+                    return 4
+                return 3
+            return 2
+        return 1
+    return 0
+
+assert nest5(5) == 5, "nest5(5) failed"
+assert nest5(3) == 3, "nest5(3) failed"
+assert nest5(0) == 0, "nest5(0) failed"
+print("PASS: test_ctrl_if_nested_5_levels")

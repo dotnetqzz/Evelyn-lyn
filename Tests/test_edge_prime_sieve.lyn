@@ -1,0 +1,22 @@
+# Test Sieve of Eratosthenes prime generator
+fn countPrimes(limit):
+    var is_prime = {}
+    for i in 2...limit:
+        is_prime[toString(i)] = true
+
+    for p in 2...limit:
+        if is_prime[toString(p)] == true:
+            var mult = p * 2
+            while mult <= limit:
+                is_prime[toString(mult)] = false
+                mult += p
+
+    var count = 0
+    for i in 2...limit:
+        if is_prime[toString(i)] == true:
+            count += 1
+    return count
+
+assert countPrimes(30) == 10, "primes up to 30 failed"
+assert countPrimes(50) == 15, "primes up to 50 failed"
+print("PASS: test_edge_prime_sieve")

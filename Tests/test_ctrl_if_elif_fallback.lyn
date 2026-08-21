@@ -1,0 +1,11 @@
+# Test if-elif chain falling through to else
+fn check(n):
+    if n > 10:
+        return "greater_than_10"
+    elif n > 5:
+        return "greater_than_5"
+    else:
+        return "otherwise"
+
+assert check(2) == "otherwise", "if-elif else fallback failed"
+print("PASS: test_ctrl_if_elif_fallback")

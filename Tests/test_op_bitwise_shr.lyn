@@ -1,0 +1,5 @@
+# Test bitwise shift right >>
+assert (64 >> 2) == 16, "shr 64>>2 failed"
+assert (16 >> 4) == 1, "shr 16>>4 failed"
+assert (1 >> 1) == 0, "shr 1>>1 failed"
+print("PASS: test_op_bitwise_shr")

@@ -1,0 +1,16 @@
+# Test modifying nested map values
+var state = {
+    "counter": {
+        "val": 0
+    }
+}
+var c = state["counter"]
+c["val"] = c["val"] + 1
+state["counter"] = c
+
+c = state["counter"]
+c["val"] = c["val"] + 1
+state["counter"] = c
+
+assert state["counter"]["val"] == 2, "nested map mutation failed"
+print("PASS: test_map_nested_mutation")

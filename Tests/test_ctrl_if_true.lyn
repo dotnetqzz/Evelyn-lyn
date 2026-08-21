@@ -1,0 +1,7 @@
+# Test basic if statement with true condition
+var executed = false
+if 100 > 50:
+    executed = true
+
+assert executed == true, "if true branch failed"
+print("PASS: test_ctrl_if_true")

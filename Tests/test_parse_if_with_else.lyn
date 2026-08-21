@@ -1,0 +1,9 @@
+# Test if statement with else branch
+var branch = ""
+if 5 > 10:
+    branch = "then"
+else:
+    branch = "else"
+
+assert branch == "else", "if with else failed"
+print("PASS: test_parse_if_with_else")

@@ -1,0 +1,5 @@
+# Test mathPow builtin
+assert mathPow(2, 0) == 1.0 or mathPow(2, 0) == 1, "mathPow(2,0) failed"
+assert mathPow(2, 8) == 256.0 or mathPow(2, 8) == 256, "mathPow(2,8) failed"
+assert mathPow(10, 3) == 1000.0 or mathPow(10, 3) == 1000, "mathPow(10,3) failed"
+print("PASS: test_std_math_pow")

@@ -1,0 +1,20 @@
+# Test Depth-First Search on graph
+fn dfs(graph, node, visited):
+    visited = arrayAppend(visited, node)
+    let neighbors = graph[node] ?? []
+    for next_node in neighbors:
+        if not arrayContains(visited, next_node):
+            visited = dfs(graph, next_node, visited)
+    return visited
+
+let g = {
+    "A": ["B", "C"],
+    "B": ["D"],
+    "C": ["E"],
+    "D": [],
+    "E": []
+}
+
+let visited_nodes = dfs(g, "A", [])
+assert visited_nodes == ["A", "B", "D", "C", "E"], "dfs traversal failed"
+print("PASS: test_algo_dfs_graph")

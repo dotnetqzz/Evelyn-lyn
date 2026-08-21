@@ -1,0 +1,9 @@
+# Test array literal spanning multiple lines
+let items = [
+    "first_item",
+    "second_item",
+    "third_item",
+]
+assert arrayLen(items) == 3, "multiline array len failed"
+assert items[0] == "first_item", "multiline array item 0 failed"
+print("PASS: test_parse_multiline_array")

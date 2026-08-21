@@ -1,0 +1,10 @@
+# Test throwing structured error map
+var error_info = {}
+try {
+    throw {"code": 500, "message": "Database timeout", "retry": true}
+} catch e {
+    error_info = e
+}
+assert error_info["code"] == 500, "error map code failed"
+assert error_info["retry"] == true, "error map retry failed"
+print("PASS: test_err_throw_map")

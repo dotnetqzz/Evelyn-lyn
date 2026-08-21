@@ -1,0 +1,8 @@
+# Test arithmetic operator precedence (* and / over + and -)
+let r1 = 2 + 3 * 4
+let r2 = 10 - 8 / 2
+let r3 = 2 * 3 + 4 * 5
+assert r1 == 14, "2 + 3 * 4 == 14 failed"
+assert r2 == 6 or r2 == 6.0, "10 - 8 / 2 == 6 failed"
+assert r3 == 26, "2 * 3 + 4 * 5 == 26 failed"
+print("PASS: test_parse_op_prec_arith")

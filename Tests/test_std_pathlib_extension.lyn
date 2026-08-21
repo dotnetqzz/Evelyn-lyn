@@ -1,0 +1,4 @@
+# Test pathExtension builtin
+let ext = pathExtension("archive.tar.gz")
+assert ext == ".gz" or ext == "gz", "pathExtension failed"
+print("PASS: test_std_pathlib_extension")

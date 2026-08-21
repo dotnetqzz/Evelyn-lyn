@@ -1,0 +1,7 @@
+# Test zero argument function call
+fn zeroArgs():
+    return 777
+
+let res = zeroArgs()
+assert res == 777, "zero args call failed"
+print("PASS: test_parse_fn_call_no_args")

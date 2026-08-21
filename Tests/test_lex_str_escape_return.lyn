@@ -1,0 +1,5 @@
+# Test carriage return escape \r
+let s = "a\rb"
+assert stringLen(s) == 3, "return escape len failed"
+assert stringContains(s, "\r"), "contains return failed"
+print("PASS: test_lex_str_escape_return")

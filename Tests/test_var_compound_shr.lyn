@@ -1,0 +1,5 @@
+# Test compound shift right >>=
+var x = 64
+x >>= 3
+assert x == 8, ">>= failed"
+print("PASS: test_var_compound_shr")

@@ -1,0 +1,24 @@
+# Test transactional state rollback on exception
+var state = {"balance": 100, "items": []}
+
+fn transaction(should_fail):
+    let backup = deepCopy(state)
+    try {
+        state["balance"] = state["balance"] - 50
+        state["items"] = arrayAppend(state["items"], "item1")
+        if should_fail:
+            throw "tx_fail"
+    } catch e {
+        state = backup
+        throw e
+    }
+
+try {
+    transaction(true)
+} catch e {}
+
+assert state["balance"] == 100 and arrayLen(state["items"]) == 0, "rollback on fail failed"
+
+transaction(false)
+assert state["balance"] == 50 and state["items"] == ["item1"], "tx on success failed"
+print("PASS: test_err_exception_state_rollback")

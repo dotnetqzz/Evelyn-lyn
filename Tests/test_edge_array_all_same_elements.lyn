@@ -1,0 +1,9 @@
+# Test array of 100 identical elements
+var a = []
+for i in 0..100:
+    a = arrayAppend(a, "same")
+
+assert arrayLen(a) == 100, "same elements len failed"
+let uniq = arrayUnique(a)
+assert uniq == ["same"], "same elements unique failed"
+print("PASS: test_edge_array_all_same_elements")

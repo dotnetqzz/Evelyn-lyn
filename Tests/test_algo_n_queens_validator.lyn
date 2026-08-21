@@ -1,0 +1,17 @@
+# Test N-Queens board configuration validator
+fn isSafeQueens(queens):
+    let n = arrayLen(queens)
+    for i in 0..n:
+        for j in (i + 1)..n:
+            if queens[i] == queens[j]: return false # same column
+            let row_diff = j - i
+            let col_diff = mathAbs(queens[i] - queens[j])
+            if row_diff == col_diff: return false # diagonal
+    return true
+
+# Valid 4-queens: [1, 3, 0, 2] (0-indexed columns for rows 0, 1, 2, 3)
+let valid_4 = [1, 3, 0, 2]
+let invalid_4 = [0, 1, 2, 3] # diagonal conflict
+assert isSafeQueens(valid_4) == true, "4-queens valid solution check failed"
+assert isSafeQueens(invalid_4) == false, "4-queens invalid solution check failed"
+print("PASS: test_algo_n_queens_validator")

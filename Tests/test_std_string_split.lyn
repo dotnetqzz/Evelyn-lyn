@@ -1,0 +1,6 @@
+# Test stringSplit builtin
+let parts = stringSplit("a,b,c,d", ",")
+assert parts == ["a", "b", "c", "d"], "stringSplit comma failed"
+let words = stringSplit("one two three", " ")
+assert words == ["one", "two", "three"], "stringSplit space failed"
+print("PASS: test_std_string_split")

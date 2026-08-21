@@ -1,0 +1,10 @@
+# Test nested recursive McCarthy 91 function
+fn m91(n):
+    if n > 100:
+        return n - 10
+    return m91(m91(n + 11))
+
+assert m91(99) == 91, "m91(99) failed"
+assert m91(87) == 91, "m91(87) failed"
+assert m91(105) == 95, "m91(105) failed"
+print("PASS: test_fn_nested_recursion")

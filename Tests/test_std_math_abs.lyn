@@ -1,0 +1,6 @@
+# Test mathAbs builtin
+assert mathAbs(10) == 10, "mathAbs pos failed"
+assert mathAbs(-10) == 10, "mathAbs neg failed"
+assert mathAbs(0) == 0, "mathAbs zero failed"
+assert mathAbs(-3.14) > 3.13, "mathAbs float failed"
+print("PASS: test_std_math_abs")

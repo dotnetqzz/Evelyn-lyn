@@ -1,0 +1,9 @@
+# Test makeMap helper constructing map
+var m = makeMap()
+m["id"] = 42
+m["username"] = "alice"
+m["email"] = "alice@example.com"
+assert m["id"] == 42, "makeMap id failed"
+assert m["username"] == "alice", "makeMap username failed"
+assert m["email"] == "alice@example.com", "makeMap email failed"
+print("PASS: test_map_make_map_helper")

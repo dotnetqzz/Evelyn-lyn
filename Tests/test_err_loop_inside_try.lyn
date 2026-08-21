@@ -1,0 +1,12 @@
+# Test loop inside try block aborts on error
+var count = 0
+try {
+    for i in 0..10:
+        if i == 4:
+            throw "abort_loop"
+        count += 1
+} catch e {
+    pass
+}
+assert count == 4, "loop abort sum failed"
+print("PASS: test_err_loop_inside_try")

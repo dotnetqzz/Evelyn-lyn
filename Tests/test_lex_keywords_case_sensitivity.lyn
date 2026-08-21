@@ -1,0 +1,6 @@
+# Test that keywords are case-sensitive
+let True_val = 10
+let False_val = 20
+let While_val = 30
+assert True_val + False_val + While_val == 60, "case sensitivity failed"
+print("PASS: test_lex_keywords_case_sensitivity")

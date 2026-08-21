@@ -1,0 +1,17 @@
+# Test matching on masked bitwise flags
+fn getFlagName(byte_val):
+    let masked = byte_val & 0x07
+    match masked {
+        case 0b001: return "READ"
+        case 0b010: return "WRITE"
+        case 0b100: return "EXEC"
+        case 0b011: return "READ_WRITE"
+        case 0b111: return "ALL"
+        default:    return "NONE"
+    }
+
+assert getFlagName(0b001) == "READ", "flag read failed"
+assert getFlagName(0b011) == "READ_WRITE", "flag read write failed"
+assert getFlagName(0b111) == "ALL", "flag all failed"
+assert getFlagName(0b000) == "NONE", "flag none failed"
+print("PASS: test_match_bitwise_flags")

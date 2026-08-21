@@ -1,0 +1,8 @@
+# Test recursion depth to 100 frames
+fn countRec(n):
+    if n <= 0:
+        return 0
+    return 1 + countRec(n - 1)
+
+assert countRec(100) == 100, "recursion depth 100 failed"
+print("PASS: test_edge_recursion_depth_100")

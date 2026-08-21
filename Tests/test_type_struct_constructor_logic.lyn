@@ -1,0 +1,16 @@
+# Test factory constructor function validating struct parameters
+struct UserAccount {
+    username,
+    age
+}
+
+fn makeUser(username, age):
+    if stringLen(username) == 0:
+        throw "username cannot be empty"
+    if age < 0:
+        throw "age cannot be negative"
+    return UserAccount(username, age)
+
+let valid = makeUser("alice", 25)
+assert valid.username == "alice" and valid.age == 25, "valid user make failed"
+print("PASS: test_type_struct_constructor_logic")

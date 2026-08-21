@@ -1,0 +1,14 @@
+# Test mutually recursive even / odd functions
+fn isEven(n):
+    if n == 0: return true
+    return isOdd(n - 1)
+
+fn isOdd(n):
+    if n == 0: return false
+    return isEven(n - 1)
+
+assert isEven(10) == true, "isEven(10) failed"
+assert isOdd(10) == false, "isOdd(10) failed"
+assert isEven(7) == false, "isEven(7) failed"
+assert isOdd(7) == true, "isOdd(7) failed"
+print("PASS: test_fn_mutual_recursion")

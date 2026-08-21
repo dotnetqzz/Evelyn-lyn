@@ -1,0 +1,6 @@
+# Test variable reuse in sequential steps
+var temp = 10
+temp = temp * 2
+let final_val = temp + 5
+assert final_val == 25, "var reuse failed"
+print("PASS: test_var_redeclared_in_same_scope")

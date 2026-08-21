@@ -1,0 +1,5 @@
+# Test greater-than-or-equal operator >=
+assert 10 >= 5, "gte greater failed"
+assert 5 >= 5, "gte equal failed"
+assert (4 >= 5) == false, "gte false failed"
+print("PASS: test_op_cmp_gte")

@@ -1,0 +1,8 @@
+# Test tab escape sequence \t
+let s = "col1\tcol2"
+assert stringLen(s) == 9, "tab escape len failed"
+assert stringContains(s, "\t"), "contains tab failed"
+let cols = stringSplit(s, "\t")
+assert arrayLen(cols) == 2, "split tab count failed"
+assert cols[0] == "col1" and cols[1] == "col2", "split tab content failed"
+print("PASS: test_lex_str_escape_tab")

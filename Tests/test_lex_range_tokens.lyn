@@ -1,0 +1,12 @@
+# Test range tokens .. and ...
+var sum_excl = 0
+for i in 1..5:
+    sum_excl += i
+
+var sum_incl = 0
+for i in 1...5:
+    sum_incl += i
+
+assert sum_excl == 10, "range exclusive failed"
+assert sum_incl == 15, "range inclusive failed"
+print("PASS: test_lex_range_tokens")

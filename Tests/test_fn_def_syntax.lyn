@@ -1,0 +1,6 @@
+# Test def keyword function definition
+def add(a, b):
+    return a + b
+
+assert add(15, 25) == 40, "def syntax failed"
+print("PASS: test_fn_def_syntax")

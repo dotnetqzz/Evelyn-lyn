@@ -1,0 +1,9 @@
+# Test if-else statement taking false branch
+var branch = ""
+if false:
+    branch = "TRUE_BRANCH"
+else:
+    branch = "FALSE_BRANCH"
+
+assert branch == "FALSE_BRANCH", "if-else false branch failed"
+print("PASS: test_ctrl_if_else_false")

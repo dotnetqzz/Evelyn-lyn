@@ -1,0 +1,10 @@
+# Test double-ended queue operations
+var deque = [2, 3]
+deque = arrayUnshift(deque, 1)
+deque = arrayPush(deque, 4)
+let back = arrayPop(deque)
+let front = arrayShift(deque)
+
+assert front == 1 and back == 4, "deque front/back failed"
+assert deque == [2, 3], "deque remaining failed"
+print("PASS: test_arr_deque_operations")

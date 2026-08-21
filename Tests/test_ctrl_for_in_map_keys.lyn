@@ -1,0 +1,9 @@
+# Test for-in iterating over map keys
+let scores = {"alice": 95, "bob": 80, "charlie": 90}
+let keys = mapKeys(scores)
+var total = 0
+for k in keys:
+    total += scores[k]
+
+assert total == 265, "for-in map keys failed"
+print("PASS: test_ctrl_for_in_map_keys")

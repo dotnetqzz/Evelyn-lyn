@@ -1,0 +1,8 @@
+# Test multi-stage function transformation pipeline
+fn step1(x): return x + 10
+fn step2(x): return x * 2
+fn step3(x): return x - 5
+
+let res = 5 |> step1 |> step2 |> step3 # (5+10)*2 - 5 = 25
+assert res == 25, "pipeline transform failed"
+print("PASS: test_fn_pipeline_transform")

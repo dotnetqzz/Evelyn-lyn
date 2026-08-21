@@ -1,0 +1,7 @@
+# Test toString on all core value types
+assert toString(123) == "123", "toString int failed"
+assert toString(3.14) == "3.14", "toString float failed"
+assert toString(true) == "true", "toString bool failed"
+assert toString(null) == "null", "toString null failed"
+assert toString([1, 2]) == "[1, 2]", "toString array failed"
+print("PASS: test_std_io_to_string")

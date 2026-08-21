@@ -1,0 +1,5 @@
+# Test hex encode roundtrip
+let orig = "HexRoundtrip123!"
+let enc = hexEncode(orig)
+assert stringLen(enc) == 32, "hex roundtrip encode len failed"
+print("PASS: test_std_hex_roundtrip")

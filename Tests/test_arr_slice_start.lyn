@@ -1,0 +1,5 @@
+# Test arraySlice from start
+let arr = [10, 20, 30, 40, 50]
+let sub = arraySlice(arr, 0, 3)
+assert sub == [10, 20, 30], "arraySlice start failed"
+print("PASS: test_arr_slice_start")

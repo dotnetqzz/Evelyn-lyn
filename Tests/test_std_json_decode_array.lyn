@@ -1,0 +1,5 @@
+# Test JSON decoding of arrays
+let parsed = jsonParse("[10, 20, 30, 40]")
+assert arrayLen(parsed) == 4, "parsed arr len failed"
+assert parsed[0] == 10 and parsed[3] == 40, "parsed arr elements failed"
+print("PASS: test_std_json_decode_array")

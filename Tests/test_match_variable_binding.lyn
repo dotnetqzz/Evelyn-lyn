@@ -1,0 +1,8 @@
+# Test match pattern variable binding
+fn echoVal(v):
+    match v {
+        case x: return x * 2
+    }
+
+assert echoVal(21) == 42, "match variable binding failed"
+print("PASS: test_match_variable_binding")

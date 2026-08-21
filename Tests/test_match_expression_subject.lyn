@@ -1,0 +1,11 @@
+# Test match on result of complex expression
+fn evaluate(a, b):
+    match a + b * 2 {
+        case 10: return "TEN"
+        case 20: return "TWENTY"
+        default: return "OTHER"
+    }
+
+assert evaluate(2, 4) == "TEN", "match expression subject failed"
+assert evaluate(0, 10) == "TWENTY", "match expression subject 20 failed"
+print("PASS: test_match_expression_subject")

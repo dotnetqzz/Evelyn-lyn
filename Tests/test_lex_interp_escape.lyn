@@ -1,0 +1,5 @@
+# Test string with parens and interpolation
+let n = 42
+let s = "Status (active): \(n)"
+assert s == "Status (active): 42", "interpolation with parens failed"
+print("PASS: test_lex_interp_escape")

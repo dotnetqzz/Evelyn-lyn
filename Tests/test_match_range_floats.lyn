@@ -1,0 +1,15 @@
+# Test match with floating point range patterns
+fn threatLevel(cvss):
+    match cvss {
+        case 0.0...3.9:  return "LOW"
+        case 4.0...6.9:  return "MEDIUM"
+        case 7.0...8.9:  return "HIGH"
+        case 9.0...10.0: return "CRITICAL"
+        default:         return "UNKNOWN"
+    }
+
+assert threatLevel(2.5) == "LOW", "match float range LOW failed"
+assert threatLevel(5.5) == "MEDIUM", "match float range MEDIUM failed"
+assert threatLevel(8.0) == "HIGH", "match float range HIGH failed"
+assert threatLevel(9.8) == "CRITICAL", "match float range CRITICAL failed"
+print("PASS: test_match_range_floats")

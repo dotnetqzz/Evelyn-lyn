@@ -1,0 +1,5 @@
+# Test assert with true condition passes silently
+assert 10 > 5, "10 > 5 should pass"
+assert "abc" == "abc", "strings eq should pass"
+assert true == true, "bool should pass"
+print("PASS: test_err_assert_true_passes")

@@ -1,0 +1,5 @@
+# Test chained boolean expressions
+let x = 15
+let valid = (x > 10) and (x < 20) and (x != 12)
+assert valid == true, "chained comparison failed"
+print("PASS: test_parse_chained_comparisons")

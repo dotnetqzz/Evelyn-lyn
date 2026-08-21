@@ -1,0 +1,6 @@
+# Test mutable destructuring with var
+var [a, b] = [10, 20]
+a += 5
+b *= 2
+assert a == 15 and b == 40, "mutable destructure failed"
+print("PASS: test_var_destructure_var_mutable")

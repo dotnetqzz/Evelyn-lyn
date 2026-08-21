@@ -1,0 +1,12 @@
+# Test simple enum declaration
+enum Direction {
+    North,
+    South,
+    East,
+    West
+}
+
+let d = Direction.North
+assert d == Direction.North, "enum variant equality failed"
+assert d != Direction.South, "enum variant inequality failed"
+print("PASS: test_type_enum_decl_simple")

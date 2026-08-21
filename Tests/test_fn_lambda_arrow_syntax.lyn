@@ -1,0 +1,6 @@
+# Test lambda arrow syntax def(x) => expr
+let sq = def(x) => x * x
+let add = def(a, b) => a + b
+assert sq(8) == 64, "lambda sq failed"
+assert add(10, 20) == 30, "lambda add failed"
+print("PASS: test_fn_lambda_arrow_syntax")

@@ -1,0 +1,11 @@
+# Test LIFO stack operations
+var stack = []
+stack = arrayPush(stack, "page1")
+stack = arrayPush(stack, "page2")
+stack = arrayPush(stack, "page3")
+
+let top1 = arrayPop(stack)
+let top2 = arrayPop(stack)
+assert top1 == "page3" and top2 == "page2", "stack LIFO failed"
+assert arrayLen(stack) == 1 and stack[0] == "page1", "stack remaining failed"
+print("PASS: test_arr_stack_operations")

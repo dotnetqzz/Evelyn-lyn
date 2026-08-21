@@ -1,0 +1,10 @@
+# Test map keys containing special characters
+let m = {
+    "content-type": "application/json",
+    "x-custom:header": "value",
+    "path/with/slashes": 123
+}
+assert m["content-type"] == "application/json", "special key 1 failed"
+assert m["x-custom:header"] == "value", "special key 2 failed"
+assert m["path/with/slashes"] == 123, "special key 3 failed"
+print("PASS: test_map_special_char_keys")

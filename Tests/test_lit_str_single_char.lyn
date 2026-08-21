@@ -1,0 +1,5 @@
+# Test single character string
+let c = "Z"
+assert stringLen(c) == 1, "single char len failed"
+assert charCodeAt(c, 0) == 90, "single char code failed"
+print("PASS: test_lit_str_single_char")

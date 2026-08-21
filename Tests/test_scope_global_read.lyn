@@ -1,0 +1,8 @@
+# Test reading global variable inside function
+let global_val = 100
+
+fn getGlobal():
+    return global_val
+
+assert getGlobal() == 100, "global read failed"
+print("PASS: test_scope_global_read")

@@ -1,0 +1,5 @@
+# Test stringStartsWith builtin
+assert stringStartsWith("https://example.com", "https://") == true, "starts with https failed"
+assert stringStartsWith("http://example.com", "https://") == false, "starts with false failed"
+assert stringStartsWith("any_str", "") == true, "starts with empty failed"
+print("PASS: test_std_string_starts_with")

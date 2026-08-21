@@ -1,0 +1,12 @@
+# Test nested map navigation
+let appConfig = {
+    "server": {
+        "http": {
+            "port": 8080,
+            "host": "localhost"
+        }
+    }
+}
+assert appConfig["server"]["http"]["port"] == 8080, "nested map port lookup failed"
+assert appConfig["server"]["http"]["host"] == "localhost", "nested map host lookup failed"
+print("PASS: test_map_nested_lookup")

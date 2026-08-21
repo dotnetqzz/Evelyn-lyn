@@ -1,0 +1,6 @@
+# Test reversed builtin
+let nums = [1, 2, 3, 4]
+let r = reversed(nums)
+assert r == [4, 3, 2, 1], "reversed builtin failed"
+assert nums == [1, 2, 3, 4], "reversed did not mutate original failed"
+print("PASS: test_std_reversed")

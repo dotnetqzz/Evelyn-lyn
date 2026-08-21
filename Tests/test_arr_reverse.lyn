@@ -1,0 +1,5 @@
+# Test arrayReverse
+let orig = [1, 2, 3, 4, 5]
+let rev = arrayReverse(orig)
+assert rev == [5, 4, 3, 2, 1], "arrayReverse failed"
+print("PASS: test_arr_reverse")

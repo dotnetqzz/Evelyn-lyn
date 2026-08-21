@@ -1,0 +1,25 @@
+# Test Longest Common Subsequence length
+fn lcs(s1, s2):
+    let m = stringLen(s1)
+    let n = stringLen(s2)
+    var dp = []
+    for i in 0...(m+1):
+        var row = []
+        for j in 0...(n+1):
+            row = arrayAppend(row, 0)
+        dp = arrayAppend(dp, row)
+
+    for i in 1...m:
+        var cur_row = dp[i]
+        for j in 1...n:
+            if stringSub(s1, i - 1, 1) == stringSub(s2, j - 1, 1):
+                cur_row[j] = dp[i - 1][j - 1] + 1
+            else:
+                let up = dp[i - 1][j]
+                let left = cur_row[j - 1]
+                cur_row[j] = up > left ? up : left
+        dp[i] = cur_row
+    return dp[m][n]
+
+assert lcs("ABCBDAB", "BDCABA") == 4, "lcs length failed"
+print("PASS: test_algo_longest_common_subseq")

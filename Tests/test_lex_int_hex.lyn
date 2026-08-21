@@ -1,0 +1,12 @@
+# Test hexadecimal integer tokenization
+let h0 = 0x0
+let h1 = 0x1F
+let h2 = 0xABCD
+let h3 = 0xabcdef
+let h4 = 0xFFFFFFFF
+assert h0 == 0, "hex 0 failed"
+assert h1 == 31, "hex 1F failed"
+assert h2 == 43981, "hex ABCD failed"
+assert h3 == 11259375, "hex abcdef failed"
+assert h4 == 4294967295, "hex FFFFFFFF failed"
+print("PASS: test_lex_int_hex")

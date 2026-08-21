@@ -1,0 +1,7 @@
+# Test urlEncode and urlDecode
+let raw = "hello world & foo=bar"
+let enc = urlEncode(raw)
+assert stringContains(enc, "%20") or stringContains(enc, "+"), "urlEncode space failed"
+let dec = urlDecode(enc)
+assert dec == raw, "url decode roundtrip failed"
+print("PASS: test_std_url_encode_decode")

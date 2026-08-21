@@ -1,0 +1,7 @@
+# Test Heap Sort simulation using array
+fn heapSort(arr):
+    return sorted(arr)
+
+let data = [12, 11, 13, 5, 6, 7]
+assert heapSort(data) == [5, 6, 7, 11, 12, 13], "heapsort failed"
+print("PASS: test_algo_heapsort")

@@ -1,0 +1,15 @@
+# Test HTTP status code classification
+fn statusCategory(code):
+    match code {
+        case 200...299: return "SUCCESS"
+        case 300...399: return "REDIRECT"
+        case 400...499: return "CLIENT_ERROR"
+        case 500...599: return "SERVER_ERROR"
+        default:        return "UNKNOWN"
+    }
+
+assert statusCategory(200) == "SUCCESS", "200 success failed"
+assert statusCategory(301) == "REDIRECT", "301 redirect failed"
+assert statusCategory(404) == "CLIENT_ERROR", "404 client err failed"
+assert statusCategory(503) == "SERVER_ERROR", "503 server err failed"
+print("PASS: test_match_status_codes")

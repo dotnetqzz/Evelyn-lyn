@@ -1,0 +1,4 @@
+# Test positive number evaluation
+let x = 42
+assert x == 42, "unary pos failed"
+print("PASS: test_op_arith_unary_pos")

@@ -1,0 +1,8 @@
+# Test deepCopy isolation
+let orig = [1, [2, 3], {"k": "orig"}]
+let cloned = deepCopy(orig)
+cloned[1][0] = 999
+cloned[2]["k"] = "modified"
+assert orig[1][0] == 2, "deepCopy nested array isolation failed"
+assert orig[2]["k"] == "orig", "deepCopy nested map isolation failed"
+print("PASS: test_lit_deep_copy")

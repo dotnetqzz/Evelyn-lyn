@@ -1,0 +1,7 @@
+# Test mathSqrt builtin
+assert mathSqrt(0) == 0.0, "mathSqrt(0) failed"
+assert mathSqrt(1) == 1.0, "mathSqrt(1) failed"
+assert mathSqrt(4) == 2.0, "mathSqrt(4) failed"
+assert mathSqrt(9) == 3.0, "mathSqrt(9) failed"
+assert mathSqrt(100) == 10.0, "mathSqrt(100) failed"
+print("PASS: test_std_math_sqrt")

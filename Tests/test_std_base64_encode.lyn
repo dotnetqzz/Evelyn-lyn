@@ -1,0 +1,7 @@
+# Test base64Encode builtin
+assert base64Encode("hello world") == "aGVsbG8gd29ybGQ=", "base64 encode hello world failed"
+assert base64Encode("") == "", "base64 encode empty failed"
+assert base64Encode("f") == "Zg==", "base64 encode 1 char failed"
+assert base64Encode("fo") == "Zm8=", "base64 encode 2 chars failed"
+assert base64Encode("foo") == "Zm9v", "base64 encode 3 chars failed"
+print("PASS: test_std_base64_encode")

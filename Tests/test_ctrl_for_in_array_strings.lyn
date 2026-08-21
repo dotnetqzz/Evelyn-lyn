@@ -1,0 +1,11 @@
+# Test for-in iterating over string array
+let words = ["The", "quick", "fox"]
+var sentence = ""
+for w in words:
+    if sentence == "":
+        sentence = w
+    else:
+        sentence = sentence + " " + w
+
+assert sentence == "The quick fox", "for-in string array failed"
+print("PASS: test_ctrl_for_in_array_strings")

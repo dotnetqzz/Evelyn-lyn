@@ -1,0 +1,5 @@
+# Test bitwise XOR operator ^
+assert (0b1100 ^ 0b1010) == 0b0110, "bitwise xor failed"
+assert (0xFF ^ 0xFF) == 0, "xor self failed"
+assert (0xFF ^ 0x00) == 0xFF, "xor zero failed"
+print("PASS: test_op_bitwise_xor")

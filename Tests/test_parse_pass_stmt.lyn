@@ -1,0 +1,11 @@
+# Test pass statement in empty blocks
+if true:
+    pass
+else:
+    pass
+
+for i in 0..3:
+    pass
+
+assert true, "pass statement failed"
+print("PASS: test_parse_pass_stmt")

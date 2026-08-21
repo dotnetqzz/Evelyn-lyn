@@ -1,0 +1,9 @@
+# Test while loop with compound logical condition
+var a = 0
+var b = 10
+while a < 5 and b > 5:
+    a += 1
+    b -= 1
+
+assert a == 5 and b == 5, "while compound condition failed"
+print("PASS: test_ctrl_while_complex_condition")

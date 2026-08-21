@@ -1,0 +1,10 @@
+# Test dynamically selecting and invoking function from array
+fn opAdd(a, b): return a + b
+fn opSub(a, b): return a - b
+fn opMul(a, b): return a * b
+
+let ops = [opAdd, opSub, opMul]
+assert ops[0](10, 5) == 15, "dynamic opAdd failed"
+assert ops[1](10, 5) == 5, "dynamic opSub failed"
+assert ops[2](10, 5) == 50, "dynamic opMul failed"
+print("PASS: test_fn_call_dynamic_callee")

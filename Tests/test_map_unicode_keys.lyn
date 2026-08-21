@@ -1,0 +1,6 @@
+# Test map with Unicode string keys
+let m = {"α": "alpha", "β": "beta", "γ": "gamma"}
+assert m["α"] == "alpha", "unicode key alpha failed"
+assert m["β"] == "beta", "unicode key beta failed"
+assert m["γ"] == "gamma", "unicode key gamma failed"
+print("PASS: test_map_unicode_keys")

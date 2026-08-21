@@ -1,0 +1,21 @@
+# Test multiple closures sharing and mutating common environment
+fn createBank(initial):
+    var balance = initial
+    let deposit = def(amount) {
+        balance += amount
+        return balance
+    }
+    let withdraw = def(amount) {
+        balance -= amount
+        return balance
+    }
+    let getBalance = def() {
+        return balance
+    }
+    return {"deposit": deposit, "withdraw": withdraw, "get": getBalance}
+
+let acct = createBank(100)
+acct["deposit"](50)
+acct["withdraw"](30)
+assert acct["get"]() == 120, "shared closure state failed"
+print("PASS: test_scope_multiple_closures_share_env")

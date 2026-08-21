@@ -1,0 +1,10 @@
+# Test early return before end of function body
+fn findFirstEven(arr):
+    for x in arr:
+        if x % 2 == 0:
+            return x
+    return -1
+
+assert findFirstEven([1, 3, 5, 8, 9]) == 8, "early return failed"
+assert findFirstEven([1, 3, 5]) == -1, "early return fallback failed"
+print("PASS: test_fn_early_return")

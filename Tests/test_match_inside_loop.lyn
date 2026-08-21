@@ -1,0 +1,14 @@
+# Test match inside loop over items
+let items = ["apple", "carrot", "banana", "broccoli"]
+var fruits = 0
+var veggies = 0
+for item in items:
+    match item {
+        case "apple": fruits += 1
+        case "banana": fruits += 1
+        case "carrot": veggies += 1
+        case "broccoli": veggies += 1
+    }
+
+assert fruits == 2 and veggies == 2, "match inside loop failed"
+print("PASS: test_match_inside_loop")

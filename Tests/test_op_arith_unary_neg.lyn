@@ -1,0 +1,7 @@
+# Test unary negation operator -
+let x = 42
+assert -x == -42, "unary neg failed"
+assert -(-x) == 42, "double unary neg failed"
+let f = 3.14
+assert -f < -3.1, "float unary neg failed"
+print("PASS: test_op_arith_unary_neg")

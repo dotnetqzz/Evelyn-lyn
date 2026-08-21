@@ -1,0 +1,8 @@
+# Test multilingual unicode characters
+let s1 = "Bonjour le monde"
+let s2 = "Hola Mundo"
+let s3 = "Hallo Welt"
+assert stringLen(s1) == 16, "s1 len failed"
+assert stringLen(s2) == 10, "s2 len failed"
+assert stringLen(s3) == 10, "s3 len failed"
+print("PASS: test_lit_str_unicode_multilingual")

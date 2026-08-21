@@ -1,0 +1,9 @@
+# Test iterating map keys in loop
+let prices = {"apple": 2, "banana": 1, "orange": 3}
+let keys = mapKeys(prices)
+var total_price = 0
+for k in keys:
+    total_price += prices[k]
+
+assert total_price == 6, "map iterate keys failed"
+print("PASS: test_map_iterate_keys")

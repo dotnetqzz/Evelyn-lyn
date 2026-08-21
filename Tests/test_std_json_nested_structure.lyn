@@ -1,0 +1,16 @@
+# Test JSON roundtrip on complex nested data structure
+let complex = {
+    "project": "Evelyn-lyn",
+    "version": 1,
+    "tags": ["compiler", "vm", "native"],
+    "meta": {
+        "active": true,
+        "author": "KAT"
+    }
+}
+let json_text = jsonStringify(complex)
+let decoded = jsonParse(json_text)
+assert decoded["project"] == "Evelyn-lyn", "nested json project failed"
+assert decoded["tags"][1] == "vm", "nested json tag failed"
+assert decoded["meta"]["active"] == true, "nested json meta failed"
+print("PASS: test_std_json_nested_structure")

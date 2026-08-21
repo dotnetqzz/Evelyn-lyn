@@ -1,0 +1,5 @@
+# Test small floating point values
+let small = 1.0e-5
+let halved = small / 2.0
+assert halved < small and halved > 0.0, "small float ops failed"
+print("PASS: test_edge_small_float_operations")

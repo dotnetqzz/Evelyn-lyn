@@ -1,0 +1,6 @@
+# Test inequality operator !=
+assert 42 != 43, "int neq failed"
+assert "a" != "b", "str neq failed"
+assert true != false, "bool neq failed"
+assert 1 != null, "int null neq failed"
+print("PASS: test_op_cmp_neq")

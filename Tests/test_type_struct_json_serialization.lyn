@@ -1,0 +1,15 @@
+# Test serializing struct to map and JSON
+struct Product {
+    id,
+    name,
+    price
+}
+
+fn productToMap(p):
+    return {"id": p.id, "name": p.name, "price": p.price}
+
+let prod = Product(1, "Laptop", 999.99)
+let map_val = productToMap(prod)
+let json_out = jsonStringify(map_val)
+assert stringContains(json_out, "Laptop"), "struct to json failed"
+print("PASS: test_type_struct_json_serialization")

@@ -1,0 +1,5 @@
+# Test empty array creation
+let a = []
+assert arrayLen(a) == 0, "empty array len failed"
+assert isArray(a) == true, "isArray(a) failed"
+print("PASS: test_arr_create_empty")

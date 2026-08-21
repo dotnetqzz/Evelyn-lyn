@@ -1,0 +1,12 @@
+# Test Quadtree 2D bounding box point containment
+struct BBox { x, y, w, h }
+struct Pt { x, y }
+
+fn bboxContains(box, pt):
+    return pt.x >= box.x and pt.x <= (box.x + box.w) and pt.y >= box.y and pt.y <= (box.y + box.h)
+
+let bounds = BBox(0, 0, 100, 100)
+assert bboxContains(bounds, Pt(50, 50)) == true, "inside bbox failed"
+assert bboxContains(bounds, Pt(150, 50)) == false, "outside bbox x failed"
+assert bboxContains(bounds, Pt(50, 150)) == false, "outside bbox y failed"
+print("PASS: test_algo_quad_tree_partition")

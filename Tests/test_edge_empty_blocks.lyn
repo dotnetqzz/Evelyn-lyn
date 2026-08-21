@@ -1,0 +1,14 @@
+# Test empty statement blocks with pass
+if true:
+    pass
+if false:
+    pass
+else:
+    pass
+while false:
+    pass
+for i in 0..0:
+    pass
+
+assert true, "empty blocks with pass failed"
+print("PASS: test_edge_empty_blocks")

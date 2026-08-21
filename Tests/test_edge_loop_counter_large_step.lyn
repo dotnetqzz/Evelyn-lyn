@@ -1,0 +1,7 @@
+# Test for-range with negative to positive bounds
+var sum = 0
+for i in -10...10:
+    sum += i
+
+assert sum == 0, "symmetric for range sum failed"
+print("PASS: test_edge_loop_counter_large_step")

@@ -1,0 +1,16 @@
+# Test error unwinding through 5 stack frames
+fn level5(): throw "deep_error"
+fn level4(): return level5()
+fn level3(): return level4()
+fn level2(): return level3()
+fn level1(): return level2()
+
+var caught = false
+try {
+    level1()
+} catch e {
+    caught = true
+    assert toString(e) == "deep_error", "deep error value mismatch"
+}
+assert caught == true, "deep stack unwind failed"
+print("PASS: test_err_throw_deep_call_stack")

@@ -1,0 +1,19 @@
+# Test Bubble Sort with early exit
+fn bubbleSort(arr):
+    var a = arrayCopy(arr)
+    let n = arrayLen(a)
+    for i in 0..n:
+        var swapped = false
+        for j in 0..(n - i - 1):
+            if a[j] > a[j + 1]:
+                let tmp = a[j]
+                a[j] = a[j + 1]
+                a[j + 1] = tmp
+                swapped = true
+        if not swapped:
+            break
+    return a
+
+let data = [64, 34, 25, 12, 22, 11, 90]
+assert bubbleSort(data) == [11, 12, 22, 25, 34, 64, 90], "bubbleSort failed"
+print("PASS: test_algo_bubblesort")

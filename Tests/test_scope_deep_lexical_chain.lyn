@@ -1,0 +1,16 @@
+# Test accessing variable through 4 levels of function nesting
+fn level1(a):
+    fn level2(b):
+        fn level3(c):
+            fn level4(d):
+                return a + b + c + d
+            return level4
+        return level3
+    return level2
+
+let f2 = level1(1)
+let f3 = f2(2)
+let f4 = f3(3)
+let res = f4(4)
+assert res == 10, "deep lexical chain failed"
+print("PASS: test_scope_deep_lexical_chain")

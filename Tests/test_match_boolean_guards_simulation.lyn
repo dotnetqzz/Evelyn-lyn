@@ -1,0 +1,15 @@
+# Test pattern matching combined with boolean conditions
+fn evalNumber(n):
+    match n {
+        case 0: return "zero"
+        default:
+            if n > 0:
+                return "positive"
+            else:
+                return "negative"
+    }
+
+assert evalNumber(0) == "zero", "eval zero failed"
+assert evalNumber(10) == "positive", "eval positive failed"
+assert evalNumber(-10) == "negative", "eval negative failed"
+print("PASS: test_match_boolean_guards_simulation")

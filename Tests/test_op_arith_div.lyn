@@ -1,0 +1,4 @@
+# Test arithmetic division operator /
+assert 20 / 4 == 5 or 20 / 4 == 5.0, "div failed"
+assert 7 / 2 == 3.5, "float div failed"
+print("PASS: test_op_arith_div")

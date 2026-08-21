@@ -1,0 +1,20 @@
+# Test pattern match with 10 arms
+fn letterValue(c):
+    match c {
+        case "A": return 1
+        case "B": return 2
+        case "C": return 3
+        case "D": return 4
+        case "E": return 5
+        case "F": return 6
+        case "G": return 7
+        case "H": return 8
+        case "I": return 9
+        case "J": return 10
+        default: return 0
+    }
+
+assert letterValue("E") == 5, "match arm E failed"
+assert letterValue("J") == 10, "match arm J failed"
+assert letterValue("Z") == 0, "match arm Z default failed"
+print("PASS: test_edge_match_many_arms_10")

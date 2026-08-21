@@ -1,0 +1,8 @@
+# Test sequential declarations of various types
+let n = 42
+let s = "text"
+let b = true
+let arr = [1, 2]
+let m = {"k": "v"}
+assert n == 42 and s == "text" and b == true, "multi decl failed"
+print("PASS: test_var_multiple_decl")

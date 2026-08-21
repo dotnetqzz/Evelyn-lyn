@@ -1,0 +1,11 @@
+# Test 3 levels of nested lexical blocks
+let v0 = 10
+var res = 0
+if true:
+    let v1 = 20
+    if true:
+        let v2 = 30
+        res = v0 + v1 + v2
+
+assert res == 60, "3 level block scoping failed"
+print("PASS: test_scope_nested_blocks_3_levels")

@@ -1,0 +1,4 @@
+# Test sha1 builtin
+let h = sha1("hello")
+assert stringLen(h) == 40, "sha1 len 40 failed"
+print("PASS: test_std_hash_sha1")

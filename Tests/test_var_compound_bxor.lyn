@@ -1,0 +1,5 @@
+# Test compound bitwise xor ^=
+var x = 0xAA
+x ^= 0xFF
+assert x == 0x55, "^= failed"
+print("PASS: test_var_compound_bxor")

@@ -1,0 +1,5 @@
+# Test arraySlice to end of array
+let arr = [10, 20, 30, 40, 50]
+let sub = arraySlice(arr, 3, 5)
+assert sub == [40, 50], "arraySlice to end failed"
+print("PASS: test_arr_slice_to_end")

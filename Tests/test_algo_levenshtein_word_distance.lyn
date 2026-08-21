@@ -1,0 +1,39 @@
+# Test Levenshtein distance on words
+fn min3(a, b, c):
+    var m = a
+    if b < m: m = b
+    if c < m: m = c
+    return m
+
+fn wordDist(w1, w2):
+    let l1 = stringLen(w1)
+    let l2 = stringLen(w2)
+    var dp = []
+    for i in 0...l1:
+        var row = []
+        for j in 0...l2:
+            row = arrayAppend(row, 0)
+        dp = arrayAppend(dp, row)
+
+    for i in 0...l1:
+        var r = dp[i]
+        r[0] = i
+        dp[i] = r
+
+    var r0 = dp[0]
+    for j in 0...l2:
+        r0[j] = j
+    dp[0] = r0
+
+    for i in 1...l1:
+        var cur_row = dp[i]
+        for j in 1...l2:
+            if stringSub(w1, i - 1, 1) == stringSub(w2, j - 1, 1):
+                cur_row[j] = dp[i - 1][j - 1]
+            else:
+                cur_row[j] = 1 + min3(cur_row[j - 1], dp[i - 1][j], dp[i - 1][j - 1])
+        dp[i] = cur_row
+    return dp[l1][l2]
+
+assert wordDist("book", "back") == 2, "word distance book-back failed"
+print("PASS: test_algo_levenshtein_word_distance")

@@ -1,0 +1,18 @@
+# Test Jump Search on block intervals
+fn jumpSearch(arr, target):
+    let n = arrayLen(arr)
+    let step = mathFloor(mathSqrt(n))
+    var prev = 0
+    var cur = step
+    while cur < n and arr[mathMin(cur, n) - 1] < target:
+        prev = cur
+        cur += step
+        if prev >= n: return -1
+    for i in prev..mathMin(cur, n):
+        if arr[i] == target: return i
+    return -1
+
+let data = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144]
+assert jumpSearch(data, 55) == 10, "jump search 55 failed"
+assert jumpSearch(data, 999) == -1, "jump search absent failed"
+print("PASS: test_algo_jump_search")

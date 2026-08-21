@@ -1,0 +1,4 @@
+# Test map with empty string as key
+let m = {"": "empty_key_value"}
+assert m[""] == "empty_key_value", "empty string key lookup failed"
+print("PASS: test_map_empty_string_key")

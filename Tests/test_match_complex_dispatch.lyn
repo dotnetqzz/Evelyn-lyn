@@ -1,0 +1,13 @@
+# Test matching with route dispatcher pattern
+fn route(path):
+    match path {
+        case "/":         return "HOME"
+        case "/api/v1":   return "API_V1"
+        case "/login":    return "LOGIN"
+        default:          return "404"
+    }
+
+assert route("/") == "HOME", "route home failed"
+assert route("/api/v1") == "API_V1", "route api failed"
+assert route("/unknown") == "404", "route 404 failed"
+print("PASS: test_match_complex_dispatch")

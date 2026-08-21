@@ -1,0 +1,6 @@
+# Test mathFloor builtin
+assert mathFloor(3.14) == 3, "mathFloor(3.14) failed"
+assert mathFloor(3.99) == 3, "mathFloor(3.99) failed"
+assert mathFloor(5.0) == 5, "mathFloor(5.0) failed"
+assert mathFloor(-2.5) == -3, "mathFloor(-2.5) failed"
+print("PASS: test_std_math_floor")

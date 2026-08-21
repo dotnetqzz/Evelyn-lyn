@@ -1,0 +1,5 @@
+# Test empty map creation
+let m = {}
+assert arrayLen(mapKeys(m)) == 0, "empty map keys len failed"
+assert isMap(m) == true, "isMap(m) failed"
+print("PASS: test_map_create_empty")

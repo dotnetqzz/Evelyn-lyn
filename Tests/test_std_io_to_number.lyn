@@ -1,0 +1,6 @@
+# Test toNumber on strings and numerics
+assert toNumber("500") == 500, "toNumber str failed"
+assert toNumber("-25") == -25, "toNumber neg str failed"
+assert toNumber("3.5") == 3.5, "toNumber float str failed"
+assert toNumber(100) == 100, "toNumber numeric identity failed"
+print("PASS: test_std_io_to_number")

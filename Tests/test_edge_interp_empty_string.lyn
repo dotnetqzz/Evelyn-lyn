@@ -1,0 +1,5 @@
+# Test string interpolation with empty variable
+let empty = ""
+let s = "prefix\(empty)suffix"
+assert s == "prefixsuffix", "empty interp failed"
+print("PASS: test_edge_interp_empty_string")

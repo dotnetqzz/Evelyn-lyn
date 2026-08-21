@@ -1,0 +1,7 @@
+# Test edge arithmetic with zero
+assert 0 + 0 == 0, "0+0 failed"
+assert 0 * 100 == 0, "0*100 failed"
+assert 0 - 0 == 0, "0-0 failed"
+assert 0 % 5 == 0, "0%5 failed"
+assert 0 ** 0 == 1, "0**0 failed"
+print("PASS: test_edge_zero_operations")

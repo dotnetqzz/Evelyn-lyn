@@ -1,0 +1,17 @@
+# Test struct copy / cloning with modified field
+struct Settings {
+    theme,
+    fontSize,
+    notifications
+}
+
+fn withTheme(s, newTheme):
+    return Settings(newTheme, s.fontSize, s.notifications)
+
+let base = Settings("dark", 14, true)
+let updated = withTheme(base, "light")
+
+assert base.theme == "dark", "base theme unaffected failed"
+assert updated.theme == "light", "updated theme failed"
+assert updated.fontSize == 14, "preserved fontSize failed"
+print("PASS: test_type_struct_copy_pattern")

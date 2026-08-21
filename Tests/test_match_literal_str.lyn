@@ -1,0 +1,14 @@
+# Test match on string literals
+fn handleMethod(m):
+    match m {
+        case "GET": return "read"
+        case "POST": return "create"
+        case "PUT": return "update"
+        case "DELETE": return "remove"
+        default: return "unsupported"
+    }
+
+assert handleMethod("GET") == "read", "match str GET failed"
+assert handleMethod("DELETE") == "remove", "match str DELETE failed"
+assert handleMethod("PATCH") == "unsupported", "match str default failed"
+print("PASS: test_match_literal_str")

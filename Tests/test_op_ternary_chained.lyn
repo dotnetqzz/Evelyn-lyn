@@ -1,0 +1,9 @@
+# Test chained ternary operator
+fn getLevel(exp):
+    return exp > 1000 ? "MASTER" : (exp > 500 ? "EXPERT" : (exp > 100 ? "NOVICE" : "BEGINNER"))
+
+assert getLevel(1500) == "MASTER", "level master failed"
+assert getLevel(750) == "EXPERT", "level expert failed"
+assert getLevel(200) == "NOVICE", "level novice failed"
+assert getLevel(50) == "BEGINNER", "level beginner failed"
+print("PASS: test_op_ternary_chained")

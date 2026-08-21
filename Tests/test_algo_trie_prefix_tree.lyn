@@ -1,0 +1,31 @@
+# Test Prefix Tree (Trie) dictionary lookup
+fn makeTrie():
+    return {"children": {}, "is_end": false}
+
+fn insertWord(root, word):
+    var curr = root
+    for i in 0..stringLen(word):
+        let ch = stringSub(word, i, 1)
+        if not mapHas(curr["children"], ch):
+            curr["children"][ch] = makeTrie()
+        curr = curr["children"][ch]
+    curr["is_end"] = true
+
+fn searchWord(root, word):
+    var curr = root
+    for i in 0..stringLen(word):
+        let ch = stringSub(word, i, 1)
+        if not mapHas(curr["children"], ch):
+            return false
+        curr = curr["children"][ch]
+    return curr["is_end"] == true
+
+let trie = makeTrie()
+insertWord(trie, "apple")
+insertWord(trie, "app")
+
+assert searchWord(trie, "apple") == true, "trie search apple failed"
+assert searchWord(trie, "app") == true, "trie search app failed"
+assert searchWord(trie, "appl") == false, "trie search prefix only failed"
+assert searchWord(trie, "banana") == false, "trie search absent failed"
+print("PASS: test_algo_trie_prefix_tree")

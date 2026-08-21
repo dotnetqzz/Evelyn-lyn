@@ -1,0 +1,10 @@
+# Test boolean AND short circuiting
+var side_effect = false
+fn shouldNotBeCalled():
+    side_effect = true
+    return true
+
+let result = false and shouldNotBeCalled()
+assert result == false, "and result failed"
+assert side_effect == false, "and short circuit failed"
+print("PASS: test_ctrl_short_circuit_and")

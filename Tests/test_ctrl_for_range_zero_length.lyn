@@ -1,0 +1,7 @@
+# Test zero length for range
+var count = 0
+for i in 5..5:
+    count += 1
+
+assert count == 0, "zero length for range failed"
+print("PASS: test_ctrl_for_range_zero_length")

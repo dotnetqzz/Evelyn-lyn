@@ -1,0 +1,17 @@
+# Test try-catch inside loop collecting errors vs successes
+let inputs = ["10", "20", "invalid", "30", "bad_num"]
+var sum = 0
+var err_count = 0
+
+for item in inputs:
+    try {
+        if item == "invalid" or item == "bad_num":
+            throw "bad"
+        sum += toNumber(item)
+    } catch e {
+        err_count += 1
+    }
+
+assert sum == 60, "parsed sum failed"
+assert err_count == 2, "error count failed"
+print("PASS: test_err_catch_inside_loop")

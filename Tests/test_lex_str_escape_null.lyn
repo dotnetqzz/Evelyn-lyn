@@ -1,0 +1,4 @@
+# Test null byte escape \0
+let s = "a\0b"
+assert stringLen(s) == 3, "null byte escape len failed"
+print("PASS: test_lex_str_escape_null")

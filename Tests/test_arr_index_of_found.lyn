@@ -1,0 +1,4 @@
+# Test arrayIndexOf finding element index
+let items = [10, 20, 30, 40, 50]
+assert arrayIndexOf(items, 30) == 2, "arrayIndexOf found failed"
+print("PASS: test_arr_index_of_found")

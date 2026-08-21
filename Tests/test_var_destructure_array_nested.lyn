@@ -1,0 +1,7 @@
+# Test nested array destructuring
+let matrix = [[1, 2], [3, 4]]
+let [row1, row2] = matrix
+let [a, b] = row1
+let [c, d] = row2
+assert a == 1 and b == 2 and c == 3 and d == 4, "nested array destructure failed"
+print("PASS: test_var_destructure_array_nested")

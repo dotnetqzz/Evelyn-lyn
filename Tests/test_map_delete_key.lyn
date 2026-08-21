@@ -1,0 +1,7 @@
+# Test mapDelete removing key
+var m = {"a": 1, "b": 2, "c": 3}
+mapDelete(m, "b")
+assert mapHas(m, "b") == false, "mapDelete key removal failed"
+assert m["b"] == null, "deleted key lookup failed"
+assert arrayLen(mapKeys(m)) == 2, "mapDelete key count failed"
+print("PASS: test_map_delete_key")

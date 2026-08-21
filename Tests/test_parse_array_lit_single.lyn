@@ -1,0 +1,5 @@
+# Test single element array literal
+let a = [42]
+assert arrayLen(a) == 1, "single array len failed"
+assert a[0] == 42, "single array item failed"
+print("PASS: test_parse_array_lit_single")

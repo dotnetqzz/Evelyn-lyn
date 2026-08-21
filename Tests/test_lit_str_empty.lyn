@@ -1,0 +1,6 @@
+# Test empty string properties
+let s = ""
+assert stringLen(s) == 0, "empty str len failed"
+assert s + "hello" == "hello", "empty str concat failed"
+assert "hello" + s == "hello", "str concat empty failed"
+print("PASS: test_lit_str_empty")

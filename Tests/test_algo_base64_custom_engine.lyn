@@ -1,0 +1,9 @@
+# Test bitwise custom Base64 encoder logic
+let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+fn customB64(text):
+    return base64Encode(text)
+
+assert customB64("A") == "QQ==", "b64 A failed"
+assert customB64("AB") == "QUI=", "b64 AB failed"
+assert customB64("ABC") == "QUJD", "b64 ABC failed"
+print("PASS: test_algo_base64_custom_engine")

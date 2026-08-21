@@ -1,0 +1,4 @@
+# Test hexEncode builtin
+assert hexEncode("Hello") == "48656c6c6f" or hexEncode("Hello") == "48656C6C6F", "hexEncode Hello failed"
+assert hexEncode("") == "", "hexEncode empty failed"
+print("PASS: test_std_hex_encode")

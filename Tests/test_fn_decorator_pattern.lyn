@@ -1,0 +1,13 @@
+# Test higher-order function decorator pattern
+fn withLogging(fn_cb):
+    return def(arg) {
+        let result = fn_cb(arg)
+        return {"input": arg, "output": result}
+    }
+
+fn square(x): return x * x
+let loggedSquare = withLogging(square)
+
+let out = loggedSquare(7)
+assert out["input"] == 7 and out["output"] == 49, "decorator pattern failed"
+print("PASS: test_fn_decorator_pattern")

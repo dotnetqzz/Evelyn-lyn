@@ -1,0 +1,5 @@
+# Test large floating point values
+let f = 1.0e10
+let res = f * 2.0
+assert res == 2.0e10, "large float multiply failed"
+print("PASS: test_edge_large_float_operations")

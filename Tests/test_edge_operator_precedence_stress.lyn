@@ -1,0 +1,5 @@
+# Test multi-operator precedence expression
+let res = 10 + 2 * 3 - 4 / 2 + 2 ** 3
+# 10 + 6 - 2 + 8 = 22
+assert res == 22 or res == 22.0, "precedence stress failed"
+print("PASS: test_edge_operator_precedence_stress")

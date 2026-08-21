@@ -1,0 +1,10 @@
+# Test map as function dispatch table
+fn handleAdd(a, b): return a + b
+fn handleMul(a, b): return a * b
+fn handleSub(a, b): return a - b
+
+let dispatch = {"+": handleAdd, "*": handleMul, "-": handleSub}
+assert dispatch["+"](10, 5) == 15, "dispatch add failed"
+assert dispatch["*"](10, 5) == 50, "dispatch mul failed"
+assert dispatch["-"](10, 5) == 5, "dispatch sub failed"
+print("PASS: test_map_lookup_table_dispatch")

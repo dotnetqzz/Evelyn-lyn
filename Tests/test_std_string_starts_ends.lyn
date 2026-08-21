@@ -1,0 +1,6 @@
+# Test stringStartsWith and stringEndsWith
+assert stringStartsWith("filename.lyn", "file") == true, "startsWith true failed"
+assert stringStartsWith("filename.lyn", "name") == false, "startsWith false failed"
+assert stringEndsWith("filename.lyn", ".lyn") == true, "endsWith true failed"
+assert stringEndsWith("filename.lyn", ".txt") == false, "endsWith false failed"
+print("PASS: test_std_string_starts_ends")

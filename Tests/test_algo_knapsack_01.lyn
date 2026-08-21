@@ -1,0 +1,23 @@
+# Test 0/1 Knapsack problem with dynamic programming
+fn knapsack(W, weights, values):
+    let n = arrayLen(weights)
+    var dp = []
+    for w in 0...W:
+        dp = arrayAppend(dp, 0)
+
+    for i in 0..n:
+        let wt = weights[i]
+        let val = values[i]
+        var w = W
+        while w >= wt:
+            let without_item = dp[w]
+            let with_item = dp[w - wt] + val
+            dp[w] = with_item > without_item ? with_item : without_item
+            w -= 1
+    return dp[W]
+
+let values = [60, 100, 120]
+let weights = [10, 20, 30]
+let W = 50
+assert knapsack(W, weights, values) == 220, "knapsack 0/1 failed"
+print("PASS: test_algo_knapsack_01")

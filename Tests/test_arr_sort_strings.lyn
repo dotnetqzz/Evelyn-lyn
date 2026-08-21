@@ -1,0 +1,5 @@
+# Test arraySort on strings
+let words = ["banana", "apple", "cherry", "date"]
+let sorted = arraySort(words)
+assert sorted == ["apple", "banana", "cherry", "date"], "arraySort strings failed"
+print("PASS: test_arr_sort_strings")

@@ -1,0 +1,14 @@
+# Test error thrown from nested function caught by caller
+fn divideSafe(a, b):
+    if b == 0:
+        throw "division_by_zero"
+    return a / b
+
+var err_msg = ""
+try {
+    divideSafe(10, 0)
+} catch e {
+    err_msg = toString(e)
+}
+assert err_msg == "division_by_zero", "function throw failed"
+print("PASS: test_err_throw_from_function")

@@ -1,0 +1,9 @@
+# Test byte string literals b"..."
+let b = b"\x48\x65\x6C\x6C\x6F"
+assert arrayLen(b) == 5, "bytes len failed"
+assert b[0] == 72, "byte 0 failed"
+assert b[1] == 101, "byte 1 failed"
+assert b[2] == 108, "byte 2 failed"
+assert b[3] == 108, "byte 3 failed"
+assert b[4] == 111, "byte 4 failed"
+print("PASS: test_lex_bytes_lit")

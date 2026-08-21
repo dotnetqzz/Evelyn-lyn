@@ -1,0 +1,14 @@
+# Test handling multiple consecutive newlines
+
+
+
+let x = 42
+
+
+
+let y = x * 2
+
+
+
+assert y == 84, "consecutive newlines failed"
+print("PASS: test_lex_consecutive_newlines")

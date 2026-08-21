@@ -1,0 +1,12 @@
+# Test octal integer tokenization
+let o0 = 0o0
+let o1 = 0o7
+let o2 = 0o77
+let o3 = 0o755
+let o4 = 0o123456
+assert o0 == 0, "oct 0 failed"
+assert o1 == 7, "oct 7 failed"
+assert o2 == 63, "oct 77 failed"
+assert o3 == 493, "oct 755 failed"
+assert o4 == 42798, "oct 123456 failed"
+print("PASS: test_lex_int_oct")

@@ -1,0 +1,9 @@
+# Test catching AssertionError from failed assertion
+var caught = false
+try {
+    assert 5 > 10, "intentional assertion failure"
+} catch e {
+    caught = true
+}
+assert caught == true, "assert false was not caught"
+print("PASS: test_err_assert_false_catches")

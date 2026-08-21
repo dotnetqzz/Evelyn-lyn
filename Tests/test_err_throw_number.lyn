@@ -1,0 +1,9 @@
+# Test throwing integer error code
+var caught_code = 0
+try {
+    throw 404
+} catch e {
+    caught_code = toNumber(e)
+}
+assert caught_code == 404, "number throw failed"
+print("PASS: test_err_throw_number")

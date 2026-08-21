@@ -1,0 +1,5 @@
+# Test stringReverse builtin
+assert stringReverse("hello") == "olleh", "stringReverse hello failed"
+assert stringReverse("racecar") == "racecar", "stringReverse palindrome failed"
+assert stringReverse("") == "", "stringReverse empty failed"
+print("PASS: test_std_string_reverse")

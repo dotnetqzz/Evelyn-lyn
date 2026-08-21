@@ -1,0 +1,5 @@
+# Test pipe with lambda callback
+fn double(x): return x * 2
+let res = 10 |> double
+assert res == 20, "pipe with fn failed"
+print("PASS: test_op_pipe_with_lambda")

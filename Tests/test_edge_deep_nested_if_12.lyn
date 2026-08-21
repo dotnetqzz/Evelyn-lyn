@@ -1,0 +1,31 @@
+# Test 12 levels of nested if statements
+fn checkDepth(n):
+    if n >= 1:
+        if n >= 2:
+            if n >= 3:
+                if n >= 4:
+                    if n >= 5:
+                        if n >= 6:
+                            if n >= 7:
+                                if n >= 8:
+                                    if n >= 9:
+                                        if n >= 10:
+                                            if n >= 11:
+                                                if n >= 12:
+                                                    return 12
+                                                return 11
+                                            return 10
+                                        return 9
+                                    return 8
+                                return 7
+                            return 6
+                        return 5
+                    return 4
+                return 3
+            return 2
+        return 1
+    return 0
+
+assert checkDepth(12) == 12, "checkDepth(12) failed"
+assert checkDepth(6) == 6, "checkDepth(6) failed"
+print("PASS: test_edge_deep_nested_if_12")

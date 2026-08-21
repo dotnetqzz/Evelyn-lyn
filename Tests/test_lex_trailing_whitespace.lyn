@@ -1,0 +1,6 @@
+# Test lines with trailing whitespace
+let a = 1     
+let b = 2  	   
+let c = a + b    
+assert c == 3, "trailing whitespace failed"
+print("PASS: test_lex_trailing_whitespace")

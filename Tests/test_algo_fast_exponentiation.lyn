@@ -1,0 +1,15 @@
+# Test fast modular exponentiation: (base^exp) % mod
+fn modPow(base, exp, modulus):
+    var res = 1
+    var b = base % modulus
+    var e = exp
+    while e > 0:
+        if e % 2 == 1:
+            res = (res * b) % modulus
+        e = e // 2
+        b = (b * b) % modulus
+    return res
+
+assert modPow(2, 10, 1000) == 24, "modPow(2, 10, 1000) failed"
+assert modPow(3, 7, 100) == 87, "modPow(3, 7, 100) failed"
+print("PASS: test_algo_fast_exponentiation")

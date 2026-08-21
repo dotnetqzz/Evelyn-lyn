@@ -1,0 +1,6 @@
+# Test int() and toNumber() conversions
+assert int(42) == 42, "int(42) failed"
+assert int(42.9) == 42, "int(42.9) failed"
+assert toNumber("123") == 123, "toNumber('123') failed"
+assert toNumber("-456") == -456, "toNumber('-456') failed"
+print("PASS: test_lit_int_conversion")

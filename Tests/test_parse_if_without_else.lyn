@@ -1,0 +1,7 @@
+# Test if statement without else branch
+var ran = false
+if 10 > 5:
+    ran = true
+
+assert ran == true, "if without else failed"
+print("PASS: test_parse_if_without_else")

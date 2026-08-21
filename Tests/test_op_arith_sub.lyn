@@ -1,0 +1,5 @@
+# Test arithmetic subtraction operator -
+assert 30 - 10 == 20, "int sub failed"
+assert 5.5 - 2.0 == 3.5, "float sub failed"
+assert 10 - 15 == -5, "sub neg result failed"
+print("PASS: test_op_arith_sub")

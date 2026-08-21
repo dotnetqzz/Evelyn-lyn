@@ -1,0 +1,16 @@
+# Test nested struct instances
+struct Vector {
+    x,
+    y
+}
+
+struct Entity {
+    id,
+    position
+}
+
+let pos = Vector(100, 200)
+let ent = Entity(1, pos)
+assert ent.position.x == 100, "nested struct x failed"
+assert ent.position.y == 200, "nested struct y failed"
+print("PASS: test_type_struct_nested")

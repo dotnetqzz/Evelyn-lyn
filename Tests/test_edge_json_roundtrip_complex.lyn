@@ -1,0 +1,10 @@
+# Test JSON serialization of complex array of maps
+let data = [
+    {"id": 1, "tags": ["a", "b"]},
+    {"id": 2, "tags": ["c", "d"]}
+]
+let encoded = jsonStringify(data)
+let decoded = jsonParse(encoded)
+assert decoded[0]["tags"][1] == "b", "complex json roundtrip failed"
+assert decoded[1]["id"] == 2, "complex json roundtrip id failed"
+print("PASS: test_edge_json_roundtrip_complex")

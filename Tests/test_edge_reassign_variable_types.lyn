@@ -1,0 +1,10 @@
+# Test dynamic variable reassignment to different types
+var v = 42
+assert type(v) == "int", "initial type int failed"
+v = "now a string"
+assert type(v) == "string", "reassign type str failed"
+v = [1, 2, 3]
+assert type(v) == "array", "reassign type array failed"
+v = {"k": true}
+assert type(v) == "map", "reassign type map failed"
+print("PASS: test_edge_reassign_variable_types")

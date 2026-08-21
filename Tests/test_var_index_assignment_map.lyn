@@ -1,0 +1,6 @@
+# Test map key assignment and update
+var m = {"a": 1}
+m["b"] = 2
+m["a"] = 100
+assert m["a"] == 100 and m["b"] == 2, "map index assign failed"
+print("PASS: test_var_index_assignment_map")

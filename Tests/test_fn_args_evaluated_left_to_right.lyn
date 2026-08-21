@@ -1,0 +1,13 @@
+# Test function argument evaluation order
+var log = []
+fn record(val):
+    log = arrayAppend(log, val)
+    return val
+
+fn target(a, b, c):
+    return a + b + c
+
+let res = target(record(1), record(2), record(3))
+assert res == 6, "args result failed"
+assert log == [1, 2, 3], "args left to right evaluation failed"
+print("PASS: test_fn_args_evaluated_left_to_right")

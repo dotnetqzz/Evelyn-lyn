@@ -1,0 +1,4 @@
+# Test string with all printable ASCII characters
+let s = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+assert stringLen(s) == 95, "printable ascii len failed"
+print("PASS: test_edge_str_all_ascii_chars")

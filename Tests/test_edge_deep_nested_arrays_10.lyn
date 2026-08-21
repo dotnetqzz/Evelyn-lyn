@@ -1,0 +1,4 @@
+# Test 10-level nested array indexing
+let a = [[[[[[[[[[100]]]]]]]]]]
+assert a[0][0][0][0][0][0][0][0][0][0] == 100, "10-level nested array failed"
+print("PASS: test_edge_deep_nested_arrays_10")

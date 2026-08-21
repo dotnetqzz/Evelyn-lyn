@@ -1,0 +1,5 @@
+# Test stringLen builtin
+assert stringLen("") == 0, "stringLen empty failed"
+assert stringLen("hello") == 5, "stringLen hello failed"
+assert stringLen("1234567890") == 10, "stringLen digits failed"
+print("PASS: test_std_string_len")

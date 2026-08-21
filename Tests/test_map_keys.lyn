@@ -1,0 +1,7 @@
+# Test mapKeys builtin
+let m = {"z": 3, "a": 1, "m": 2}
+let keys = mapKeys(m)
+assert arrayLen(keys) == 3, "mapKeys len failed"
+assert arrayContains(keys, "z") == true, "mapKeys contains z failed"
+assert arrayContains(keys, "a") == true, "mapKeys contains a failed"
+print("PASS: test_map_keys")

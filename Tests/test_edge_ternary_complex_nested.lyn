@@ -1,0 +1,7 @@
+# Test complex nested ternary expression
+let a = 10
+let b = 20
+let c = 30
+let res = a > b ? "a" : (b > c ? "b" : (c > a ? "c" : "none"))
+assert res == "c", "nested ternary failed"
+print("PASS: test_edge_ternary_complex_nested")

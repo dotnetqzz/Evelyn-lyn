@@ -1,0 +1,4 @@
+# Test empty array literal
+let a = []
+assert arrayLen(a) == 0, "empty array length failed"
+print("PASS: test_parse_array_lit_empty")

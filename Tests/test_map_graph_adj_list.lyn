@@ -1,0 +1,12 @@
+# Test representing graph with adjacency list map
+let graph = {
+    "A": ["B", "C"],
+    "B": ["A", "D", "E"],
+    "C": ["A", "F"],
+    "D": ["B"],
+    "E": ["B", "F"],
+    "F": ["C", "E"]
+}
+assert arrayLen(graph["A"]) == 2, "graph node A neighbors failed"
+assert arrayContains(graph["B"], "E") == true, "graph node B neighbor E failed"
+print("PASS: test_map_graph_adj_list")

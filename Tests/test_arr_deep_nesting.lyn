@@ -1,0 +1,4 @@
+# Test 5-level deeply nested array access
+let deep = [[[[[42]]]]]
+assert deep[0][0][0][0][0] == 42, "deep 5-level array failed"
+print("PASS: test_arr_deep_nesting")

@@ -1,0 +1,4 @@
+# Test float() and toNumber() float conversion
+assert float(10) == 10.0, "float(10) failed"
+assert toNumber("3.1415") > 3.14 and toNumber("3.1415") < 3.15, "toNumber('3.1415') failed"
+print("PASS: test_lit_float_conversion")

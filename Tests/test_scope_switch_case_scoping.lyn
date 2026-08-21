@@ -1,0 +1,12 @@
+# Test variable in switch case
+let opt = "A"
+var res = ""
+switch opt {
+    case "A":
+        let msg = "Case_A_matched"
+        res = msg
+    default:
+        res = "Default"
+}
+assert res == "Case_A_matched", "switch case scope failed"
+print("PASS: test_scope_switch_case_scoping")

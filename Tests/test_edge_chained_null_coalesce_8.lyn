@@ -1,0 +1,13 @@
+# Test 8 chained null coalescing operators
+let v1 = null
+let v2 = null
+let v3 = null
+let v4 = null
+let v5 = null
+let v6 = null
+let v7 = null
+let v8 = "final_fallback"
+
+let res = v1 ?? v2 ?? v3 ?? v4 ?? v5 ?? v6 ?? v7 ?? v8
+assert res == "final_fallback", "8-chain null coalesce failed"
+print("PASS: test_edge_chained_null_coalesce_8")

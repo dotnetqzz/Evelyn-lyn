@@ -1,0 +1,5 @@
+# Test mathRound builtin
+assert mathRound(3.2) == 3, "mathRound(3.2) failed"
+assert mathRound(3.7) == 4, "mathRound(3.7) failed"
+assert mathRound(3.5) == 4, "mathRound(3.5) failed"
+print("PASS: test_std_math_round")

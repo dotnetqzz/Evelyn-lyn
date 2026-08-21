@@ -1,0 +1,4 @@
+# Test fileExists on existing vs non-existing path
+assert fileExists("run_all_tests.py") == true, "fileExists existing failed"
+assert fileExists("non_existent_file_xyz_123.tmp") == false, "fileExists absent failed"
+print("PASS: test_std_file_exists")

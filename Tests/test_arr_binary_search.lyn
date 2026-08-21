@@ -1,0 +1,20 @@
+# Test binary search in sorted array
+fn bsearch(arr, target):
+    var low = 0
+    var high = arrayLen(arr) - 1
+    while low <= high:
+        let mid = (low + high) // 2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            low = mid + 1
+        else:
+            high = mid - 1
+    return -1
+
+let data = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91]
+assert bsearch(data, 23) == 5, "bsearch found 23 failed"
+assert bsearch(data, 2) == 0, "bsearch found first failed"
+assert bsearch(data, 91) == 9, "bsearch found last failed"
+assert bsearch(data, 99) == -1, "bsearch not found failed"
+print("PASS: test_arr_binary_search")

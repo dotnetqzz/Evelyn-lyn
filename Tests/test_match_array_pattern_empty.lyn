@@ -1,0 +1,10 @@
+# Test matching empty array pattern
+fn checkArray(arr):
+    match arr {
+        case []: return "EMPTY"
+        default: return "NON_EMPTY"
+    }
+
+assert checkArray([]) == "EMPTY", "match empty array failed"
+assert checkArray([1, 2]) == "NON_EMPTY", "match non-empty array failed"
+print("PASS: test_match_array_pattern_empty")

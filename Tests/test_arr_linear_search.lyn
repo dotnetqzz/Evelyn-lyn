@@ -1,0 +1,12 @@
+# Test finding all matching indices with linear search
+fn findAll(arr, target):
+    var indices = []
+    for i in 0..arrayLen(arr):
+        if arr[i] == target:
+            indices = arrayAppend(indices, i)
+    return indices
+
+let data = [1, 3, 7, 3, 5, 3, 9]
+assert findAll(data, 3) == [1, 3, 5], "findAll indices failed"
+assert arrayLen(findAll(data, 99)) == 0, "findAll empty failed"
+print("PASS: test_arr_linear_search")

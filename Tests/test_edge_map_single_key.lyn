@@ -1,0 +1,6 @@
+# Test map with single key
+var m = {"only": 1}
+assert m["only"] == 1, "single key map lookup failed"
+mapDelete(m, "only")
+assert mapHas(m, "only") == false, "single key map delete failed"
+print("PASS: test_edge_map_single_key")

@@ -1,0 +1,17 @@
+# Test batch processor continues processing following errors
+let jobs = [1, 2, 0, 4, 0, 5]
+var successful_results = []
+var failed_jobs = []
+
+for j in jobs:
+    try {
+        if j == 0:
+            throw "zero_job"
+        successful_results = arrayAppend(successful_results, 100 / j)
+    } catch e {
+        failed_jobs = arrayAppend(failed_jobs, j)
+    }
+
+assert arrayLen(successful_results) == 4, "batch success count failed"
+assert arrayLen(failed_jobs) == 2, "batch fail count failed"
+print("PASS: test_err_batch_processor_resilience")

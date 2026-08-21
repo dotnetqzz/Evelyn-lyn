@@ -1,0 +1,6 @@
+# Test compound modulo %=
+var x = 50
+x %= 30
+x %= 7
+assert x == 6, "%= failed"
+print("PASS: test_var_compound_mod")

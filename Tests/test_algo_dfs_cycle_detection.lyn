@@ -1,0 +1,27 @@
+# Test Depth-First Search cycle detection in directed graph
+fn hasCycle(graph, num_nodes):
+    var state = {} # 0: unvisited, 1: visiting, 2: visited
+    for i in 0..num_nodes: state[toString(i)] = 0
+
+    fn dfs(u):
+        state[toString(u)] = 1
+        let edges = graph[toString(u)] ?? []
+        for v in edges:
+            if state[toString(v)] == 1:
+                return true
+            if state[toString(v)] == 0:
+                if dfs(v): return true
+        state[toString(u)] = 2
+        return false
+
+    for i in 0..num_nodes:
+        if state[toString(i)] == 0:
+            if dfs(i): return true
+    return false
+
+let cycleGraph = {"0": [1], "1": [2], "2": [0]}
+let dagGraph = {"0": [1], "1": [2], "2": []}
+
+assert hasCycle(cycleGraph, 3) == true, "cycle detection true failed"
+assert hasCycle(dagGraph, 3) == false, "cycle detection false failed"
+print("PASS: test_algo_dfs_cycle_detection")

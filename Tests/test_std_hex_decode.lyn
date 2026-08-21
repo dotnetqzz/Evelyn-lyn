@@ -1,0 +1,5 @@
+# Test hexDecode builtin
+let dec = hexDecode("48656c6c6f")
+assert arrayLen(dec) == 5, "hexDecode len failed"
+assert dec[0] == 72 and dec[1] == 101, "hexDecode byte values failed"
+print("PASS: test_std_hex_decode")

@@ -1,0 +1,16 @@
+# Test nested match statements
+fn checkPair(a, b):
+    match a {
+        case "A":
+            match b {
+                case "1": return "A1"
+                default:  return "A_other"
+            }
+        default:
+            return "other"
+    }
+
+assert checkPair("A", "1") == "A1", "nested match A1 failed"
+assert checkPair("A", "2") == "A_other", "nested match A_other failed"
+assert checkPair("B", "1") == "other", "nested match other failed"
+print("PASS: test_match_nested_match")

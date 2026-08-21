@@ -1,0 +1,13 @@
+# Test calculating 40th Fibonacci with memoization
+var fib_cache = {"0": 0, "1": 1}
+fn fib40(n):
+    let key = toString(n)
+    if mapHas(fib_cache, key):
+        return fib_cache[key]
+    let res = fib40(n - 1) + fib40(n - 2)
+    fib_cache[key] = res
+    return res
+
+let f40 = fib40(40)
+assert f40 == 102334155, "fib(40) failed"
+print("PASS: test_edge_fibonacci_memo_40")

@@ -1,0 +1,16 @@
+# Test 2D Euclidean distance calculation between two points
+struct Point {
+    x,
+    y
+}
+
+fn distanceSq(p1, p2):
+    let dx = p1.x - p2.x
+    let dy = p1.y - p2.y
+    return dx * dx + dy * dy
+
+let a = Point(0, 0)
+let b = Point(3, 4)
+assert distanceSq(a, b) == 25, "distanceSq failed"
+assert mathSqrt(distanceSq(a, b)) == 5.0, "euclidean distance failed"
+print("PASS: test_type_struct_distance_calc")

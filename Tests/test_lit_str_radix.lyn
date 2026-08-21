@@ -1,0 +1,6 @@
+# Test str(n, radix) conversion
+assert str(255, 16) == "ff", "str(255, 16) failed"
+assert str(10, 2) == "1010", "str(10, 2) failed"
+assert str(64, 8) == "100", "str(64, 8) failed"
+assert str(100, 10) == "100", "str(100, 10) failed"
+print("PASS: test_lit_str_radix")

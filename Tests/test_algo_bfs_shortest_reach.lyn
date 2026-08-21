@@ -1,0 +1,27 @@
+# Test Breadth-First Search shortest unweighted reach
+fn bfsDist(graph, start):
+    var dist = {}
+    var queue = [start]
+    dist[start] = 0
+
+    while arrayLen(queue) > 0:
+        let curr = arrayShift(queue)
+        let d = dist[curr]
+        let neighbors = graph[curr] ?? []
+        for n in neighbors:
+            if not mapHas(dist, n):
+                dist[n] = d + 1
+                queue = arrayPush(queue, n)
+    return dist
+
+let graph = {
+    "A": ["B", "C"],
+    "B": ["A", "D"],
+    "C": ["A", "E"],
+    "D": ["B", "F"],
+    "E": ["C"],
+    "F": ["D"]
+}
+let d = bfsDist(graph, "A")
+assert d["A"] == 0 and d["B"] == 1 and d["D"] == 2 and d["F"] == 3, "bfs reach failed"
+print("PASS: test_algo_bfs_shortest_reach")

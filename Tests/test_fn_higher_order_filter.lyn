@@ -1,0 +1,11 @@
+# Test custom filter higher order function
+fn myFilter(arr, predicate):
+    var out = []
+    for item in arr:
+        if predicate(item):
+            out = arrayAppend(out, item)
+    return out
+
+let evens = myFilter([1, 2, 3, 4, 5, 6], def(x) => x % 2 == 0)
+assert evens == [2, 4, 6], "custom filter failed"
+print("PASS: test_fn_higher_order_filter")

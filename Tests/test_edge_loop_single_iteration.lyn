@@ -1,0 +1,5 @@
+# Test loop executing exactly once
+var count = 0
+for i in 0..1: count += 1
+assert count == 1, "single iteration loop failed"
+print("PASS: test_edge_loop_single_iteration")

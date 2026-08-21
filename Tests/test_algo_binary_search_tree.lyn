@@ -1,0 +1,31 @@
+# Test Binary Search Tree insertion and lookup
+fn bstInsert(node, val):
+    if node == null:
+        return {"val": val, "left": null, "right": null}
+    if val < node["val"]:
+        node["left"] = bstInsert(node["left"], val)
+    elif val > node["val"]:
+        node["right"] = bstInsert(node["right"], val)
+    return node
+
+fn bstSearch(node, val):
+    if node == null:
+        return false
+    if node["val"] == val:
+        return true
+    elif val < node["val"]:
+        return bstSearch(node["left"], val)
+    else:
+        return bstSearch(node["right"], val)
+
+var root = null
+root = bstInsert(root, 50)
+root = bstInsert(root, 30)
+root = bstInsert(root, 70)
+root = bstInsert(root, 20)
+root = bstInsert(root, 40)
+
+assert bstSearch(root, 40) == true, "bst search 40 failed"
+assert bstSearch(root, 70) == true, "bst search 70 failed"
+assert bstSearch(root, 99) == false, "bst search absent 99 failed"
+print("PASS: test_algo_binary_search_tree")

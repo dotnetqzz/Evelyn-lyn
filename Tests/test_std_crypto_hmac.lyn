@@ -1,0 +1,6 @@
+# Test hmacSha256 builtin
+let hmac1 = hmac("sha256", "secret_key", "message_payload")
+assert stringLen(hmac1) == 64, "hmac sha256 len failed"
+let hmac2 = hmac("sha256", "secret_key", "message_payload")
+assert hmac1 == hmac2, "hmac deterministic failed"
+print("PASS: test_std_crypto_hmac")

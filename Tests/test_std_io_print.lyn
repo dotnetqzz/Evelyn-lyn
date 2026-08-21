@@ -1,0 +1,4 @@
+# Test print builtin execution
+print("test print output")
+assert true, "print execution failed"
+print("PASS: test_std_io_print")

@@ -1,0 +1,5 @@
+# Test assert with true condition passes
+assert 1 + 1 == 2, "1+1==2 failed"
+assert true == true, "true==true failed"
+assert "a" == "a", "str eq failed"
+print("PASS: test_err_assert_true")

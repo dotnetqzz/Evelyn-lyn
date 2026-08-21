@@ -1,0 +1,10 @@
+# Test Tower of Hanoi move counter
+fn hanoiMoves(n):
+    if n == 1:
+        return 1
+    return 2 * hanoiMoves(n - 1) + 1
+
+assert hanoiMoves(1) == 1, "hanoi(1) failed"
+assert hanoiMoves(3) == 7, "hanoi(3) failed"
+assert hanoiMoves(5) == 31, "hanoi(5) failed"
+print("PASS: test_fn_recursion_hanoi")

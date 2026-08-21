@@ -1,0 +1,11 @@
+# Test building reverse map
+let dict = {"one": "1", "two": "2", "three": "3"}
+var reversed_dict = {}
+for k in mapKeys(dict):
+    let v = dict[k]
+    reversed_dict[v] = k
+
+assert reversed_dict["1"] == "one", "reverse map 1 failed"
+assert reversed_dict["2"] == "two", "reverse map 2 failed"
+assert reversed_dict["3"] == "three", "reverse map 3 failed"
+print("PASS: test_map_iterate_entries")

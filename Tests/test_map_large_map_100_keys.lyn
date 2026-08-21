@@ -1,0 +1,10 @@
+# Test creating and querying map with 100 entries
+var m = {}
+for i in 0..100:
+    m["key_" + toString(i)] = i * 2
+
+assert arrayLen(mapKeys(m)) == 100, "large map 100 keys count failed"
+assert m["key_0"] == 0, "large map key_0 failed"
+assert m["key_50"] == 100, "large map key_50 failed"
+assert m["key_99"] == 198, "large map key_99 failed"
+print("PASS: test_map_large_map_100_keys")

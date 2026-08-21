@@ -1,0 +1,16 @@
+# Test closure containing try-catch logic
+fn makeSafeParser():
+    return def(json_text) {
+        try {
+            return {"success": true, "data": jsonParse(json_text)}
+        } catch e {
+            return {"success": false, "error": toString(e)}
+        }
+    }
+
+let parser = makeSafeParser()
+let r1 = parser("{\"k\": 10}")
+let r2 = parser("invalid_json")
+assert r1["success"] == true and r1["data"]["k"] == 10, "parser success failed"
+assert r2["success"] == false, "parser failure failed"
+print("PASS: test_err_try_catch_in_closure")

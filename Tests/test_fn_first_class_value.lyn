@@ -1,0 +1,7 @@
+# Test assigning function to variable and invoking
+fn cube(x):
+    return x * x * x
+
+let f = cube
+assert f(3) == 27, "first class function assignment failed"
+print("PASS: test_fn_first_class_value")

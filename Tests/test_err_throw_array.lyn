@@ -1,0 +1,9 @@
+# Test throwing error array
+var validation_errors = []
+try {
+    throw ["field1 required", "field2 out of range"]
+} catch e {
+    validation_errors = e
+}
+assert arrayLen(validation_errors) == 2, "error array len failed"
+print("PASS: test_err_throw_array")

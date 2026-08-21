@@ -1,0 +1,16 @@
+# Test multiple distinct closure counter instances
+fn makeCounter(start):
+    var val = start
+    return def() {
+        let curr = val
+        val += 1
+        return curr
+    }
+
+let c1 = makeCounter(10)
+let c2 = makeCounter(100)
+
+assert c1() == 10 and c1() == 11, "counter 1 failed"
+assert c2() == 100 and c2() == 101, "counter 2 failed"
+assert c1() == 12, "counter 1 independent failed"
+print("PASS: test_fn_closure_counter")

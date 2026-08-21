@@ -1,0 +1,10 @@
+# Test multi-character operators
+assert (10 == 10) == true, "== operator failed"
+assert (10 != 5) == true, "!= operator failed"
+assert (5 <= 5) == true, "<= operator failed"
+assert (5 >= 5) == true, ">= operator failed"
+assert (true && true) == true, "&& operator failed"
+assert (false || true) == true, "|| operator failed"
+assert (2 ** 3) == 8, "** operator failed"
+assert (15 // 4) == 3, "// operator failed"
+print("PASS: test_lex_multi_char_ops")

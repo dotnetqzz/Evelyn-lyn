@@ -1,0 +1,15 @@
+# Test try-catch executed inside closure
+let safeExec = def(fn_cb) {
+    try {
+        return {"ok": true, "data": fn_cb()}
+    } catch e {
+        return {"ok": false, "error": toString(e)}
+    }
+}
+
+let ok_res = safeExec(def() => 42)
+let err_res = safeExec(def() { throw "failed"; })
+
+assert ok_res["ok"] == true and ok_res["data"] == 42, "closure try ok failed"
+assert err_res["ok"] == false and err_res["error"] == "failed", "closure try err failed"
+print("PASS: test_err_try_in_closure")

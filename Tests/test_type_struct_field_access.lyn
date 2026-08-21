@@ -1,0 +1,12 @@
+# Test reading fields from struct instance
+struct Rectangle {
+    width,
+    height
+}
+
+let r = Rectangle(30, 40)
+let area = r.width * r.height
+let perimeter = 2 * (r.width + r.height)
+assert area == 1200, "struct area failed"
+assert perimeter == 140, "struct perimeter failed"
+print("PASS: test_type_struct_field_access")

@@ -1,0 +1,7 @@
+# Test arrayPop removing last element
+var arr = [10, 20, 30, 40]
+let last = arrayPop(arr)
+assert last == 40, "arrayPop return failed"
+assert arrayLen(arr) == 3, "arrayPop length failed"
+assert arr == [10, 20, 30], "arrayPop contents failed"
+print("PASS: test_arr_pop")

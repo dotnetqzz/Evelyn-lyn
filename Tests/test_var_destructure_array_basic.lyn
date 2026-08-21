@@ -1,0 +1,4 @@
+# Test basic array destructuring assignment
+let [x, y, z] = [10, 20, 30]
+assert x == 10 and y == 20 and z == 30, "array destructuring failed"
+print("PASS: test_var_destructure_array_basic")

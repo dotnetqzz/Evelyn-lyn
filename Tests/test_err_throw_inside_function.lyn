@@ -1,0 +1,15 @@
+# Test throwing error deep inside helper function
+fn innerThrow():
+    throw "deep_exception"
+
+fn middle():
+    innerThrow()
+
+var caught = ""
+try {
+    middle()
+} catch e {
+    caught = toString(e)
+}
+assert caught == "deep_exception", "throw inside fn failed"
+print("PASS: test_err_throw_inside_function")

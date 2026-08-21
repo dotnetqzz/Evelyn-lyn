@@ -1,0 +1,15 @@
+# Test switch statement on strings
+fn switchStr(cmd):
+    switch cmd {
+        case "start":
+            return "RUNNING"
+        case "stop":
+            return "STOPPED"
+        default:
+            return "UNKNOWN"
+    }
+
+assert switchStr("start") == "RUNNING", "switch str start failed"
+assert switchStr("stop") == "STOPPED", "switch str stop failed"
+assert switchStr("restart") == "UNKNOWN", "switch str default failed"
+print("PASS: test_ctrl_switch_str")

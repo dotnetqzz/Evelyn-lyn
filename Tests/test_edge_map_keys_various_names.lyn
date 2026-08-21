@@ -1,0 +1,13 @@
+# Test reserved-word-like keys in maps
+let m = {
+    "let": 1,
+    "var": 2,
+    "if": 3,
+    "while": 4,
+    "for": 5,
+    "return": 6
+}
+assert m["let"] == 1, "map key 'let' failed"
+assert m["while"] == 4, "map key 'while' failed"
+assert m["return"] == 6, "map key 'return' failed"
+print("PASS: test_edge_map_keys_various_names")

@@ -1,0 +1,9 @@
+# Test error variable e is scoped to catch block
+var caught_msg = ""
+try {
+    throw "error_val"
+} catch e {
+    caught_msg = toString(e)
+}
+assert caught_msg == "error_val", "catch error var scoping failed"
+print("PASS: test_scope_try_catch_err_scoping")

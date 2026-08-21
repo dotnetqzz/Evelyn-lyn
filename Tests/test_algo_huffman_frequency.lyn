@@ -1,0 +1,18 @@
+# Test character frequency table for Huffman encoding
+fn buildFreqTable(text):
+    var freqs = {}
+    for i in 0..stringLen(text):
+        let ch = stringSub(text, i, 1)
+        if mapHas(freqs, ch):
+            freqs[ch] = freqs[ch] + 1
+        else:
+            freqs[ch] = 1
+    return freqs
+
+let ft = buildFreqTable("abracadabra")
+assert ft["a"] == 5, "freq a failed"
+assert ft["b"] == 2, "freq b failed"
+assert ft["r"] == 2, "freq r failed"
+assert ft["c"] == 1, "freq c failed"
+assert ft["d"] == 1, "freq d failed"
+print("PASS: test_algo_huffman_frequency")

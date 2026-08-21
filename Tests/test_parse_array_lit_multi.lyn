@@ -1,0 +1,5 @@
+# Test multi-element array literal
+let a = [10, 20, 30, 40, 50]
+assert arrayLen(a) == 5, "multi array len failed"
+assert a[0] == 10 and a[4] == 50, "multi array items failed"
+print("PASS: test_parse_array_lit_multi")

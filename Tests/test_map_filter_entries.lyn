@@ -1,0 +1,10 @@
+# Test filtering map entries by condition
+let items = {"itemA": 10, "itemB": 50, "itemC": 5, "itemD": 100}
+var expensive = {}
+for k in mapKeys(items):
+    if items[k] >= 50:
+        expensive[k] = items[k]
+
+assert arrayLen(mapKeys(expensive)) == 2, "filter map count failed"
+assert expensive["itemB"] == 50 and expensive["itemD"] == 100, "filter map entries failed"
+print("PASS: test_map_filter_entries")

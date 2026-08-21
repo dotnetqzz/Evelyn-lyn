@@ -1,0 +1,6 @@
+# Test exponentiation operator **
+assert 2 ** 0 == 1, "2**0 failed"
+assert 2 ** 3 == 8, "2**3 failed"
+assert 2 ** 10 == 1024, "2**10 failed"
+assert 5 ** 2 == 25, "5**2 failed"
+print("PASS: test_op_arith_pow")

@@ -1,0 +1,9 @@
+# Test string right padding simulation
+fn padEnd(s, target_len, pad_char):
+    var out = s
+    while stringLen(out) < target_len:
+        out = out + pad_char
+    return out
+
+assert padEnd("hi", 5, ".") == "hi...", "padEnd failed"
+print("PASS: test_std_string_pad_end")

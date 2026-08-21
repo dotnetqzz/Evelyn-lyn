@@ -1,0 +1,13 @@
+# Test stateful accumulator closure
+fn makeAccumulator(initial):
+    var total = initial
+    return def(n) {
+        total += n
+        return total
+    }
+
+let acc = makeAccumulator(0)
+assert acc(10) == 10, "acc 10 failed"
+assert acc(20) == 30, "acc 30 failed"
+assert acc(5) == 35, "acc 35 failed"
+print("PASS: test_fn_closure_accumulator")

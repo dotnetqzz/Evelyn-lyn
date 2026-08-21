@@ -1,0 +1,4 @@
+# Test arrayIndexOf returning -1 for absent element
+let items = [10, 20, 30]
+assert arrayIndexOf(items, 999) == -1, "arrayIndexOf absent failed"
+print("PASS: test_arr_index_of_not_found")

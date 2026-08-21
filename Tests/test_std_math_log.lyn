@@ -1,0 +1,6 @@
+# Test mathLog builtin
+let l1 = mathLog(1)
+assert l1 == 0.0 or mathAbs(l1) < 0.0001, "mathLog(1) failed"
+let l_e = mathLog(2.718281828)
+assert mathAbs(l_e - 1.0) < 0.001, "mathLog(e) failed"
+print("PASS: test_std_math_log")

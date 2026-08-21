@@ -1,0 +1,13 @@
+# Test Ackermann function recursion
+fn ackermann(m, n):
+    if m == 0:
+        return n + 1
+    elif n == 0:
+        return ackermann(m - 1, 1)
+    else:
+        return ackermann(m - 1, ackermann(m, n - 1))
+
+assert ackermann(1, 2) == 4, "ackermann(1, 2) failed"
+assert ackermann(2, 2) == 7, "ackermann(2, 2) failed"
+assert ackermann(3, 2) == 29, "ackermann(3, 2) failed"
+print("PASS: test_fn_recursion_ackermann")

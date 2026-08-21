@@ -1,0 +1,10 @@
+# Test subscripting the result of a function call
+fn getList():
+    return ["alpha", "beta", "gamma"]
+
+fn getDict():
+    return {"status": "ok", "code": 200}
+
+assert getList()[1] == "beta", "call subscript array failed"
+assert getDict()["code"] == 200, "call subscript map failed"
+print("PASS: test_parse_call_subscript")

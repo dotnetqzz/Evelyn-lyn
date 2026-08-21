@@ -1,0 +1,18 @@
+# Test exhaustive match over all enum variants
+enum TriState {
+    Yes,
+    No,
+    Maybe
+}
+
+fn describe(s):
+    match s {
+        case TriState.Yes: return 1
+        case TriState.No: return 0
+        case TriState.Maybe: return -1
+    }
+
+assert describe(TriState.Yes) == 1, "match Yes failed"
+assert describe(TriState.No) == 0, "match No failed"
+assert describe(TriState.Maybe) == -1, "match Maybe failed"
+print("PASS: test_type_enum_match_exhaustiveness")

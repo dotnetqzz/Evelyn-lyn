@@ -1,0 +1,26 @@
+# Test Cocktail Shaker Sort bidirectional bubble sort
+fn cocktailSort(arr):
+    var a = deepCopy(arr)
+    var swapped = true
+    var start = 0
+    var end = arrayLen(a) - 1
+    while swapped:
+        swapped = false
+        for i in start..end:
+            if a[i] > a[i + 1]:
+                let tmp = a[i]; a[i] = a[i + 1]; a[i + 1] = tmp
+                swapped = true
+        if not swapped: break
+        swapped = false
+        end -= 1
+        var j = end - 1
+        while j >= start:
+            if a[j] > a[j + 1]:
+                let tmp = a[j]; a[j] = a[j + 1]; a[j + 1] = tmp
+                swapped = true
+            j -= 1
+        start += 1
+    return a
+
+assert cocktailSort([5, 1, 4, 2, 8, 0, 2]) == [0, 1, 2, 2, 4, 5, 8], "cocktail sort failed"
+print("PASS: test_algo_cocktail_shaker_sort")

@@ -1,0 +1,9 @@
+# Test for range with dynamic variable bounds
+let start = 10
+let end = 15
+var sum = 0
+for i in start..end:
+    sum += i
+
+assert sum == 60, "for range dynamic bounds failed"
+print("PASS: test_ctrl_for_range_variables")

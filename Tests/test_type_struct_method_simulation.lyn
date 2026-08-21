@@ -1,0 +1,12 @@
+# Test functions operating on structs
+struct Circle {
+    radius
+}
+
+fn circleArea(c):
+    return 3.14159 * c.radius * c.radius
+
+let c = Circle(10)
+let a = circleArea(c)
+assert a > 314.0 and a < 315.0, "struct method simulation failed"
+print("PASS: test_type_struct_method_simulation")

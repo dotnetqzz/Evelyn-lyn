@@ -1,0 +1,9 @@
+# Test throwing and catching string error
+var caught_val = ""
+try {
+    throw "validation_failed: invalid email format"
+} catch e {
+    caught_val = toString(e)
+}
+assert stringContains(caught_val, "validation_failed"), "string throw failed"
+print("PASS: test_err_throw_string")

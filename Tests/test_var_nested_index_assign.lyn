@@ -1,0 +1,12 @@
+# Test nested array and map index assignment
+var grid = [[0, 0], [0, 0]]
+var r0 = grid[0]
+r0[1] = 5
+grid[0] = r0
+
+var r1 = grid[1]
+r1[0] = 7
+grid[1] = r1
+
+assert grid[0][1] == 5 and grid[1][0] == 7, "nested grid assign failed"
+print("PASS: test_var_nested_index_assign")

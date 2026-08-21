@@ -1,0 +1,14 @@
+# Test enum variant comparisons
+enum Color {
+    Red,
+    Green,
+    Blue
+}
+
+let c1 = Color.Red
+let c2 = Color.Red
+let c3 = Color.Blue
+
+assert c1 == c2, "same variant equality failed"
+assert c1 != c3, "diff variant inequality failed"
+print("PASS: test_type_enum_variant_equality")

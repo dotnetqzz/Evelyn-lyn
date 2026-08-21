@@ -1,0 +1,7 @@
+# Test sequential reassignment of var
+var counter = 0
+counter = counter + 1
+counter = counter + 2
+counter = counter + 3
+assert counter == 6, "var sequential reassign failed"
+print("PASS: test_var_var_reassign")

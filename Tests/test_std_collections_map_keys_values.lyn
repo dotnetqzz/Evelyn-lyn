@@ -1,0 +1,16 @@
+# Test mapKeys and mapValues relationship
+let m = {"k1": 10, "k2": 20, "k3": 30}
+let keys = mapKeys(m)
+let vals = mapValues(m)
+assert arrayLen(keys) == 3, "keys count failed"
+assert arrayLen(vals) == 3, "vals count failed"
+var sum_from_keys = 0
+for k in keys:
+    sum_from_keys += m[k]
+
+var sum_from_vals = 0
+for v in vals:
+    sum_from_vals += v
+
+assert sum_from_keys == sum_from_vals, "keys/values sum parity failed"
+print("PASS: test_std_collections_map_keys_values")

@@ -1,0 +1,17 @@
+# Test error propagation through 3 levels of try blocks
+var level3_caught = ""
+try {
+    try {
+        try {
+            throw "deep_failure"
+        } finally {
+            pass
+        }
+    } finally {
+        pass
+    }
+} catch e {
+    level3_caught = toString(e)
+}
+assert level3_caught == "deep_failure", "3 level try propagation failed"
+print("PASS: test_err_nested_try_3_levels")

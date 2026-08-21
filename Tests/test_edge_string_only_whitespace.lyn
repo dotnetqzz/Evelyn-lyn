@@ -1,0 +1,5 @@
+# Test whitespace-only string operations
+let s = "   \t\n\r   "
+let trimmed = stringTrim(s)
+assert stringLen(trimmed) == 0, "whitespace trim failed"
+print("PASS: test_edge_string_only_whitespace")

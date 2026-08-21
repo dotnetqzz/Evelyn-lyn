@@ -1,0 +1,7 @@
+# Test computed subscript expression
+let arr = [10, 20, 30, 40, 50]
+let idx = 1 + 2
+assert arr[idx] == 40, "computed array subscript failed"
+let m = {"k_3": 999}
+assert m["k_" + toString(3)] == 999, "computed map subscript failed"
+print("PASS: test_parse_subscript_expr")

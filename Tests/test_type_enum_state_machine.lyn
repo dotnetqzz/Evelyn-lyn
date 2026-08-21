@@ -1,0 +1,25 @@
+# Test order state machine modeled with enums
+enum OrderStatus {
+    Created,
+    Paid,
+    Shipped,
+    Delivered,
+    Cancelled
+}
+
+fn nextState(current):
+    match current {
+        case OrderStatus.Created: return OrderStatus.Paid
+        case OrderStatus.Paid:    return OrderStatus.Shipped
+        case OrderStatus.Shipped: return OrderStatus.Delivered
+        default:                  return current
+    }
+
+var order = OrderStatus.Created
+order = nextState(order)
+assert order == OrderStatus.Paid, "transition to Paid failed"
+order = nextState(order)
+assert order == OrderStatus.Shipped, "transition to Shipped failed"
+order = nextState(order)
+assert order == OrderStatus.Delivered, "transition to Delivered failed"
+print("PASS: test_type_enum_state_machine")

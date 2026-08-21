@@ -1,0 +1,8 @@
+# Test type builtin returns canonical string type names
+assert type(1) == "int", "type int failed"
+assert type(1.5) == "float", "type float failed"
+assert type("s") == "string", "type str failed"
+assert type(true) == "bool", "type bool failed"
+assert type([]) == "array", "type arr failed"
+assert type({}) == "map", "type map failed"
+print("PASS: test_std_io_type_name")

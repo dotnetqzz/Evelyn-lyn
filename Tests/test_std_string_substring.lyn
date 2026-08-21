@@ -1,0 +1,5 @@
+# Test stringSub / substring builtin
+let s = "0123456789"
+assert stringSub(s, 2, 4) == "2345", "substring 2, 4 failed"
+assert stringSub(s, 0, 3) == "012", "substring 0, 3 failed"
+print("PASS: test_std_string_substring")

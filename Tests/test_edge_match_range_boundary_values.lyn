@@ -1,0 +1,13 @@
+# Test exact boundaries of match ranges
+fn testBoundary(n):
+    match n {
+        case 10...20: return "IN_RANGE"
+        default: return "OUT_OF_RANGE"
+    }
+
+assert testBoundary(9) == "OUT_OF_RANGE", "boundary 9 failed"
+assert testBoundary(10) == "IN_RANGE", "boundary 10 failed"
+assert testBoundary(15) == "IN_RANGE", "boundary 15 failed"
+assert testBoundary(20) == "IN_RANGE", "boundary 20 failed"
+assert testBoundary(21) == "OUT_OF_RANGE", "boundary 21 failed"
+print("PASS: test_edge_match_range_boundary_values")

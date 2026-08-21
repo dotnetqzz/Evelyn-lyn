@@ -1,0 +1,18 @@
+# Test interval overlap checking and intersection
+fn intervalsOverlap(i1, i2):
+    return i1[0] <= i2[1] and i2[0] <= i1[1]
+
+fn intervalIntersection(i1, i2):
+    if not intervalsOverlap(i1, i2): return null
+    let start = i1[0] > i2[0] ? i1[0] : i2[0]
+    let end = i1[1] < i2[1] ? i1[1] : i2[1]
+    return [start, end]
+
+let a = [1, 5]
+let b = [4, 8]
+let c = [10, 15]
+
+assert intervalsOverlap(a, b) == true, "overlap a-b failed"
+assert intervalsOverlap(a, c) == false, "no-overlap a-c failed"
+assert intervalIntersection(a, b) == [4, 5], "intersection a-b failed"
+print("PASS: test_algo_interval_overlap")

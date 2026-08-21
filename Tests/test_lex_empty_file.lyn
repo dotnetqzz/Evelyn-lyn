@@ -1,0 +1,4 @@
+# Empty test file with only comments
+# Just comments
+# Nothing to fail
+print("PASS: test_lex_empty_file")

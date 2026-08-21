@@ -1,0 +1,9 @@
+# Test partial application pattern
+fn partial(fn_cb, arg1):
+    return def(arg2) => fn_cb(arg1, arg2)
+
+fn multiply(x, y): return x * y
+let triple = partial(multiply, 3)
+
+assert triple(7) == 21, "partial application failed"
+print("PASS: test_fn_partial_application")

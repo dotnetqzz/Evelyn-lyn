@@ -1,0 +1,27 @@
+# Test Sieve of Eratosthenes finding primes up to 50
+fn sieve(limit):
+    var is_prime = []
+    for i in 0..(limit + 1):
+        is_prime = arrayAppend(is_prime, true)
+    is_prime[0] = false
+    is_prime[1] = false
+
+    var p = 2
+    while p * p <= limit:
+        if is_prime[p]:
+            var multiple = p * p
+            while multiple <= limit:
+                is_prime[multiple] = false
+                multiple += p
+        p += 1
+
+    var primes = []
+    for i in 2...limit:
+        if is_prime[i]:
+            primes = arrayAppend(primes, i)
+    return primes
+
+let primes50 = sieve(50)
+assert arrayLen(primes50) == 15, "prime count up to 50 failed"
+assert primes50[0] == 2 and primes50[14] == 47, "prime bounds up to 50 failed"
+print("PASS: test_algo_sieve_of_eratosthenes")

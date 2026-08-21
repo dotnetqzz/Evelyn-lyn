@@ -1,0 +1,7 @@
+# Test logical AND operator
+assert (true and true) == true, "true and true failed"
+assert (true and false) == false, "true and false failed"
+assert (false and true) == false, "false and true failed"
+assert (false and false) == false, "false and false failed"
+assert (true && true) == true, "&& failed"
+print("PASS: test_op_logic_and")

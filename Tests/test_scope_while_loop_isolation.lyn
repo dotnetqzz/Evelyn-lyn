@@ -1,0 +1,11 @@
+# Test while loop local variable isolation
+var count = 0
+var last_inner = 0
+while count < 3:
+    let inner = count * 10
+    last_inner = inner
+    count += 1
+
+assert count == 3, "while count failed"
+assert last_inner == 20, "while inner var failed"
+print("PASS: test_scope_while_loop_isolation")

@@ -1,0 +1,4 @@
+# Test randomBytes generating requested number of bytes
+let b = randomBytes(16)
+assert arrayLen(b) == 16, "randomBytes len 16 failed"
+print("PASS: test_std_random_bytes")

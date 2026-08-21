@@ -1,0 +1,6 @@
+# Test mathCeil builtin
+assert mathCeil(3.14) == 4, "mathCeil(3.14) failed"
+assert mathCeil(3.01) == 4, "mathCeil(3.01) failed"
+assert mathCeil(5.0) == 5, "mathCeil(5.0) failed"
+assert mathCeil(-2.5) == -2, "mathCeil(-2.5) failed"
+print("PASS: test_std_math_ceil")

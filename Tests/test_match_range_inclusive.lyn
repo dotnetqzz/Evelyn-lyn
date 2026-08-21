@@ -1,0 +1,15 @@
+# Test match with inclusive range pattern
+fn grade(score):
+    match score {
+        case 90...100: return "A"
+        case 80...89:  return "B"
+        case 70...79:  return "C"
+        case 0...69:   return "F"
+        default:       return "INVALID"
+    }
+
+assert grade(95) == "A", "match range A failed"
+assert grade(80) == "B", "match range B lower bound failed"
+assert grade(79) == "C", "match range C upper bound failed"
+assert grade(45) == "F", "match range F failed"
+print("PASS: test_match_range_inclusive")

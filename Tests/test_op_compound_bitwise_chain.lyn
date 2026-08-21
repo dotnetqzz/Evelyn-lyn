@@ -1,0 +1,9 @@
+# Test sequence of compound bitwise operations
+var mask = 0x00
+mask |= 0x01
+mask |= 0x04
+mask |= 0x10
+assert mask == 0x15, "compound bitwise sequence failed"
+mask &= 0x05
+assert mask == 0x05, "compound bitwise and failed"
+print("PASS: test_op_compound_bitwise_chain")

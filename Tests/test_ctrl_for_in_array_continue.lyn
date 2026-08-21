@@ -1,0 +1,10 @@
+# Test continue in for-in array loop
+let nums = [1, 2, 3, 4, 5, 6]
+var collected = []
+for n in nums:
+    if n % 2 != 0:
+        continue
+    collected = arrayAppend(collected, n)
+
+assert collected == [2, 4, 6], "for-in continue failed"
+print("PASS: test_ctrl_for_in_array_continue")

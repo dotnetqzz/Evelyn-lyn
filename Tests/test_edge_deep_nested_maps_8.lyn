@@ -1,0 +1,4 @@
+# Test 8-level nested maps
+let m = {"l1": {"l2": {"l3": {"l4": {"l5": {"l6": {"l7": {"l8": "TARGET"}}}}}}}}
+assert m["l1"]["l2"]["l3"]["l4"]["l5"]["l6"]["l7"]["l8"] == "TARGET", "8-level nested map failed"
+print("PASS: test_edge_deep_nested_maps_8")

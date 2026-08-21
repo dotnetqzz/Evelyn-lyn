@@ -1,0 +1,8 @@
+# Test loop breaking immediately on first iteration
+var count = 0
+for i in 0..100:
+    count += 1
+    break
+
+assert count == 1, "break first iteration failed"
+print("PASS: test_edge_loop_break_first_iteration")

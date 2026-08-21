@@ -1,0 +1,4 @@
+# Test stringJoin builtin
+let arr = ["alpha", "beta", "gamma"]
+assert stringJoin(arr, "::") == "alpha::beta::gamma", "stringJoin failed"
+print("PASS: test_std_string_join")

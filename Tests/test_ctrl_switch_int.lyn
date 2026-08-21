@@ -1,0 +1,17 @@
+# Test switch statement on integers
+fn switchInt(n):
+    switch n {
+        case 1:
+            return "ONE"
+        case 2:
+            return "TWO"
+        case 3:
+            return "THREE"
+        default:
+            return "OTHER"
+    }
+
+assert switchInt(1) == "ONE", "switch int 1 failed"
+assert switchInt(2) == "TWO", "switch int 2 failed"
+assert switchInt(99) == "OTHER", "switch int default failed"
+print("PASS: test_ctrl_switch_int")

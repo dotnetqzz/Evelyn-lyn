@@ -1,0 +1,14 @@
+# Test merging two maps
+fn mergeMaps(m1, m2):
+    var out = {}
+    for k in mapKeys(m1):
+        out[k] = m1[k]
+    for k in mapKeys(m2):
+        out[k] = m2[k]
+    return out
+
+let d1 = {"a": 1, "b": 2}
+let d2 = {"b": 99, "c": 3}
+let merged = mergeMaps(d1, d2)
+assert merged["a"] == 1 and merged["b"] == 99 and merged["c"] == 3, "merge maps failed"
+print("PASS: test_map_merge_two_maps")

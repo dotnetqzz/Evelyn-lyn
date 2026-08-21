@@ -1,0 +1,10 @@
+# Test uuidV4 format and generation
+let u = uuidV4()
+assert stringLen(u) == 36, "uuid length failed"
+assert charCodeAt(u, 8) == 45, "uuid hyphen at 8 failed"
+assert charCodeAt(u, 13) == 45, "uuid hyphen at 13 failed"
+assert charCodeAt(u, 18) == 45, "uuid hyphen at 18 failed"
+assert charCodeAt(u, 23) == 45, "uuid hyphen at 23 failed"
+let u2 = uuidV4()
+assert u != u2, "distinct uuids failed"
+print("PASS: test_std_uuid_v4")

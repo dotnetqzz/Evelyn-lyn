@@ -1,0 +1,4 @@
+# Test deeply nested parenthesized expressions
+let r = ((((1 + 2) * 3) - 4) * 2) + ((10 - (2 * 3)) / 2)
+assert r == 12 or r == 12.0, "nested parens failed"
+print("PASS: test_parse_nested_parens")

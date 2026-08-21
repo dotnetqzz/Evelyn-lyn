@@ -1,0 +1,5 @@
+# Test arrayFlatten on empty nested arrays
+let empty_nested = [[], []]
+let flat = arrayFlatten(empty_nested)
+assert arrayLen(flat) == 0, "arrayFlatten empty failed"
+print("PASS: test_arr_flatten_empty")

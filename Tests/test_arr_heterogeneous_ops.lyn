@@ -1,0 +1,6 @@
+# Test array containing mixed types
+let mixed = [10, "twenty", 30.5, true, null, [1, 2], {"key": "val"}]
+assert arrayLen(mixed) == 7, "mixed array len failed"
+assert mixed[1] == "twenty", "mixed str element failed"
+assert mixed[6]["key"] == "val", "mixed map element failed"
+print("PASS: test_arr_heterogeneous_ops")

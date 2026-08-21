@@ -1,0 +1,4 @@
+# Test complex mixed operator precedence expression
+let r = 2 + 3 * 4 > 10 and (5 << 1) == 10 ? 99 : 0
+assert r == 99, "complex mixed precedence failed"
+print("PASS: test_op_mixed_precedence_complex")

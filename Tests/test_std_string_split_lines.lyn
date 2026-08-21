@@ -1,0 +1,6 @@
+# Test stringSplitLines builtin
+let text = "line1\nline2\nline3"
+let lines = stringSplitLines(text)
+assert arrayLen(lines) == 3, "splitlines count failed"
+assert lines[0] == "line1" and lines[2] == "line3", "splitlines content failed"
+print("PASS: test_std_string_split_lines")

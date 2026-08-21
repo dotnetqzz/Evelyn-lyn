@@ -1,0 +1,4 @@
+# Test mathTan builtin
+let t0 = mathTan(0)
+assert mathAbs(t0) < 0.0001, "mathTan(0) failed"
+print("PASS: test_std_math_tan")

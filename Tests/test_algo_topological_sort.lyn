@@ -1,0 +1,30 @@
+# Test Kahn's algorithm for Topological Sort
+fn topoSort(graph, num_nodes):
+    var in_degree = {}
+    for i in 0..num_nodes: in_degree[toString(i)] = 0
+    for i in 0..num_nodes:
+        let edges = graph[toString(i)] ?? []
+        for v in edges:
+            in_degree[toString(v)] = in_degree[toString(v)] + 1
+
+    var queue = []
+    for i in 0..num_nodes:
+        if in_degree[toString(i)] == 0:
+            queue = arrayPush(queue, i)
+
+    var order = []
+    while arrayLen(queue) > 0:
+        let u = arrayShift(queue)
+        order = arrayAppend(order, u)
+        let edges = graph[toString(u)] ?? []
+        for v in edges:
+            in_degree[toString(v)] = in_degree[toString(v)] - 1
+            if in_degree[toString(v)] == 0:
+                queue = arrayPush(queue, v)
+    return order
+
+let dag = {"0": [1, 2], "1": [3], "2": [3], "3": []}
+let order = topoSort(dag, 4)
+assert arrayLen(order) == 4, "topo sort count failed"
+assert order[0] == 0 and order[3] == 3, "topo sort endpoints failed"
+print("PASS: test_algo_topological_sort")

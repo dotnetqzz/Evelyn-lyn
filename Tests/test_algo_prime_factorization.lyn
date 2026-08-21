@@ -1,0 +1,18 @@
+# Test prime factorization of integers
+fn primeFactors(n):
+    var factors = []
+    var d = 2
+    var val = n
+    while d * d <= val:
+        while val % d == 0:
+            factors = arrayAppend(factors, d)
+            val = val // d
+        d += 1
+    if val > 1:
+        factors = arrayAppend(factors, val)
+    return factors
+
+assert primeFactors(12) == [2, 2, 3], "prime factors 12 failed"
+assert primeFactors(315) == [3, 3, 5, 7], "prime factors 315 failed"
+assert primeFactors(13) == [13], "prime factors prime 13 failed"
+print("PASS: test_algo_prime_factorization")

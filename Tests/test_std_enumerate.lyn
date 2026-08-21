@@ -1,0 +1,7 @@
+# Test enumerate builtin
+let items = ["apple", "banana", "cherry"]
+let indexed = enumerate(items)
+assert arrayLen(indexed) == 3, "enumerate len failed"
+assert indexed[0][0] == 0 and indexed[0][1] == "apple", "enumerate [0] failed"
+assert indexed[2][0] == 2 and indexed[2][1] == "cherry", "enumerate [2] failed"
+print("PASS: test_std_enumerate")

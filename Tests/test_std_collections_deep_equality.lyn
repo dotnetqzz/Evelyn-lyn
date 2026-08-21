@@ -1,0 +1,7 @@
+# Test deepEqual on nested collection graphs
+let graph1 = {"nodes": [1, 2, 3], "edges": [{"from": 1, "to": 2}]}
+let graph2 = {"nodes": [1, 2, 3], "edges": [{"from": 1, "to": 2}]}
+let graph3 = {"nodes": [1, 2, 3], "edges": [{"from": 1, "to": 3}]}
+assert deepEqual(graph1, graph2) == true, "deepEqual same graph failed"
+assert deepEqual(graph1, graph3) == false, "deepEqual diff graph failed"
+print("PASS: test_std_collections_deep_equality")

@@ -1,0 +1,7 @@
+# Test bool() truthiness conversions
+assert bool(1) == true, "bool(1) failed"
+assert bool(0) == false, "bool(0) failed"
+assert bool("hello") == true, "bool('hello') failed"
+assert bool("") == false, "bool('') failed"
+assert bool(null) == false, "bool(null) failed"
+print("PASS: test_lit_bool_conversion")

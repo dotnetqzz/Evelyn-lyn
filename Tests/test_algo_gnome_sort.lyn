@@ -1,0 +1,15 @@
+# Test Gnome Sort
+fn gnomeSort(arr):
+    var a = deepCopy(arr)
+    var idx = 0
+    let n = arrayLen(a)
+    while idx < n:
+        if idx == 0: idx += 1
+        if a[idx] >= a[idx - 1]: idx += 1
+        else:
+            let tmp = a[idx]; a[idx] = a[idx - 1]; a[idx - 1] = tmp
+            idx -= 1
+    return a
+
+assert gnomeSort([34, 2, 10, -9]) == [-9, 2, 10, 34], "gnome sort failed"
+print("PASS: test_algo_gnome_sort")

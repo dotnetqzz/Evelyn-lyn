@@ -1,0 +1,32 @@
+# Test recursive Merge Sort algorithm
+fn merge(left, right):
+    var result = []
+    var i = 0
+    var j = 0
+    while i < arrayLen(left) and j < arrayLen(right):
+        if left[i] <= right[j]:
+            result = arrayAppend(result, left[i])
+            i += 1
+        else:
+            result = arrayAppend(result, right[j])
+            j += 1
+    while i < arrayLen(left):
+        result = arrayAppend(result, left[i])
+        i += 1
+    while j < arrayLen(right):
+        result = arrayAppend(result, right[j])
+        j += 1
+    return result
+
+fn mergeSort(arr):
+    if arrayLen(arr) <= 1:
+        return arr
+    let mid = arrayLen(arr) // 2
+    let left = mergeSort(arraySlice(arr, 0, mid))
+    let right = mergeSort(arraySlice(arr, mid, arrayLen(arr)))
+    return merge(left, right)
+
+let data = [38, 27, 43, 3, 9, 82, 10]
+let sorted_data = mergeSort(data)
+assert sorted_data == [3, 9, 10, 27, 38, 43, 82], "mergesort failed"
+print("PASS: test_algo_mergesort")

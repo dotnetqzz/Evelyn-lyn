@@ -1,0 +1,6 @@
+# Test arrayShift removing first element
+var arr = ["first", "second", "third"]
+let f = arrayShift(arr)
+assert f == "first", "arrayShift return failed"
+assert arr[0] == "second", "arrayShift new first failed"
+print("PASS: test_arr_shift")

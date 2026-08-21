@@ -1,0 +1,5 @@
+# Test unicode symbol strings
+let s = "Symbols: ★ ♠ ♣ ♥ ♦ ♫ ✈"
+assert stringContains(s, "★"), "contains star failed"
+assert stringContains(s, "♥"), "contains heart failed"
+print("PASS: test_lit_str_unicode_symbols")

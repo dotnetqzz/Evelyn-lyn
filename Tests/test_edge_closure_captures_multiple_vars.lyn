@@ -1,0 +1,11 @@
+# Test closure capturing 6 variables
+let a = 1
+let b = 2
+let c = 3
+let d = 4
+let e = 5
+let f = 6
+
+let cl = def() => a + b + c + d + e + f
+assert cl() == 21, "closure capturing 6 vars failed"
+print("PASS: test_edge_closure_captures_multiple_vars")

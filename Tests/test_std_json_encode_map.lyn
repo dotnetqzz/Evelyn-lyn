@@ -1,0 +1,6 @@
+# Test JSON encoding of maps
+let m = {"name": "Bob", "score": 95}
+let s = jsonStringify(m)
+assert stringContains(s, "Bob"), "json map Bob failed"
+assert stringContains(s, "95"), "json map score failed"
+print("PASS: test_std_json_encode_map")

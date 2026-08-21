@@ -1,0 +1,14 @@
+# Test multiple consecutive range match arms
+fn classifyNumber(n):
+    match n {
+        case -100...-1: return "negative"
+        case 0:         return "zero"
+        case 1...100:   return "positive"
+        default:        return "out_of_bounds"
+    }
+
+assert classifyNumber(-50) == "negative", "classify negative failed"
+assert classifyNumber(0) == "zero", "classify zero failed"
+assert classifyNumber(50) == "positive", "classify positive failed"
+assert classifyNumber(200) == "out_of_bounds", "classify out of bounds failed"
+print("PASS: test_match_multiple_ranges")

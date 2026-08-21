@@ -1,0 +1,16 @@
+# Test matching array length and contents
+fn classifyList(l):
+    if arrayLen(l) == 0:
+        return "empty"
+    elif arrayLen(l) == 1:
+        return "single"
+    elif arrayLen(l) == 2:
+        return "pair"
+    else:
+        return "many"
+
+assert classifyList([]) == "empty", "classify empty failed"
+assert classifyList([1]) == "single", "classify single failed"
+assert classifyList([1, 2]) == "pair", "classify pair failed"
+assert classifyList([1, 2, 3]) == "many", "classify many failed"
+print("PASS: test_match_array_pattern_fixed")

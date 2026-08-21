@@ -1,0 +1,9 @@
+########################################
+# Full line comment block
+# Line 2
+# Line 3
+########################################
+let val = 100
+########################################
+assert val == 100, "comment block failed"
+print("PASS: test_lex_comments_full")

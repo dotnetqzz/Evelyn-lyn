@@ -1,0 +1,8 @@
+# Test calling function stored in array or map
+fn f1(x): return x + 1
+fn f2(x): return x * 2
+
+let fn_arr = [f1, f2]
+assert fn_arr[0](10) == 11, "subscript fn call 0 failed"
+assert fn_arr[1](10) == 20, "subscript fn call 1 failed"
+print("PASS: test_parse_subscript_call")

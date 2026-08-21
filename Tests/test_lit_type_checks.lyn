@@ -1,0 +1,13 @@
+# Test isInteger, isNumber, isString, isBool, isNull, isArray, isMap, isFunction
+fn dummy(): pass
+
+assert isInteger(10) == true, "isInteger(10) failed"
+assert isInteger(10.5) == false, "isInteger(10.5) failed"
+assert isNumber(10) == true and isNumber(10.5) == true, "isNumber failed"
+assert isString("abc") == true and isString(123) == false, "isString failed"
+assert isBool(true) == true and isBool(1) == false, "isBool failed"
+assert isNull(null) == true and isNull(0) == false, "isNull failed"
+assert isArray([1]) == true and isArray({}) == false, "isArray failed"
+assert isMap({}) == true and isMap([]) == false, "isMap failed"
+assert isFunction(dummy) == true, "isFunction failed"
+print("PASS: test_lit_type_checks")

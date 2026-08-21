@@ -1,0 +1,6 @@
+# Test overwriting existing map key
+var m = {"score": 50}
+m["score"] = 99
+assert m["score"] == 99, "map overwrite key failed"
+assert arrayLen(mapKeys(m)) == 1, "map overwrite key count failed"
+print("PASS: test_map_set_overwrite_key")

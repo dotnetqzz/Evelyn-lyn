@@ -1,0 +1,9 @@
+# Test mutating an accumulator within a loop
+var total = 0
+var multiplier = 1
+for i in 1...5:
+    total += i * multiplier
+    multiplier += 1
+
+assert total == 55, "loop mutation safety failed"
+print("PASS: test_ctrl_loop_mutation_safety")

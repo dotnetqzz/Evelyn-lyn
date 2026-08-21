@@ -1,0 +1,8 @@
+# Test recursive function call to depth 100
+fn countRecurse100(n):
+    if n <= 0:
+        return 0
+    return 1 + countRecurse100(n - 1)
+
+assert countRecurse100(100) == 100, "deep recursion 100 failed"
+print("PASS: test_edge_deep_recursion_100")

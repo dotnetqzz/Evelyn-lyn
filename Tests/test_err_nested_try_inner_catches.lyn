@@ -1,0 +1,15 @@
+# Test nested try where inner catch handles error
+var outer_catch = false
+var inner_catch = false
+try {
+    try {
+        throw "inner_error"
+    } catch e {
+        inner_catch = true
+    }
+} catch e {
+    outer_catch = true
+}
+assert inner_catch == true, "inner catch did not trigger"
+assert outer_catch == false, "outer catch triggered unexpectedly"
+print("PASS: test_err_nested_try_inner_catches")

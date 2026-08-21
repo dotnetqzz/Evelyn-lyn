@@ -1,0 +1,12 @@
+# Test binary integer tokenization
+let b0 = 0b0
+let b1 = 0b1
+let b2 = 0b101010
+let b3 = 0b11110000
+let b4 = 0b1111111111111111
+assert b0 == 0, "bin 0 failed"
+assert b1 == 1, "bin 1 failed"
+assert b2 == 42, "bin 101010 failed"
+assert b3 == 240, "bin 11110000 failed"
+assert b4 == 65535, "bin 16-ones failed"
+print("PASS: test_lex_int_bin")

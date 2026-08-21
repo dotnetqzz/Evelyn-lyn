@@ -1,0 +1,6 @@
+# Test arithmetic addition operator +
+assert 10 + 20 == 30, "int add failed"
+assert 1.5 + 2.5 == 4.0, "float add failed"
+assert 10 + 2.5 == 12.5, "int float add failed"
+assert "Hello " + "World" == "Hello World", "str concat failed"
+print("PASS: test_op_arith_add")

@@ -1,0 +1,7 @@
+# Test searching for null, bool, string, array in array
+let haystack = [null, true, "marker", [1, 2]]
+assert arrayContains(haystack, null) == true, "contains null failed"
+assert arrayContains(haystack, true) == true, "contains bool failed"
+assert arrayContains(haystack, "marker") == true, "contains marker failed"
+assert arrayContains(haystack, "missing") == false, "contains missing failed"
+print("PASS: test_edge_array_contains_various_types")

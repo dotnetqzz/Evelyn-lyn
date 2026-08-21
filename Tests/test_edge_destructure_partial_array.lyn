@@ -1,0 +1,4 @@
+# Test destructuring array with more elements than targets
+let [a, b] = [10, 20, 30, 40, 50]
+assert a == 10 and b == 20, "partial array destructure failed"
+print("PASS: test_edge_destructure_partial_array")

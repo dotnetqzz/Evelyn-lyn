@@ -1,0 +1,13 @@
+# Test rethrowing error from inner catch to outer catch
+var outer_received = ""
+try {
+    try {
+        throw "original_problem"
+    } catch e {
+        throw e
+    }
+} catch e {
+    outer_received = toString(e)
+}
+assert outer_received == "original_problem", "rethrow propagation failed"
+print("PASS: test_err_nested_try_rethrow")

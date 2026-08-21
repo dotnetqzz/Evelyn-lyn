@@ -1,0 +1,12 @@
+# Test array of enum variants
+enum Priority {
+    Low,
+    Medium,
+    High,
+    Critical
+}
+
+let queue = [Priority.Low, Priority.High, Priority.Critical, Priority.Medium]
+assert queue[0] == Priority.Low, "queue [0] failed"
+assert queue[2] == Priority.Critical, "queue [2] failed"
+print("PASS: test_type_enum_in_collection")

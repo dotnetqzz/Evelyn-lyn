@@ -1,0 +1,7 @@
+# Test nested array literals
+let matrix = [[1, 2], [3, 4], [5, [6, 7]]]
+assert arrayLen(matrix) == 3, "matrix len failed"
+assert matrix[0][1] == 2, "matrix [0][1] failed"
+assert matrix[1][0] == 3, "matrix [1][0] failed"
+assert matrix[2][1][0] == 6, "matrix [2][1][0] failed"
+print("PASS: test_parse_array_nested")

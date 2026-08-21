@@ -1,0 +1,9 @@
+# Test null coalesce preserves non-null falsy values: 0, false, ""
+let zero = 0
+let false_val = false
+let empty_str = ""
+
+assert (zero ?? 999) == 0, "0 ?? default should be 0"
+assert (false_val ?? true) == false, "false ?? true should be false"
+assert (empty_str ?? "def") == "", "empty str ?? def should be empty str"
+print("PASS: test_op_null_coalesce_falsy_values")

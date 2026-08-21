@@ -1,0 +1,18 @@
+# Test simple CSV parser
+fn parseCsvLine(line):
+    var fields = []
+    var curr = ""
+    for i in 0..stringLen(line):
+        let ch = stringSub(line, i, 1)
+        if ch == ",":
+            fields = arrayAppend(fields, curr)
+            curr = ""
+        else:
+            curr += ch
+    fields = arrayAppend(fields, curr)
+    return fields
+
+let fields = parseCsvLine("alice,25,engineer")
+assert arrayLen(fields) == 3, "csv field count failed"
+assert fields[0] == "alice" and fields[1] == "25" and fields[2] == "engineer", "csv fields failed"
+print("PASS: test_algo_state_machine_parser")

@@ -1,0 +1,8 @@
+# Test hashSha256 builtin
+let hash1 = hashSha256("")
+let hash2 = hashSha256("hello world")
+assert stringLen(hash1) == 64, "sha256 empty len failed"
+assert stringLen(hash2) == 64, "sha256 hello len failed"
+assert hash1 != hash2, "sha256 diff inputs failed"
+assert hashSha256("hello world") == hash2, "sha256 deterministic failed"
+print("PASS: test_std_crypto_sha256")

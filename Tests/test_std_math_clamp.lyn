@@ -1,0 +1,5 @@
+# Test mathClamp builtin
+assert mathClamp(5, 0, 10) == 5, "mathClamp within range failed"
+assert mathClamp(-5, 0, 10) == 0, "mathClamp lower bound failed"
+assert mathClamp(15, 0, 10) == 10, "mathClamp upper bound failed"
+print("PASS: test_std_math_clamp")

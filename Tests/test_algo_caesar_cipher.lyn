@@ -1,0 +1,21 @@
+# Test Caesar Cipher encryption and decryption
+fn caesarEncrypt(text, shift):
+    var out = ""
+    for i in 0..stringLen(text):
+        let code = charCodeAt(text, i)
+        if code >= 65 and code <= 90: # Uppercase
+            let shifted = ((code - 65 + shift) % 26) + 65
+            out += charFromCode(shifted)
+        elif code >= 97 and code <= 122: # Lowercase
+            let shifted = ((code - 97 + shift) % 26) + 97
+            out += charFromCode(shifted)
+        else:
+            out += stringSub(text, i, 1)
+    return out
+
+let plain = "Hello, World!"
+let encrypted = caesarEncrypt(plain, 3)
+assert encrypted == "Khoor, Zruog!", "caesar encrypt failed"
+let decrypted = caesarEncrypt(encrypted, 23)
+assert decrypted == plain, "caesar decrypt failed"
+print("PASS: test_algo_caesar_cipher")

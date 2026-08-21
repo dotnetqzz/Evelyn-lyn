@@ -1,0 +1,10 @@
+# Test 2D geometry cross-product orientation test
+fn orientation(p, q, r):
+    let val = (q[1] - p[1]) * (r[0] - q[0]) - (q[0] - p[0]) * (r[1] - q[1])
+    if val == 0: return 0 # collinear
+    return val > 0 ? 1 : 2 # 1: clockwise, 2: counterclockwise
+
+assert orientation([0, 0], [4, 4], [1, 2]) == 2, "counterclockwise test failed"
+assert orientation([0, 0], [4, 4], [2, 1]) == 1, "clockwise test failed"
+assert orientation([0, 0], [2, 2], [4, 4]) == 0, "collinear test failed"
+print("PASS: test_algo_convex_hull_orientation")

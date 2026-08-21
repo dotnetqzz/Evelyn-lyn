@@ -1,0 +1,32 @@
+# Test Bloom Filter membership simulation
+fn makeBloom(size):
+    var bits = []
+    for i in 0..size: bits = arrayAppend(bits, 0)
+    return {"size": size, "bits": bits}
+
+fn h1(s, size):
+    var h = 0
+    for i in 0..stringLen(s): h = (h * 31 + charCodeAt(s, i)) % size
+    return h
+
+fn h2(s, size):
+    var h = 0
+    for i in 0..stringLen(s): h = (h * 17 + charCodeAt(s, i)) % size
+    return h
+
+fn bloomAdd(bf, item):
+    let sz = bf["size"]
+    bf["bits"][h1(item, sz)] = 1
+    bf["bits"][h2(item, sz)] = 1
+
+fn bloomContains(bf, item):
+    let sz = bf["size"]
+    return bf["bits"][h1(item, sz)] == 1 and bf["bits"][h2(item, sz)] == 1
+
+let bf = makeBloom(64)
+bloomAdd(bf, "apple")
+bloomAdd(bf, "banana")
+
+assert bloomContains(bf, "apple") == true, "bloom contains apple failed"
+assert bloomContains(bf, "banana") == true, "bloom contains banana failed"
+print("PASS: test_algo_bloom_filter_simulation")

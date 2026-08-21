@@ -1,0 +1,7 @@
+# Test 64-bit integer arithmetic boundaries
+let big = 1000000000000
+let prod = big * 1000
+assert prod == 1000000000000000, "big int mul failed"
+let div = prod / 1000
+assert div == big or div == float(big), "big int div failed"
+print("PASS: test_edge_i64_boundary_arith")

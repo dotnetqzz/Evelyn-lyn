@@ -25,11 +25,12 @@ use lexer::Lexer;
 use parser::Parser;
 use interpreter::Interpreter;
 use compiler::Compiler;
+use crate::value::AvelynError;
 
 fn main() {
-    // Increase stack size to 128MB for deep AST recursion resilience in production
+    // Standard 8MB stack size matching industry standard runtimes (Python, GCC/Clang, JVM)
     std::thread::Builder::new()
-        .stack_size(128 * 1024 * 1024)
+        .stack_size(8 * 1024 * 1024)
         .spawn(run_cli)
         .unwrap()
         .join()
@@ -46,7 +47,7 @@ fn run_cli() {
     let first = &args[1];
     match first.as_str() {
         "--version" | "-v" => {
-            println!("avelyn 2.5.7 (Rust + LLVM Native)");
+            println!("Avelyn 2.5.7");
         }
         "--help" | "-h" => {
             print_usage();
@@ -80,41 +81,107 @@ fn run_cli() {
 }
 
 fn print_usage() {
-    println!("avelyn 2.5.7 — Avelyn Programming Language Compiler & Runtime");
+    println!("Avelyn 2.5.7 Compiler & Runtime");
     println!();
     println!("USAGE:");
-    println!("  avelyn <file.lyn>                          Run file via interpreter");
-    println!("  avelyn compile <file.lyn> [OPTIONS]        Compile to native binary");
-    println!("  avelyn repl                                Start interactive REPL");
-    println!("  avelyn test [path]                         Run test suite");
-    println!("  avelyn --sandbox <file.lyn>                Run in sandboxed mode");
-    println!("  avelyn --version                           Show version");
-    println!("  avelyn --help                              Show this help");
+    println!("  Avelyn <file.lyn>                          Run file via interpreter");
+    println!("  Avelyn compile <file.lyn> [OPTIONS]        Compile to native binary");
+    println!("  Avelyn repl                                Start interactive REPL");
+    println!("  Avelyn test [path]                         Run test suite");
+    println!("  Avelyn --sandbox <file.lyn>                Run in sandboxed mode");
+    println!("  Avelyn --version                           Show version");
+    println!("  Avelyn --help                              Show this help");
     println!();
     println!("COMPILE OPTIONS:");
     println!("  -o <output>            Output file path (default: <input>.exe)");
     println!("  --emit-ast             Print AST and exit");
     println!("  --emit-air             Print unoptimized AIR and exit");
     println!("  --emit-air-opt         Print optimized AIR and exit");
-    println!("  --emit-llvm            Emit LLVM IR (.ll file) and exit");
+    println!("  --emit-llvm            Emit intermediate IR (.ll file) and exit");
     println!("  --emit-object          Compile to object file, do not link");
     println!("  --emit-asm             Compile to assembly (.s file)");
     println!("  -O0 / -O1 / -O2 / -O3 Optimization level (default: -O2)");
     println!("  --target <triple>      Override target triple");
-    println!("  --llvm-path <dir>      Path to LLVM bin directory");
+    println!("  --llvm-path <dir>      Path to compiler backend bin directory");
     println!("  --verify               Run AIR verifier (default: on)");
     println!("  --no-verify            Skip AIR verifier");
     println!("  --verbose              Print each pipeline stage");
     println!();
     println!("EXAMPLES:");
-    println!("  avelyn hello.lyn");
-    println!("  avelyn compile hello.lyn -o hello.exe");
-    println!("  avelyn compile hello.lyn --emit-air");
-    println!("  avelyn compile hello.lyn --emit-llvm -O3");
-    println!("  avelyn compile hello.lyn --llvm-path \"C:\\Program Files\\LLVM\\bin\"");
+    println!("  Avelyn hello.lyn");
+    println!("  Avelyn compile hello.lyn -o hello.exe");
+    println!("  Avelyn compile hello.lyn --emit-air");
+    println!("  Avelyn compile hello.lyn -o hello.exe -O3");
 }
 
 // ──────────────── Interpreter path (completely unchanged) ─────────────────────────
+
+fn print_formatted_runtime_error(source: &str, file_path: &str, interp: &Interpreter, err: &AvelynError) {
+    let source_lines: Vec<&str> = source.lines().collect();
+    
+    eprintln!("Traceback (most recent call last):");
+    
+    if !interp.call_stack.is_empty() {
+        for (func_name, fpath, line) in &interp.call_stack {
+            let line_num = *line;
+            let display_file = if fpath.is_empty() { file_path } else { fpath.as_str() };
+            eprintln!("  File \"{}\", line {}, in {}", display_file, line_num, func_name);
+            if display_file == file_path && line_num > 0 {
+                let idx = (line_num - 1) as usize;
+                if let Some(src_line) = source_lines.get(idx) {
+                    eprintln!("    {}", src_line.trim());
+                }
+            }
+        }
+    }
+
+    let final_line = if err.line > 0 { err.line } else if interp.current_line > 0 { interp.current_line } else { 1 };
+    let final_file = if !err.file.is_empty() { err.file.as_str() } else { file_path };
+    
+    if interp.call_stack.is_empty() {
+        eprintln!("  File \"{}\", line {}, in <main>", final_file, final_line);
+        if final_file == file_path && final_line > 0 {
+            let idx = (final_line - 1) as usize;
+            if let Some(src_line) = source_lines.get(idx) {
+                eprintln!("    {}", src_line.trim());
+            }
+        }
+    }
+
+    let err_str = err.val.format();
+    let trimmed = err_str.trim();
+
+    if trimmed.starts_with("AssertionError:") || trimmed.contains("assertion failed") || trimmed.starts_with("assert ") {
+        let msg = trimmed.trim_start_matches("AssertionError:").trim();
+        eprintln!("AssertionError: {}", msg);
+    } else if trimmed.starts_with("Uncaught throw:") {
+        eprintln!("UncaughtException: {}", trimmed.trim_start_matches("Uncaught throw:").trim());
+    } else if trimmed.starts_with("NameError:") || trimmed.contains("is not defined") || trimmed.contains("undefined variable") || trimmed.contains("unknown variable") {
+        let msg = trimmed.trim_start_matches("NameError:").trim();
+        eprintln!("NameError: {}", msg);
+    } else if trimmed.starts_with("TypeError:") || trimmed.contains("cannot apply") || trimmed.contains("mismatched type") {
+        let msg = trimmed.trim_start_matches("TypeError:").trim();
+        eprintln!("TypeError: {}", msg);
+    } else if trimmed.starts_with("IndexError:") || trimmed.contains("index out of") || trimmed.contains("out of bounds") {
+        let msg = trimmed.trim_start_matches("IndexError:").trim();
+        eprintln!("IndexError: {}", msg);
+    } else if trimmed.starts_with("KeyError:") || trimmed.contains("key not found") || trimmed.contains("missing key") {
+        let msg = trimmed.trim_start_matches("KeyError:").trim();
+        eprintln!("KeyError: {}", msg);
+    } else if trimmed.starts_with("ZeroDivisionError:") || trimmed.contains("division by zero") {
+        let msg = trimmed.trim_start_matches("ZeroDivisionError:").trim();
+        eprintln!("ZeroDivisionError: {}", msg);
+    } else if trimmed.starts_with("SyntaxError:") || trimmed.contains("syntax error") {
+        let msg = trimmed.trim_start_matches("SyntaxError:").trim();
+        eprintln!("SyntaxError: {}", msg);
+    } else if trimmed.starts_with("MutabilityError:") || trimmed.contains("immutable") || trimmed.contains("Cannot assign to immutable") {
+        let msg = trimmed.trim_start_matches("MutabilityError:").trim();
+        eprintln!("MutabilityError: {}", msg);
+    } else {
+        let msg = trimmed.trim_start_matches("RuntimeError:").trim();
+        eprintln!("RuntimeError: {}", msg);
+    }
+}
 
 fn run_interpreter_file(path: &str) {
     let source = match std::fs::read_to_string(path) {
@@ -144,13 +211,13 @@ fn run_interpreter_file(path: &str) {
     let ast = parser.parse();
 
     if let Err(err) = interp.eval_ast(&ast) {
-        eprintln!("{}", err);
+        print_formatted_runtime_error(&source, path, &interp, &err);
         exit(1);
     }
 }
 
 fn run_repl() {
-    println!("avelyn 2.5.7 REPL");
+    println!("Avelyn 2.5.7 REPL");
     println!("Type 'exit' to quit.");
 
     let mut interp = Interpreter::new();
@@ -189,7 +256,7 @@ fn run_repl() {
                 }
             }
             Err(err) => {
-                eprintln!("{}", err);
+                print_formatted_runtime_error(&input, "<repl>", &interp, &err);
             }
         }
     }
@@ -222,7 +289,7 @@ fn run_sandboxed_file(path: &str) {
 
 fn run_test_runner(path: &str) {
     use rayon::prelude::*;
-    println!("avelyn Test Runner");
+    println!("Avelyn Test Runner");
     println!("Scanning: {}", path);
 
     let mut files = Vec::new();
@@ -349,7 +416,7 @@ fn compile_file_with_args(input_path: &str, extra_args: &[String]) {
     let ast = parser_inst.parse();
 
     if opts.verbose {
-        eprintln!("[avelyn] Parsed {} top-level nodes from '{}'", ast.len(), input_path);
+        eprintln!("[Avelyn] Parsed {} top-level nodes from '{}'", ast.len(), input_path);
     }
 
     let compiler = Compiler::new();

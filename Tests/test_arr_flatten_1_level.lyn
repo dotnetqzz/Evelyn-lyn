@@ -1,0 +1,5 @@
+# Test arrayFlatten flattening 1 level of nested arrays
+let nested = [[1, 2], [3, 4], [5, 6]]
+let flat = arrayFlatten(nested)
+assert flat == [1, 2, 3, 4, 5, 6], "arrayFlatten failed"
+print("PASS: test_arr_flatten_1_level")

@@ -1,0 +1,9 @@
+# Test complex nested collection in map
+let payload = {
+    "ids": [1, 2, 3],
+    "sub": {"flag": true, "items": [{"x": 10}, {"x": 20}]},
+    "count": 2
+}
+assert payload["ids"][0] == 1, "mixed collection ids failed"
+assert payload["sub"]["items"][1]["x"] == 20, "mixed collection sub items failed"
+print("PASS: test_edge_mixed_collections_in_map")

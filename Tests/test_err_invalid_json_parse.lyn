@@ -1,0 +1,11 @@
+# Test catching JSON syntax error in malformed JSON string
+var caught = false
+try {
+    let result = jsonParse("{ invalid json string }")
+    if result == null:
+        caught = true
+} catch e {
+    caught = true
+}
+assert caught == true, "malformed json parse error failed"
+print("PASS: test_err_invalid_json_parse")

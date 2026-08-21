@@ -1,0 +1,8 @@
+# Test variable swapping
+var x = 100
+var y = 200
+let tmp = x
+x = y
+y = tmp
+assert x == 200 and y == 100, "swap pattern failed"
+print("PASS: test_var_swap_pattern")

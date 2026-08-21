@@ -1,0 +1,8 @@
+# Test logical operator precedence: not > and > or
+let r1 = true or false and false
+let r2 = not false and true
+let r3 = not (false or true)
+assert r1 == true, "or / and precedence failed"
+assert r2 == true, "not / and precedence failed"
+assert r3 == false, "not with parens failed"
+print("PASS: test_parse_op_prec_logical")

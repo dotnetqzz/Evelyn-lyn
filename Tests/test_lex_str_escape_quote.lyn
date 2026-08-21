@@ -1,0 +1,4 @@
+# Test quote escape sequence in string
+let s = "Hello \"World\""
+assert stringContains(s, "World"), "contains world failed"
+print("PASS: test_lex_str_escape_quote")

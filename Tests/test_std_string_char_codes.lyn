@@ -1,0 +1,6 @@
+# Test charCodeAt and charFromCode builtins
+let codeA = charCodeAt("A", 0)
+assert codeA == 65, "charCodeAt A failed"
+let charA = charFromCode(65)
+assert charA == "A", "charFromCode 65 failed"
+print("PASS: test_std_string_char_codes")

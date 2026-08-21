@@ -1,0 +1,6 @@
+# Test nested arithmetic expression in string interpolation
+let x = 10
+let y = 20
+let s = "Result is \(x + y * 2)"
+assert s == "Result is 50", "nested expr interpolation failed"
+print("PASS: test_lex_interp_nested")

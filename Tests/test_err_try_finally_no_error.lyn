@@ -1,0 +1,9 @@
+# Test try-finally block execution when no exception occurs
+var finally_ran = false
+try {
+    let x = 10
+} finally {
+    finally_ran = true
+}
+assert finally_ran == true, "finally did not run on success"
+print("PASS: test_err_try_finally_no_error")

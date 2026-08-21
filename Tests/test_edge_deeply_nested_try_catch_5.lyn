@@ -1,0 +1,17 @@
+# Test 5 levels of nested try catch blocks
+var reached_5 = false
+try {
+    try {
+        try {
+            try {
+                try {
+                    throw "level5_error"
+                } catch e {
+                    reached_5 = true
+                }
+            } catch e { pass }
+        } catch e { pass }
+    } catch e { pass }
+} catch e { pass }
+assert reached_5 == true, "5 level try catch failed"
+print("PASS: test_edge_deeply_nested_try_catch_5")

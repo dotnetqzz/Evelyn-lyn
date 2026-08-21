@@ -1,0 +1,15 @@
+# Test match on ASCII character codes
+fn classifyChar(c):
+    let code = charCodeAt(c, 0)
+    match code {
+        case 48...57:  return "digit"
+        case 65...90:  return "uppercase"
+        case 97...122: return "lowercase"
+        default:       return "other"
+    }
+
+assert classifyChar("5") == "digit", "classify digit failed"
+assert classifyChar("K") == "uppercase", "classify upper failed"
+assert classifyChar("m") == "lowercase", "classify lower failed"
+assert classifyChar("#") == "other", "classify other failed"
+print("PASS: test_match_char_code_matching")

@@ -1,0 +1,26 @@
+# Test In-Order binary tree traversal
+fn inOrder(node):
+    if node == null:
+        return []
+    let left_vals = inOrder(node["left"])
+    let curr = [node["val"]]
+    let right_vals = inOrder(node["right"])
+    return arrayConcat(arrayConcat(left_vals, curr), right_vals)
+
+let tree = {
+    "val": 4,
+    "left": {
+        "val": 2,
+        "left": {"val": 1, "left": null, "right": null},
+        "right": {"val": 3, "left": null, "right": null}
+    },
+    "right": {
+        "val": 5,
+        "left": null,
+        "right": {"val": 6, "left": null, "right": null}
+    }
+}
+
+let traversed = inOrder(tree)
+assert traversed == [1, 2, 3, 4, 5, 6], "in-order traversal failed"
+print("PASS: test_algo_binary_tree_traversal")

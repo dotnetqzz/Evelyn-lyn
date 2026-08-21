@@ -1,0 +1,21 @@
+# Test resource guard pattern with acquired/released flags
+var resource_acquired = false
+var resource_released = false
+
+fn useResource():
+    resource_acquired = true
+    try {
+        throw "processing_failed"
+    } finally {
+        resource_released = true
+    }
+
+try {
+    useResource()
+} catch e {
+    pass
+}
+
+assert resource_acquired == true, "resource acquired failed"
+assert resource_released == true, "resource released failed"
+print("PASS: test_err_resource_guard_pattern")

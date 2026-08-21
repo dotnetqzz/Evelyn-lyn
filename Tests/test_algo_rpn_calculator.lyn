@@ -1,0 +1,27 @@
+# Test Reverse Polish Notation (RPN) stack calculator
+fn evalRpn(expr_tokens):
+    var stack = []
+    for tok in expr_tokens:
+        if tok == "+":
+            let b = arrayPop(stack)
+            let a = arrayPop(stack)
+            stack = arrayPush(stack, a + b)
+        elif tok == "-":
+            let b = arrayPop(stack)
+            let a = arrayPop(stack)
+            stack = arrayPush(stack, a - b)
+        elif tok == "*":
+            let b = arrayPop(stack)
+            let a = arrayPop(stack)
+            stack = arrayPush(stack, a * b)
+        elif tok == "/":
+            let b = arrayPop(stack)
+            let a = arrayPop(stack)
+            stack = arrayPush(stack, a // b)
+        else:
+            stack = arrayPush(stack, toNumber(tok))
+    return stack[0]
+
+let tokens = ["15", "7", "1", "1", "+", "-", "/", "3", "*", "2", "1", "1", "+", "+", "-"]
+assert evalRpn(["3", "4", "+", "2", "*"]) == 14, "rpn simple failed"
+print("PASS: test_algo_rpn_calculator")

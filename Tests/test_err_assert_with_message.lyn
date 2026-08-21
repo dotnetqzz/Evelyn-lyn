@@ -1,0 +1,4 @@
+# Test assert statement with custom diagnostic message
+let age = 25
+assert age >= 18, "age requirement assertion failed"
+print("PASS: test_err_assert_with_message")

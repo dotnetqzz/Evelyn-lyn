@@ -1,0 +1,6 @@
+# Test chained subscripts: arr[0][1] and m["a"]["b"]
+let arr = [[10, 20], [30, 40]]
+let m = {"user": {"role": "admin"}}
+assert arr[1][0] == 30, "chained array subscript failed"
+assert m["user"]["role"] == "admin", "chained map subscript failed"
+print("PASS: test_parse_chained_subscript")

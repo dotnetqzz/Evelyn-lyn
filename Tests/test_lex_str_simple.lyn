@@ -1,0 +1,8 @@
+# Test simple double-quoted string literals
+let empty = ""
+let simple = "hello world"
+let special = "alpha-beta_gamma 123!@#"
+assert stringLen(empty) == 0, "empty string failed"
+assert stringLen(simple) == 11, "simple string len failed"
+assert simple == "hello world", "simple string equality failed"
+print("PASS: test_lex_str_simple")

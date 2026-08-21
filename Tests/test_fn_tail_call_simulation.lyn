@@ -1,0 +1,8 @@
+# Test accumulator recursion
+fn sumTail(n, acc = 0):
+    if n <= 0:
+        return acc
+    return sumTail(n - 1, acc + n)
+
+assert sumTail(50) == 1275, "sumTail(50) failed"
+print("PASS: test_fn_tail_call_simulation")

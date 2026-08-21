@@ -1,0 +1,5 @@
+# Test 64-bit boundary integer operations
+let max_i64_approx = 9223372036854775000
+let next_val = max_i64_approx + 500
+assert next_val == 9223372036854775500, "i64 boundary arithmetic failed"
+print("PASS: test_edge_huge_integer_operations")

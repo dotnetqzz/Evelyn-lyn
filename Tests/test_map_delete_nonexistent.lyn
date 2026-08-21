@@ -1,0 +1,5 @@
+# Test mapDelete on absent key does not crash
+var m = {"a": 1}
+mapDelete(m, "nonexistent")
+assert m["a"] == 1, "map unaffected after delete absent key"
+print("PASS: test_map_delete_nonexistent")

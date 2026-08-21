@@ -1,0 +1,6 @@
+# Test map with numeric string keys
+let m = {"0": "zero", "1": "one", "100": "hundred"}
+assert m["0"] == "zero", "map '0' key failed"
+assert m["1"] == "one", "map '1' key failed"
+assert m["100"] == "hundred", "map '100' key failed"
+print("PASS: test_map_numeric_string_keys")

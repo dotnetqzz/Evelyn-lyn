@@ -1,0 +1,6 @@
+# Test compound subtraction -=
+var x = 100
+x -= 20
+x -= 30
+assert x == 50, "-= failed"
+print("PASS: test_var_compound_sub")

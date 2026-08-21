@@ -1,0 +1,21 @@
+# Test recursive Quicksort algorithm
+fn quicksort(arr):
+    if arrayLen(arr) <= 1:
+        return arr
+    let pivot = arr[0]
+    var less = []
+    var equal = []
+    var greater = []
+    for x in arr:
+        if x < pivot:
+            less = arrayAppend(less, x)
+        elif x == pivot:
+            equal = arrayAppend(equal, x)
+        else:
+            greater = arrayAppend(greater, x)
+    return arrayConcat(arrayConcat(quicksort(less), equal), quicksort(greater))
+
+let unsorted = [64, 34, 25, 12, 22, 11, 90]
+let sorted_arr = quicksort(unsorted)
+assert sorted_arr == [11, 12, 22, 25, 34, 64, 90], "quicksort failed"
+print("PASS: test_algo_quicksort")

@@ -1,0 +1,11 @@
+# Test try-catch block when no exception is thrown
+var catch_ran = false
+var body_ran = false
+try {
+    body_ran = true
+} catch e {
+    catch_ran = true
+}
+assert body_ran == true, "try body failed to run"
+assert catch_ran == false, "catch ran unexpectedly"
+print("PASS: test_err_try_catch_no_error")

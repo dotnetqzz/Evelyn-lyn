@@ -1,0 +1,7 @@
+# Test trailing comma in function call
+fn addThree(a, b, c):
+    return a + b + c
+
+let res = addThree(10, 20, 30,)
+assert res == 60, "trailing comma fn call failed"
+print("PASS: test_parse_fn_call_trailing_comma")

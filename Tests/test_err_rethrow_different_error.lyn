@@ -1,0 +1,13 @@
+# Test catching error and throwing new wrapped error
+var outer_err = ""
+try {
+    try {
+        throw "db_timeout"
+    } catch e {
+        throw "service_unavailable_due_to_" + toString(e)
+    }
+} catch e {
+    outer_err = toString(e)
+}
+assert outer_err == "service_unavailable_due_to_db_timeout", "wrap error failed"
+print("PASS: test_err_rethrow_different_error")

@@ -1,0 +1,6 @@
+# Test mathMin and mathMax builtins
+assert mathMin(10, 20) == 10, "mathMin failed"
+assert mathMax(10, 20) == 20, "mathMax failed"
+assert mathMin(-5, -15) == -15, "mathMin neg failed"
+assert mathMax(-5, -15) == -5, "mathMax neg failed"
+print("PASS: test_std_math_min_max")

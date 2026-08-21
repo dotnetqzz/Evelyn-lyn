@@ -1,0 +1,12 @@
+# Test function call spanning multiple lines
+fn calc(a, b, c, d):
+    return a + b * c - d
+
+let res = calc(
+    10,
+    5,
+    4,
+    2
+)
+assert res == 28, "multiline fn args failed"
+print("PASS: test_parse_multiline_fn_args")

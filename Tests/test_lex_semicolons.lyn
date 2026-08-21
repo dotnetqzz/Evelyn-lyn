@@ -1,0 +1,4 @@
+# Test statement separation with semicolons
+let a = 1; let b = 2; let c = 3
+assert a + b + c == 6, "semicolon separation failed"
+print("PASS: test_lex_semicolons")

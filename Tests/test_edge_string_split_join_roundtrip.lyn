@@ -1,0 +1,6 @@
+# Test stringSplit and stringJoin roundtrip
+let original = "apple|banana|cherry|date"
+let parts = stringSplit(original, "|")
+let reconstructed = stringJoin(parts, "|")
+assert reconstructed == original, "split join roundtrip failed"
+print("PASS: test_edge_string_split_join_roundtrip")

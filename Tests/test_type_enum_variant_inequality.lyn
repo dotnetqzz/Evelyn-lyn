@@ -1,0 +1,11 @@
+# Test all pairs of distinct enum variants are not equal
+enum State {
+    Init,
+    Ready,
+    Done
+}
+
+assert State.Init != State.Ready, "Init != Ready failed"
+assert State.Ready != State.Done, "Ready != Done failed"
+assert State.Init != State.Done, "Init != Done failed"
+print("PASS: test_type_enum_variant_inequality")

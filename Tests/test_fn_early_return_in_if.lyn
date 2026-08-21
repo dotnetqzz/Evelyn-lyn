@@ -1,0 +1,15 @@
+# Test early return in nested if branches
+fn validateAge(age):
+    if age < 0:
+        return "negative"
+    if age > 150:
+        return "too_old"
+    if age >= 18:
+        return "adult"
+    return "minor"
+
+assert validateAge(-1) == "negative", "validate negative failed"
+assert validateAge(200) == "too_old", "validate too_old failed"
+assert validateAge(25) == "adult", "validate adult failed"
+assert validateAge(10) == "minor", "validate minor failed"
+print("PASS: test_fn_early_return_in_if")

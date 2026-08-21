@@ -1,0 +1,23 @@
+# Test 3 levels of nested try-catch blocks
+var trace = []
+try {
+    trace = arrayAppend(trace, "L1_START")
+    try {
+        trace = arrayAppend(trace, "L2_START")
+        try {
+            trace = arrayAppend(trace, "L3_START")
+            throw "err_from_L3"
+        } catch e {
+            trace = arrayAppend(trace, "L3_CATCH")
+            throw "rethrow_to_L2"
+        }
+    } catch e {
+        trace = arrayAppend(trace, "L2_CATCH")
+    }
+    trace = arrayAppend(trace, "L1_END")
+} catch e {
+    trace = arrayAppend(trace, "L1_CATCH")
+}
+
+assert trace == ["L1_START", "L2_START", "L3_START", "L3_CATCH", "L2_CATCH", "L1_END"], "3-level catch trace failed"
+print("PASS: test_err_multiple_nested_catches")

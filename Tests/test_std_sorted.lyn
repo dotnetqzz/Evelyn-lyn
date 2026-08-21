@@ -1,0 +1,6 @@
+# Test sorted builtin
+let nums = [5, 1, 4, 2, 8]
+let s = sorted(nums)
+assert s == [1, 2, 4, 5, 8], "sorted builtin failed"
+assert nums == [5, 1, 4, 2, 8], "sorted did not mutate original failed"
+print("PASS: test_std_sorted")

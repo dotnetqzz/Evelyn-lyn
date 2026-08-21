@@ -1,0 +1,40 @@
+# Test 2D grid flood fill algorithm
+fn floodFill(grid, start_r, start_c, new_color):
+    var g = deepCopy(grid)
+    let rows = arrayLen(g)
+    let cols = arrayLen(g[0])
+    let orig_color = g[start_r][start_c]
+    if orig_color == new_color: return g
+
+    var queue = [[start_r, start_c]]
+    var visited = {}
+    visited[toString(start_r) + "_" + toString(start_c)] = true
+
+    while arrayLen(queue) > 0:
+        let pos = arrayShift(queue)
+        let r = pos[0]
+        let c = pos[1]
+        var row = g[r]
+        row[c] = new_color
+        g[r] = row
+
+        let neighbors = [[r-1, c], [r+1, c], [r, c-1], [r, c+1]]
+        for n in neighbors:
+            let nr = n[0]
+            let nc = n[1]
+            let key = toString(nr) + "_" + toString(nc)
+            if nr >= 0 and nr < rows and nc >= 0 and nc < cols:
+                if not mapHas(visited, key) and g[nr][nc] == orig_color:
+                    visited[key] = true
+                    queue = arrayPush(queue, [nr, nc])
+    return g
+
+let initial_grid = [
+    [1, 1, 0],
+    [1, 0, 0],
+    [0, 0, 0]
+]
+let filled = floodFill(initial_grid, 0, 0, 2)
+assert filled[0][0] == 2 and filled[0][1] == 2 and filled[1][0] == 2, "flood fill colored connected failed"
+assert filled[0][2] == 0 and filled[2][2] == 0, "flood fill left uncolored failed"
+print("PASS: test_algo_flood_fill_grid")

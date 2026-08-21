@@ -1,0 +1,9 @@
+# Test pattern variable binding scope in match arm
+let val = 42
+var captured_val = 0
+match val {
+    case x:
+        captured_val = x
+}
+assert captured_val == 42, "match pattern binding failed"
+print("PASS: test_scope_match_pattern_var_binding")

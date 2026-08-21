@@ -1,0 +1,15 @@
+# Test nested if statements
+var depth = 0
+if true:
+    depth += 1
+    if true:
+        depth += 1
+        if true:
+            depth += 1
+            if true:
+                depth += 1
+                if true:
+                    depth += 1
+
+assert depth == 5, "nested blocks failed"
+print("PASS: test_edge_deep_nested_blocks_15")

@@ -1,0 +1,4 @@
+# Test strings containing embedded null characters
+let s = "abc\0def"
+assert stringLen(s) == 7, "null byte string len failed"
+print("PASS: test_edge_str_null_bytes")

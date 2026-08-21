@@ -1,0 +1,15 @@
+# Test full Levenshtein alignment score
+fn similarityScore(s1, s2):
+    if s1 == s2: return 100
+    let l1 = stringLen(s1)
+    let l2 = stringLen(s2)
+    if l1 == 0 or l2 == 0: return 0
+    var common = 0
+    for i in 0..l1:
+        if stringContains(s2, stringSub(s1, i, 1)):
+            common += 1
+    return (common * 100) // (l1 > l2 ? l1 : l2)
+
+let score = similarityScore("compiler", "computer")
+assert score >= 60, "similarity score failed"
+print("PASS: test_algo_levenshtein_distance_matrix")

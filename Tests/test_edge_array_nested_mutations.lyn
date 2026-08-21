@@ -1,0 +1,8 @@
+# Test mutating arrays nested within an outer container
+var container = [[1, 2], [3, 4]]
+var row0 = container[0]
+row0 = arrayAppend(row0, 99)
+container[0] = row0
+
+assert container[0] == [1, 2, 99], "nested array mutation failed"
+print("PASS: test_edge_array_nested_mutations")

@@ -1,0 +1,11 @@
+# Test function returning map with functions and data
+fn makeModule(name):
+    let getName = def() => name
+    let transform = def(suffix) => name + "_" + suffix
+    return {"name": name, "getName": getName, "transform": transform}
+
+let mod = makeModule("CoreEngine")
+assert mod["name"] == "CoreEngine", "mod name field failed"
+assert mod["getName"]() == "CoreEngine", "mod getName method failed"
+assert mod["transform"]("v2") == "CoreEngine_v2", "mod transform method failed"
+print("PASS: test_fn_return_complex_structure")

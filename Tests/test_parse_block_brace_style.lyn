@@ -1,0 +1,9 @@
+# Test block scope execution
+var sum = 0
+if true:
+    let a = 10
+    let b = 20
+    sum = a + b
+
+assert sum == 30, "block scope failed"
+print("PASS: test_parse_block_brace_style")

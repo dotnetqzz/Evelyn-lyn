@@ -1,0 +1,8 @@
+# Test inverting one-to-one map
+let original = {"A": "1", "B": "2", "C": "3"}
+var inverted = {}
+for k in mapKeys(original):
+    inverted[original[k]] = k
+
+assert inverted["1"] == "A" and inverted["2"] == "B" and inverted["3"] == "C", "invert map failed"
+print("PASS: test_map_invert_map")

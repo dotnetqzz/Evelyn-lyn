@@ -1,0 +1,10 @@
+# Test decimal integer tokenization
+let zero = 0
+let single_digit = 7
+let multi_digit = 123456
+let large_int = 9876543210
+assert zero == 0, "zero literal failed"
+assert single_digit == 7, "single digit failed"
+assert multi_digit == 123456, "multi digit failed"
+assert large_int == 9876543210, "large int failed"
+print("PASS: test_lex_int_dec")

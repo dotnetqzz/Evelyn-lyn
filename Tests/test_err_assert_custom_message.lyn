@@ -1,0 +1,9 @@
+# Test assert preserves custom error message
+var msg = ""
+try {
+    assert 1 == 2, "my_custom_failure_reason"
+} catch e {
+    msg = toString(e)
+}
+assert stringContains(msg, "my_custom_failure_reason"), "custom assert msg failed"
+print("PASS: test_err_assert_custom_message")

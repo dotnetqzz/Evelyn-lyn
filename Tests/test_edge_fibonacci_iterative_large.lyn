@@ -1,0 +1,16 @@
+# Test fast iterative Fibonacci computation
+fn fibIter(n):
+    if n <= 0: return 0
+    if n == 1: return 1
+    var a = 0
+    var b = 1
+    for i in 2...n:
+        let next_f = a + b
+        a = b
+        b = next_f
+    return b
+
+assert fibIter(10) == 55, "fibIter(10) failed"
+assert fibIter(20) == 6765, "fibIter(20) failed"
+assert fibIter(30) == 832040, "fibIter(30) failed"
+print("PASS: test_edge_fibonacci_iterative_large")

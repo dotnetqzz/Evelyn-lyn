@@ -1,0 +1,6 @@
+# Test jsonEncode / jsonStringify on primitives
+assert jsonEncode(123) == "123", "json int failed"
+assert jsonEncode("hello") == "\"hello\"", "json str failed"
+assert jsonEncode(true) == "true", "json bool failed"
+assert jsonEncode(null) == "null", "json null failed"
+print("PASS: test_std_json_encode_primitives")

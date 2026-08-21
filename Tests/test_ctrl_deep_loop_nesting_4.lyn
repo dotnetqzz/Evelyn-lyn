@@ -1,0 +1,10 @@
+# Test 4 levels of nested loops
+var counter = 0
+for a in 0..2:
+    for b in 0..2:
+        for c in 0..2:
+            for d in 0..2:
+                counter += 1
+
+assert counter == 16, "4 level nested loops failed"
+print("PASS: test_ctrl_deep_loop_nesting_4")

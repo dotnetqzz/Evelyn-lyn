@@ -1,0 +1,5 @@
+# Test JSON decoding of maps
+let parsed = jsonParse("{\"id\": 101, \"status\": \"ACTIVE\"}")
+assert parsed["id"] == 101, "parsed map id failed"
+assert parsed["status"] == "ACTIVE", "parsed map status failed"
+print("PASS: test_std_json_decode_map")

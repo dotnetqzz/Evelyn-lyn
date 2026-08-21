@@ -1,0 +1,4 @@
+# Test mapHas returning true for present key
+let m = {"enabled": true}
+assert mapHas(m, "enabled") == true, "mapHas true failed"
+print("PASS: test_map_has_true")

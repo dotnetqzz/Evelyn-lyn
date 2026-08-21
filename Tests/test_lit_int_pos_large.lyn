@@ -1,0 +1,6 @@
+# Test large 64-bit integer values
+let large = 9223372036854775800
+assert large > 9000000000000000000, "large int comparison failed"
+let next_val = large + 5
+assert next_val == 9223372036854775805, "large int addition failed"
+print("PASS: test_lit_int_pos_large")

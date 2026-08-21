@@ -1,0 +1,9 @@
+# Test currying functions
+fn curryAdd(a):
+    return def(b) => def(c) => a + b + c
+
+let add1 = curryAdd(1)
+let add1and2 = add1(2)
+assert add1and2(3) == 6, "currying step 3 failed"
+assert curryAdd(10)(20)(30) == 60, "currying chain failed"
+print("PASS: test_fn_currying")

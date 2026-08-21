@@ -1,0 +1,6 @@
+# Test basic ternary operator ? :
+let r1 = true ? 100 : 200
+let r2 = false ? 100 : 200
+assert r1 == 100, "ternary true failed"
+assert r2 == 200, "ternary false failed"
+print("PASS: test_op_ternary_basic")
