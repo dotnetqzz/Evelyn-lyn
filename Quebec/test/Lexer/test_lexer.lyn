@@ -1,0 +1,21 @@
+import "../../lib/Parse/Lexer.lyn"
+
+def test_basic_tokenization() {
+    let source = """
+    let x = 100
+    var message = "Hello, Quebec!"
+    def add(a, b) {
+        return a + b
+    }
+    """
+    
+    let lex = lexer_new(source, 0)
+    let tokens = lexer_tokenize_all(lex)
+    
+    print("Tokens scanned: " + toString(arrayLen(tokens)))
+    for tok in tokens {
+        print("  " + tokenKindName(tok["kind"]) + " -> '" + tok["text"] + "' at line " + toString(tok["line"]) + ":" + toString(tok["col"]))
+    }
+}
+
+test_basic_tokenization()

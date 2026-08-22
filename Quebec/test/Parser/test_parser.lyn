@@ -1,0 +1,39 @@
+# Quebec Compiler (Evelyn) — test/Parser/test_parser.lyn
+
+import "../../lib/Parse/Lexer.lyn"
+import "../../lib/Parse/Parser.lyn"
+
+def test_parser_pipeline() {
+    let source = """
+    let x = 10
+    var y = 20 + x * 2
+    def compute(a, b) {
+        if a > b {
+            return a - b
+        } else {
+            return a + b
+        }
+    }
+    """
+
+    let lex = lexer_new(source, 0)
+    let tokens = lexer_tokenize_all(lex)
+    print("Tokens scanned: " + toString(arrayLen(tokens)))
+
+    let parser = parser_new(tokens)
+    let ast = parser_parse_program(parser)
+    print("AST Statements parsed: " + toString(arrayLen(ast)))
+
+    for stmt in ast {
+        let kind = stmt["kind"]
+        if kind == AST_DECL {
+            print("  Decl: " + stmt["name"] + " (mutable: " + toString(stmt["mutable"]) + ")")
+        } else if kind == AST_FUNC_DECL {
+            print("  FuncDecl: " + stmt["name"] + " (params: " + toString(arrayLen(stmt["params"])) + ", stmts: " + toString(arrayLen(stmt["body"])) + ")")
+        } else {
+            print("  Statement kind: " + toString(kind))
+        }
+    }
+}
+
+test_parser_pipeline()

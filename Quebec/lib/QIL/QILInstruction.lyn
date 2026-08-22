@@ -1,0 +1,53 @@
+# Quebec Compiler (Evelyn) — lib/QIL/QILInstruction.lyn
+# Quebec Intermediate Language (QIL) instruction definitions
+
+let QIL_INST_ALLOC       = 1
+let QIL_INST_STORE       = 2
+let QIL_INST_LOAD        = 3
+let QIL_INST_BINOP       = 4
+let QIL_INST_UNARYOP     = 5
+let QIL_INST_CALL        = 6
+let QIL_INST_RUNTIME_CALL = 7
+let QIL_INST_BRANCH      = 8
+let QIL_INST_COND_BRANCH = 9
+let QIL_INST_RETURN      = 10
+
+def qil_alloc(destTemp) {
+    return { "kind": QIL_INST_ALLOC, "dest": destTemp }
+}
+
+def qil_store(destPtr, srcVal) {
+    return { "kind": QIL_INST_STORE, "dest": destPtr, "src": srcVal }
+}
+
+def qil_load(destTemp, srcPtr) {
+    return { "kind": QIL_INST_LOAD, "dest": destTemp, "src": srcPtr }
+}
+
+def qil_binop(destTemp, op, leftVal, rightVal) {
+    return { "kind": QIL_INST_BINOP, "dest": destTemp, "op": op, "left": leftVal, "right": rightVal }
+}
+
+def qil_unaryop(destTemp, op, operandVal) {
+    return { "kind": QIL_INST_UNARYOP, "dest": destTemp, "op": op, "operand": operandVal }
+}
+
+def qil_call(destTemp, funcName, args) {
+    return { "kind": QIL_INST_CALL, "dest": destTemp, "funcName": funcName, "args": args }
+}
+
+def qil_runtime_call(destTemp, rtName, args) {
+    return { "kind": QIL_INST_RUNTIME_CALL, "dest": destTemp, "rtName": rtName, "args": args }
+}
+
+def qil_branch(targetBlockName) {
+    return { "kind": QIL_INST_BRANCH, "target": targetBlockName }
+}
+
+def qil_cond_branch(condVal, thenBlockName, elseBlockName) {
+    return { "kind": QIL_INST_COND_BRANCH, "cond": condVal, "then": thenBlockName, "else": elseBlockName }
+}
+
+def qil_return(retVal) {
+    return { "kind": QIL_INST_RETURN, "val": retVal }
+}

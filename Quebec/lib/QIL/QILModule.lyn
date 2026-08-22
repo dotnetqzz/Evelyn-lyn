@@ -1,0 +1,67 @@
+# Quebec Compiler (Evelyn) — lib/QIL/QILModule.lyn
+# QIL BasicBlock, Function, and Module containers
+
+import "QILInstruction.lyn"
+
+def qil_block_new(label) {
+    return {
+        "label": label,
+        "insts": []
+    }
+}
+
+def qil_block_add_inst(bb, inst) {
+    let updated = arrayAppend(bb["insts"], inst)
+    mapSet(bb, "insts", updated)
+}
+
+def qil_func_new(name, params) {
+    let entry = qil_block_new("entry")
+    return {
+        "name":     name,
+        "params":   params,
+        "blocks":   [entry],
+        "curBlock": entry,
+        "nextTemp": 0
+    }
+}
+
+def qil_func_fresh_temp(qf, prefix) {
+    let id = qf["nextTemp"]
+    mapSet(qf, "nextTemp", id + 1)
+    return prefix + toString(id)
+}
+
+def qil_func_create_block(qf, label) {
+    let bb = qil_block_new(label)
+    let updated = arrayAppend(qf["blocks"], bb)
+    mapSet(qf, "blocks", updated)
+    return bb
+}
+
+def qil_func_set_cur_block(qf, bb) {
+    mapSet(qf, "curBlock", bb)
+}
+
+def qil_func_emit(qf, inst) {
+    qil_block_add_inst(qf["curBlock"], inst)
+}
+
+def qil_module_new(name) {
+    return {
+        "name":      name,
+        "functions": [],
+        "globals":   []
+    }
+}
+
+def qil_module_add_func(qm, func) {
+    let funcName = func["name"]
+    for f in qm["functions"] {
+        if f["name"] == funcName {
+            return
+        }
+    }
+    let updated = arrayAppend(qm["functions"], func)
+    mapSet(qm, "functions", updated)
+}

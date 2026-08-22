@@ -120,9 +120,13 @@ pub fn compile_and_link(
        .arg(rt_c_file)
        .arg("-o").arg(out_file);
 
-    // On Windows, link against the CRT.
+    // On Windows, link against the CRT and core Win32 libraries.
     if cfg!(windows) {
-        cmd.arg("-lmsvcrt");
+        cmd.arg("-lmsvcrt")
+           .arg("-lshell32")
+           .arg("-lkernel32")
+           .arg("-luser32")
+           .arg("-ladvapi32");
     }
 
     if verbose {

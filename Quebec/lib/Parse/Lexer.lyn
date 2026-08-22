@@ -1,0 +1,360 @@
+# Quebec Compiler (Evelyn) — lib/Parse/Lexer.lyn
+# High-performance lexical analyzer and tokenizer
+
+import "Token.lyn"
+
+def lexer_new(source, fileId) {
+    return {
+        "src":     source,
+        "srcLen":  stringLen(source),
+        "pos":     0,
+        "line":    1,
+        "col":     1,
+        "fileId":  fileId,
+        "tokens":  []
+    }
+}
+
+def lexer_is_eof(lex) {
+    return lex["pos"] >= lex["srcLen"]
+}
+
+def lexer_peek(lex) {
+    let pos = lex["pos"]
+    if pos < lex["srcLen"] {
+        return stringSub(lex["src"], pos, 1)
+    }
+    return ""
+}
+
+def lexer_peek_next(lex) {
+    let pos = lex["pos"] + 1
+    if pos < lex["srcLen"] {
+        return stringSub(lex["src"], pos, 1)
+    }
+    return ""
+}
+
+def lexer_advance(lex) {
+    let pos = lex["pos"]
+    if pos < lex["srcLen"] {
+        let ch = stringSub(lex["src"], pos, 1)
+        mapSet(lex, "pos", pos + 1)
+        if ch == "\n" {
+            mapSet(lex, "line", lex["line"] + 1)
+            mapSet(lex, "col", 1)
+        } else {
+            mapSet(lex, "col", lex["col"] + 1)
+        }
+        return ch
+    }
+    return ""
+}
+
+def lexer_match(lex, expected) {
+    if lexer_peek(lex) == expected {
+        lexer_advance(lex)
+        return true
+    }
+    return false
+}
+
+def is_digit(ch) {
+    return ch >= "0" and ch <= "9"
+}
+
+def is_hex_digit(ch) {
+    return (ch >= "0" and ch <= "9") or (ch >= "a" and ch <= "f") or (ch >= "A" and ch <= "F")
+}
+
+def is_alpha(ch) {
+    return (ch >= "a" and ch <= "z") or (ch >= "A" and ch <= "Z") or ch == "_"
+}
+
+def is_alpha_num(ch) {
+    return is_alpha(ch) or is_digit(ch)
+}
+
+def lexer_skip_whitespace_and_comments(lex) {
+    while not lexer_is_eof(lex) {
+        let ch = lexer_peek(lex)
+        if ch == " " or ch == "\t" or ch == "\r" or ch == "\n" {
+            lexer_advance(lex)
+        } else if ch == "#" {
+            # Single line comment # ...
+            while not lexer_is_eof(lex) and lexer_peek(lex) != "\n" {
+                lexer_advance(lex)
+            }
+        } else if ch == "/" and lexer_peek_next(lex) == "/" {
+            # Single line comment // ...
+            lexer_advance(lex)
+            lexer_advance(lex)
+            while not lexer_is_eof(lex) and lexer_peek(lex) != "\n" {
+                lexer_advance(lex)
+            }
+        } else if ch == "/" and lexer_peek_next(lex) == "*" {
+            # Block comment /* ... */
+            lexer_advance(lex)
+            lexer_advance(lex)
+            while not lexer_is_eof(lex) {
+                if lexer_peek(lex) == "*" and lexer_peek_next(lex) == "/" {
+                    lexer_advance(lex)
+                    lexer_advance(lex)
+                    break
+                }
+                lexer_advance(lex)
+            }
+        } else {
+            break
+        }
+    }
+}
+
+def lexer_scan_identifier(lex, firstChar, startLine, startCol, startPos) {
+    var buf = firstChar
+    while not lexer_is_eof(lex) and is_alpha_num(lexer_peek(lex)) {
+        buf = buf + lexer_advance(lex)
+    }
+
+    let kind = get_keyword_kind(buf)
+    return makeToken(kind, buf, startLine, startCol, startPos, lex["fileId"])
+}
+
+def lexer_scan_number(lex, firstChar, startLine, startCol, startPos) {
+    var buf = firstChar
+    var isFloat = false
+
+    # Check hex 0x / binary 0b / octal 0o
+    if firstChar == "0" {
+        let next = lexer_peek(lex)
+        if next == "x" or next == "X" {
+            buf = buf + lexer_advance(lex)
+            while not lexer_is_eof(lex) and (is_hex_digit(lexer_peek(lex)) or lexer_peek(lex) == "_") {
+                let ch = lexer_advance(lex)
+                if ch != "_" { buf = buf + ch }
+            }
+            return makeToken(TOK_INT_LIT, buf, startLine, startCol, startPos, lex["fileId"])
+        } else if next == "b" or next == "B" {
+            buf = buf + lexer_advance(lex)
+            while not lexer_is_eof(lex) and (lexer_peek(lex) == "0" or lexer_peek(lex) == "1" or lexer_peek(lex) == "_") {
+                let ch = lexer_advance(lex)
+                if ch != "_" { buf = buf + ch }
+            }
+            return makeToken(TOK_INT_LIT, buf, startLine, startCol, startPos, lex["fileId"])
+        }
+    }
+
+    while not lexer_is_eof(lex) and (is_digit(lexer_peek(lex)) or lexer_peek(lex) == "_") {
+        let ch = lexer_advance(lex)
+        if ch != "_" { buf = buf + ch }
+    }
+
+    if lexer_peek(lex) == "." and is_digit(lexer_peek_next(lex)) {
+        isFloat = true
+        buf = buf + lexer_advance(lex)
+        while not lexer_is_eof(lex) and (is_digit(lexer_peek(lex)) or lexer_peek(lex) == "_") {
+            let ch = lexer_advance(lex)
+            if ch != "_" { buf = buf + ch }
+        }
+    }
+
+    if lexer_peek(lex) == "e" or lexer_peek(lex) == "E" {
+        isFloat = true
+        buf = buf + lexer_advance(lex)
+        if lexer_peek(lex) == "+" or lexer_peek(lex) == "-" {
+            buf = buf + lexer_advance(lex)
+        }
+        while not lexer_is_eof(lex) and is_digit(lexer_peek(lex)) {
+            buf = buf + lexer_advance(lex)
+        }
+    }
+
+    let kind = isFloat ? TOK_FLOAT_LIT : TOK_INT_LIT
+    return makeToken(kind, buf, startLine, startCol, startPos, lex["fileId"])
+}
+
+def lexer_scan_string(lex, quoteChar, startLine, startCol, startPos) {
+    var buf = ""
+    var isTriple = false
+
+    # Check triple quote
+    if lexer_peek(lex) == quoteChar and lexer_peek_next(lex) == quoteChar {
+        lexer_advance(lex)
+        lexer_advance(lex)
+        isTriple = true
+    }
+
+    while not lexer_is_eof(lex) {
+        if isTriple {
+            if lexer_peek(lex) == quoteChar and lexer_peek_next(lex) == quoteChar {
+                let thirdPos = lex["pos"] + 2
+                if thirdPos < lex["srcLen"] and stringSub(lex["src"], thirdPos, 1) == quoteChar {
+                    lexer_advance(lex)
+                    lexer_advance(lex)
+                    lexer_advance(lex)
+                    break
+                }
+            }
+        } else {
+            if lexer_peek(lex) == quoteChar {
+                lexer_advance(lex)
+                break
+            }
+        }
+
+        let ch = lexer_advance(lex)
+        if ch == "\\" and not lexer_is_eof(lex) {
+            let esc = lexer_advance(lex)
+            if esc == "n"  { buf = buf + "\n" }
+            else if esc == "t" { buf = buf + "\t" }
+            else if esc == "r" { buf = buf + "\r" }
+            else if esc == "\\" { buf = buf + "\\" }
+            else if esc == "\"" { buf = buf + "\"" }
+            else if esc == "'"  { buf = buf + "'" }
+            else { buf = buf + esc }
+        } else {
+            buf = buf + ch
+        }
+    }
+
+    return makeToken(TOK_STRING_LIT, buf, startLine, startCol, startPos, lex["fileId"])
+}
+
+def lexer_next_token(lex) {
+    lexer_skip_whitespace_and_comments(lex)
+
+    if lexer_is_eof(lex) {
+        return makeToken(TOK_EOF, "", lex["line"], lex["col"], lex["pos"], lex["fileId"])
+    }
+
+    let startLine = lex["line"]
+    let startCol  = lex["col"]
+    let startPos  = lex["pos"]
+    let ch = lexer_advance(lex)
+
+    # Identifiers / keywords
+    if is_alpha(ch) {
+        # Check byte array literal prefix b"..."
+        if ch == "b" and (lexer_peek(lex) == "\"" or lexer_peek(lex) == "'") {
+            let quote = lexer_advance(lex)
+            let tok = lexer_scan_string(lex, quote, startLine, startCol, startPos)
+            mapSet(tok, "kind", TOK_BYTEARRAY_LIT)
+            return tok
+        }
+        return lexer_scan_identifier(lex, ch, startLine, startCol, startPos)
+    }
+
+    # Number literals
+    if is_digit(ch) {
+        return lexer_scan_number(lex, ch, startLine, startCol, startPos)
+    }
+
+    # String literals
+    if ch == "\"" or ch == "'" {
+        return lexer_scan_string(lex, ch, startLine, startCol, startPos)
+    }
+
+    # Operators & Delimiters
+    if ch == "+" {
+        if lexer_match(lex, "=") { return makeToken(TOK_OP_PLUSEQ, "+=", startLine, startCol, startPos, lex["fileId"]) }
+        return makeToken(TOK_OP_PLUS, "+", startLine, startCol, startPos, lex["fileId"])
+    }
+    if ch == "-" {
+        if lexer_match(lex, "=") { return makeToken(TOK_OP_MINUSEQ, "-=", startLine, startCol, startPos, lex["fileId"]) }
+        if lexer_match(lex, ">") { return makeToken(TOK_OP_ARROW, "->", startLine, startCol, startPos, lex["fileId"]) }
+        return makeToken(TOK_OP_MINUS, "-", startLine, startCol, startPos, lex["fileId"])
+    }
+    if ch == "*" {
+        if lexer_match(lex, "*") {
+            if lexer_match(lex, "=") { return makeToken(TOK_OP_STARSTAREQ, "**=", startLine, startCol, startPos, lex["fileId"]) }
+            return makeToken(TOK_OP_STARSTAR, "**", startLine, startCol, startPos, lex["fileId"])
+        }
+        if lexer_match(lex, "=") { return makeToken(TOK_OP_STAREQ, "*=", startLine, startCol, startPos, lex["fileId"]) }
+        return makeToken(TOK_OP_STAR, "*", startLine, startCol, startPos, lex["fileId"])
+    }
+    if ch == "/" {
+        if lexer_match(lex, "/") {
+            if lexer_match(lex, "=") { return makeToken(TOK_OP_SLASHSLASHEQ, "//=", startLine, startCol, startPos, lex["fileId"]) }
+            return makeToken(TOK_OP_SLASHSLASH, "//", startLine, startCol, startPos, lex["fileId"])
+        }
+        if lexer_match(lex, "=") { return makeToken(TOK_OP_SLASHEQ, "/=", startLine, startCol, startPos, lex["fileId"]) }
+        return makeToken(TOK_OP_SLASH, "/", startLine, startCol, startPos, lex["fileId"])
+    }
+    if ch == "%" {
+        if lexer_match(lex, "=") { return makeToken(TOK_OP_PERCENTEQ, "%=", startLine, startCol, startPos, lex["fileId"]) }
+        return makeToken(TOK_OP_PERCENT, "%", startLine, startCol, startPos, lex["fileId"])
+    }
+    if ch == "=" {
+        if lexer_match(lex, "=") { return makeToken(TOK_OP_EQEQ, "==", startLine, startCol, startPos, lex["fileId"]) }
+        if lexer_match(lex, ">") { return makeToken(TOK_OP_FATARROW, "=>", startLine, startCol, startPos, lex["fileId"]) }
+        return makeToken(TOK_OP_ASSIGN, "=", startLine, startCol, startPos, lex["fileId"])
+    }
+    if ch == "!" {
+        if lexer_match(lex, "=") { return makeToken(TOK_OP_NEQ, "!=", startLine, startCol, startPos, lex["fileId"]) }
+        return makeToken(TOK_KW_NOT, "!", startLine, startCol, startPos, lex["fileId"])
+    }
+    if ch == "<" {
+        if lexer_match(lex, "<") {
+            if lexer_match(lex, "=") { return makeToken(TOK_OP_SHLEQ, "<<=", startLine, startCol, startPos, lex["fileId"]) }
+            return makeToken(TOK_OP_SHL, "<<", startLine, startCol, startPos, lex["fileId"])
+        }
+        if lexer_match(lex, "=") { return makeToken(TOK_OP_LTE, "<=", startLine, startCol, startPos, lex["fileId"]) }
+        return makeToken(TOK_OP_LT, "<", startLine, startCol, startPos, lex["fileId"])
+    }
+    if ch == ">" {
+        if lexer_match(lex, ">") {
+            if lexer_match(lex, "=") { return makeToken(TOK_OP_SHREQ, ">>=", startLine, startCol, startPos, lex["fileId"]) }
+            return makeToken(TOK_OP_SHR, ">>", startLine, startCol, startPos, lex["fileId"])
+        }
+        if lexer_match(lex, "=") { return makeToken(TOK_OP_GTE, ">=", startLine, startCol, startPos, lex["fileId"]) }
+        return makeToken(TOK_OP_GT, ">", startLine, startCol, startPos, lex["fileId"])
+    }
+    if ch == "&" {
+        if lexer_match(lex, "=") { return makeToken(TOK_OP_AMPEQ, "&=", startLine, startCol, startPos, lex["fileId"]) }
+        return makeToken(TOK_OP_AMP, "&", startLine, startCol, startPos, lex["fileId"])
+    }
+    if ch == "|" {
+        if lexer_match(lex, ">") { return makeToken(TOK_OP_PIPELINE, "|>", startLine, startCol, startPos, lex["fileId"]) }
+        if lexer_match(lex, "=") { return makeToken(TOK_OP_PIPEEQ, "|=", startLine, startCol, startPos, lex["fileId"]) }
+        return makeToken(TOK_OP_PIPE, "|", startLine, startCol, startPos, lex["fileId"])
+    }
+    if ch == "^" {
+        if lexer_match(lex, "=") { return makeToken(TOK_OP_CARETEQ, "^=", startLine, startCol, startPos, lex["fileId"]) }
+        return makeToken(TOK_OP_CARET, "^", startLine, startCol, startPos, lex["fileId"])
+    }
+    if ch == "~" { return makeToken(TOK_OP_TILDE, "~", startLine, startCol, startPos, lex["fileId"]) }
+    if ch == "?" {
+        if lexer_match(lex, "?") { return makeToken(TOK_OP_NULLCOAL, "??", startLine, startCol, startPos, lex["fileId"]) }
+        return makeToken(TOK_OP_QUESTION, "?", startLine, startCol, startPos, lex["fileId"])
+    }
+    if ch == ":" { return makeToken(TOK_OP_COLON, ":", startLine, startCol, startPos, lex["fileId"]) }
+    if ch == "." {
+        if lexer_match(lex, ".") {
+            if lexer_match(lex, ".") { return makeToken(TOK_OP_SPREAD, "...", startLine, startCol, startPos, lex["fileId"]) }
+            if lexer_match(lex, "=") { return makeToken(TOK_OP_DOTDOTEQ, "..=", startLine, startCol, startPos, lex["fileId"]) }
+            return makeToken(TOK_OP_DOTDOT, "..", startLine, startCol, startPos, lex["fileId"])
+        }
+        return makeToken(TOK_OP_DOT, ".", startLine, startCol, startPos, lex["fileId"])
+    }
+    if ch == "," { return makeToken(TOK_DELIM_COMMA, ",", startLine, startCol, startPos, lex["fileId"]) }
+    if ch == ";" { return makeToken(TOK_DELIM_SEMI, ";", startLine, startCol, startPos, lex["fileId"]) }
+    if ch == "(" { return makeToken(TOK_DELIM_LPAREN, "(", startLine, startCol, startPos, lex["fileId"]) }
+    if ch == ")" { return makeToken(TOK_DELIM_RPAREN, ")", startLine, startCol, startPos, lex["fileId"]) }
+    if ch == "[" { return makeToken(TOK_DELIM_LBRACK, "[", startLine, startCol, startPos, lex["fileId"]) }
+    if ch == "]" { return makeToken(TOK_DELIM_RBRACK, "]", startLine, startCol, startPos, lex["fileId"]) }
+    if ch == "{" { return makeToken(TOK_DELIM_LBRACE, "{", startLine, startCol, startPos, lex["fileId"]) }
+    if ch == "}" { return makeToken(TOK_DELIM_RBRACE, "}", startLine, startCol, startPos, lex["fileId"]) }
+    if ch == "@" { return makeToken(TOK_DELIM_AT, "@", startLine, startCol, startPos, lex["fileId"]) }
+
+    return makeToken(TOK_IDENTIFIER, ch, startLine, startCol, startPos, lex["fileId"])
+}
+
+def lexer_tokenize_all(lex) {
+    var tokens = []
+    while true {
+        let tok = lexer_next_token(lex)
+        tokens = arrayAppend(tokens, tok)
+        if tok["kind"] == TOK_EOF { break }
+    }
+    return tokens
+}

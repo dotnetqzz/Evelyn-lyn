@@ -1,0 +1,145 @@
+# Quebec Compiler (Evelyn) — lib/Frontend/CompilerInstance.lyn
+# Full Compilation Pipeline Coordinator
+
+import "../Basic/DiagnosticEngine.lyn"
+import "../Basic/SourceManager.lyn"
+import "../Parse/Lexer.lyn"
+import "../Parse/Parser.lyn"
+import "../Sema/NameLookup.lyn"
+import "../QILGen/QILGen.lyn"
+import "../QIL/QILPrinter.lyn"
+import "../IRGen/LLVMIRTextEmitter.lyn"
+import "../Driver/ToolChain.lyn"
+
+def compiler_instance_new(options) {
+    let diag = diag_engine_new(true)
+    let srcMgr = src_mgr_new()
+    return {
+        "diag":    diag,
+        "srcMgr":  srcMgr,
+        "options": options
+    }
+}
+
+def compiler_resolve_imports_rec(ci, filePath, visited) {
+    print("  -> Loading file: " + filePath)
+    let absPath = pathAbsolute(filePath)
+    if mapHas(visited, absPath) {
+        return []
+    }
+    mapSet(visited, absPath, true)
+
+    let fileId = src_mgr_load_file(ci["srcMgr"], filePath)
+    let fileObj = src_mgr_get_file(ci["srcMgr"], fileId)
+    if fileObj == null {
+        print("Warning: Could not open file '" + filePath + "'")
+        return []
+    }
+
+    print("  -> Tokenizing " + filePath)
+    let lex = lexer_new(fileObj["content"], fileId)
+    let tokens = lexer_tokenize_all(lex)
+    print("  -> Parsing " + filePath + " (" + toString(arrayLen(tokens)) + " tokens)")
+    let parser = parser_new(tokens)
+    let ast = parser_parse_program(parser)
+    print("  -> AST parsed for " + filePath + ": " + toString(arrayLen(ast)) + " statements")
+
+    var mergedAst = []
+    let curDir = pathDirname(filePath)
+
+    for node in ast {
+        if node["kind"] == AST_IMPORT {
+            var rawPath = node["path"]
+            if stringStartsWith(rawPath, "\"") and stringEndsWith(rawPath, "\"") and stringLen(rawPath) >= 2 {
+                rawPath = stringSub(rawPath, 1, stringLen(rawPath) - 2)
+            }
+            if not stringEndsWith(rawPath, ".lyn") {
+                rawPath = rawPath + ".lyn"
+            }
+            var targetPath = pathJoin(curDir, rawPath)
+            if not fileExists(targetPath) {
+                targetPath = pathJoin("stdlib", rawPath)
+            }
+            if fileExists(targetPath) {
+                let importedNodes = compiler_resolve_imports_rec(ci, targetPath, visited)
+                for impNode in importedNodes {
+                    mergedAst = arrayAppend(mergedAst, impNode)
+                }
+            }
+        } else {
+            mergedAst = arrayAppend(mergedAst, node)
+        }
+    }
+
+    return mergedAst
+}
+
+def compiler_compile_file(ci, inputPath, outputPath, mode, optLevel) {
+    print("[1/5] Resolving source and imports for: " + inputPath)
+    var visited = {}
+    let ast = compiler_resolve_imports_rec(ci, inputPath, visited)
+    print("[2/5] AST parsed: " + toString(arrayLen(ast)) + " statements")
+    if arrayLen(ast) == 0 {
+        print("Error: Could not load source or AST is empty for '" + inputPath + "'")
+        return false
+    }
+    if mode == "emit-ast" {
+        print("AST parsed: " + toString(arrayLen(ast)) + " top-level statements")
+        return true
+    }
+
+    # 3. Semantic Analysis
+    let nr = name_resolver_new(ci["diag"], inputPath)
+    name_resolve_program(nr, ast)
+    if diag_has_errors(ci["diag"]) {
+        print("Compilation aborted due to semantic errors.")
+        return false
+    }
+    if mode == "check" {
+        print("Semantic check passed with 0 errors.")
+        return true
+    }
+
+    # 4. QIL Generation
+    let qg = qilgen_new(inputPath)
+    qilgen_lower_program(qg, ast)
+    let qilMod = qg["module"]
+    if mode == "emit-qil" {
+        let qilText = qil_dump_module(qilMod)
+        if stringLen(outputPath) > 0 {
+            fileWrite(outputPath, qilText)
+            print("Wrote QIL to: " + outputPath)
+        } else {
+            print(qilText)
+        }
+        return true
+    }
+
+    # 5. LLVM IR Generation
+    let triple = toolchain_get_target_triple()
+    let layout = toolchain_get_data_layout()
+    let emitter = llvm_emitter_new(triple, layout)
+    let llvmText = llvm_emit_module(emitter, qilMod)
+
+    if mode == "emit-llvm" {
+        if stringLen(outputPath) > 0 {
+            fileWrite(outputPath, llvmText)
+            print("Wrote LLVM IR to: " + outputPath)
+        } else {
+            print(llvmText)
+        }
+        return true
+    }
+
+    # 6. Native Toolchain Invocation (Clang / LLD)
+    let tempLlPath = inputPath + ".temp.ll"
+    fileWrite(tempLlPath, llvmText)
+
+    let ok = toolchain_compile_to_binary(tempLlPath, outputPath, optLevel)
+    if ok {
+        print("Successfully compiled " + inputPath + " -> " + outputPath)
+    } else {
+        print("Error: Native compilation / linker step failed.")
+    }
+    return ok
+}

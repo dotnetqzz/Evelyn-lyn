@@ -2659,6 +2659,10 @@ void sylvel_rt_builtin_sysPlatform(SylvelVal* out) {
 
 #ifdef _WIN32
 #include <shellapi.h>
+#pragma comment(lib, "shell32.lib")
+#pragma comment(lib, "kernel32.lib")
+#pragma comment(lib, "user32.lib")
+#pragma comment(lib, "advapi32.lib")
 #endif
 
 void sylvel_rt_builtin_sysArgv(SylvelVal* out) {

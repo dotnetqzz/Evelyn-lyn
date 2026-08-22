@@ -1,0 +1,40 @@
+# Quebec Compiler (Evelyn) — lib/Driver/ToolChain.lyn
+# Host platform toolchain discovery and native binary compilation
+
+import "io"
+import "os"
+import "sys"
+
+def toolchain_get_target_triple() {
+    let plat = sysPlatform()
+    if plat == "windows" {
+        return "x86_64-pc-windows-msvc"
+    }
+    return "x86_64-unknown-linux-gnu"
+}
+
+def toolchain_get_data_layout() {
+    let plat = sysPlatform()
+    if plat == "windows" {
+        return "e-m:w-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
+    }
+    return "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
+}
+
+def toolchain_compile_to_binary(llPath, outBinPath, optLevel) {
+    let rtSourcePath = "stdlib/public/runtime/sylvel_runtime.c"
+    # Fall back to root/avelyn runtime path if needed
+    var runtimePath = rtSourcePath
+    if not fileExists(runtimePath) {
+        runtimePath = "avelyn/src/compiler/sylvel_runtime.c"
+    }
+
+    var optFlag = "-O2"
+    if optLevel == 0 { optFlag = "-O0" }
+    else if optLevel == 1 { optFlag = "-O1" }
+    else if optLevel == 3 { optFlag = "-O3" }
+
+    let cmd = "clang " + optFlag + " \"" + llPath + "\" \"" + runtimePath + "\" -o \"" + outBinPath + "\" -lm"
+    let status = sysExecute(cmd)
+    return status == 0
+}
